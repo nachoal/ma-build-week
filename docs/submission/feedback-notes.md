@@ -64,7 +64,7 @@ audited. Core implementation remains in the root task.
 
 | Task/session ID | Role | Files or evidence touched | Core implementation? |
 |---|---|---|---|
-| pending | pending | pending | no |
+| `/root/wp0_readiness_audit` | Read-only adversarial WP-0 completeness audit | No files; repo/readiness evidence only | no |
 
 ## Codex implementation journal
 
@@ -97,6 +97,22 @@ For each material decision, capture:
   48 kHz mono readiness capture; the Mac was on AC power with ample free disk.
 - Correction: stale probe wording now gates only live microphone/provider
   binding and overlap claims, not the authorized fixture product UI.
+- Baseline commit: `c3498e2` (`chore: establish MA fixture baseline`).
+- Pre-clock evidence readiness: generated and validated a private seeded
+  40/40/40 trial sheet and deterministic 48 kHz sync chirp; added tracked
+  consent/deletion and public-redaction rules. No private capture is tracked.
+- Cloudflare readiness: the API token reported active, the Worker subdomain was
+  readable, and the persistent `ma-adversary` review session was present. The
+  Gate deployment will use Wrangler's encrypted secret store instead of
+  duplicating the standard OpenAI key into a plaintext repository-local file.
+- A benign temporary `.dev.vars` marker passed through Wrangler's local Worker
+  binding and was observed only as present, never disclosed. Fresh test result
+  bundles and raw device snapshots are preserved under ignored private evidence
+  with a tracked redacted summary.
+- Recorder calibration preserved two failed attempts before a controlled
+  Studio Display speaker/microphone take recovered the sync marker under
+  synthesized speech. This changed the evidence rule from assumed mono
+  readiness to explicit per-take ambiguity failure.
 
 ## Final feedback preparation
 
