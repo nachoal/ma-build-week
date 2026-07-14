@@ -54,8 +54,8 @@ Append exact evidence after each milestone.
 | Real offline first-minute playback/capture | Root replaced the fixture-only production route with a zero-beginner local-audio path: all four bundled assets have a validated manifest, one MA audio owner performs audible-completion playback, JIT permission, bounded 8-second capture, aggregate speech-presence/onset extraction, explicit self-assessment, and no retained PCM or file | `cb9d8bd` | complete strict scheme 90/90; signed iPhone 17 Pro build and install succeeded, but launch was lock-denied before any runtime/audio claim | code and simulator complete; physical Gate 1 pending |
 | Repair/resume and next-attempt evidence | Root bound the natural local tutor turn to real playback state, admits pause only while it is active, plays one complete controlled segment labeled `REPLAY · DEMOSTRACIÓN`, resumes the same obligation only after playback completion, captures a new no-text attempt, and gates proof on the full stop/segment/resume chain | `cb9d8bd` | adversarial re-audit PASS; focused strict tests 11/11 and product UI smoke 1/1; no physical learner run yet | code and simulator complete; physical Gate 2 pending |
 | GPT-5.6 planner integration/guardrails | Root added versioned `ScenePlan`, `Attempt`, `LearningReport`, and `NextLearningAction` contracts; an immediate deterministic policy; a Keychain-backed broker client; report-generation cancellation; and double validation that binds every action/reason pair to the same observed obligation. The Worker fixes `gpt-5.6-sol`, strict structured output, `store: false`, bounded input/output/timeout/retry, canonical evidence copy, privacy-preserving safety ID, and endpoint-scoped product authentication | `64e8532` | Worker 18/18; complete strict MA scheme 104/104 test cases (106 parameterized executions); shared Swift/Worker fixtures; live private `gpt-5.6-sol` response validated; product token rejected by Realtime endpoint with 401 | code, broker, and live contract complete; physical product provisioning pending |
-| Physical-device validation and replay fallback | pending | pending | pending | pending |
-| Demo/submission evidence | pending | pending | pending | pending |
+| Physical-device validation and replay fallback | Root added a bounded normalized `ConversationProvider` contract, capability groups that cannot imply one another, a single-use `ReplayAdapter`, fixture-only provenance, a shared product/replay semantic reducer, stale-event and stale-capture rejection, and a permanently labeled replay UI with no microphone, audio, network, learner, or planner claim. One dynamic device script builds, signs, installs, and launches either product or replay without a checked-in device identifier or credential | `c344a67` | strict MA 113 Swift + 4 UI tests; independent replay re-audit PASS; exact-commit product and replay builds installed on the dynamically discovered iPhone 17 Pro, then both launches were lock-denied | fallback code, simulator, and signed install complete; unlocked physical runtime matrix pending |
+| Demo/submission evidence | Root added explicit planner opt-in, accurate deletion/privacy flows, captions, Reduce Motion and Dynamic Type hardening, a tested privacy manifest, claim matrix, Devpost draft, demo/testing/privacy runbooks, subtitles, rehearsal/cold-viewer protocols, precise secret scanning, dynamic device automation, and clean-tree archive automation | `c344a67` | MA 113 + 4, probe 47, Worker 18; `plutil`, script syntax, generated-project diff, current-tree/history secret scan, and independent WP-6/7 audit checks | submission packet prepared; release archive, physical/human evidence, video, URLs, `/feedback`, and submission remain gated |
 
 ## Delegated tasks and sessions
 
@@ -75,6 +75,8 @@ audited. Core implementation remains in the root task.
 | `/root/offline_audio_test_design` | Read-only PARTIAL product audio test-seam audit | No files; injectable offline playback/capture test design only | no |
 | `/root/wp3_product_integrity_audit` | Read-only post-implementation and post-fix WP-3 audio/state/claim integrity audit | No files; found four lifecycle/proof risks, then re-audited root fixes and returned PASS with only device checks open | no |
 | `/root/wp5_planner_contract_audit` | Read-only WP-5 broker/schema/guardrail adversarial audit | No files; planner security, privacy, progression, and test checklist only | no |
+| `/root/wp67_submission_gap_audit` | Read-only WP-6/WP-7 submission and hardening gap audit | No files; documentation, privacy, accessibility, evidence, and external-gate checklist only | no |
+| `/root/replay_contract_audit` | Read-only normalized replay architecture and test audit | No files; smallest honest `ConversationProvider`/capabilities/`ReplayAdapter` contract review only | no |
 
 ## Codex implementation journal
 
@@ -388,6 +390,57 @@ For each material decision, capture:
 - GPT-5.6 use at this milestone: `gpt-5.6-sol` with ultra reasoning powered the
   root implementation task, and MA's private broker made the product's first
   bounded `gpt-5.6-sol` Responses request.
+
+### 2026-07-14 — WP-6/WP-7 replay, privacy, and submission hardening
+
+- Intended outcome: preserve the complete hero semantics in a deterministic
+  venue fallback without importing any live, hardware, learner, exact-replay,
+  or planner claim, then prepare a reproducible private submission package.
+- Root implementation: commit `c344a67` adds bounded normalized conversation
+  events, independent model/audio/floor capability groups, a terminal
+  single-use `ReplayAdapter`, fixture-only evidence provenance, and one pure
+  semantic reducer shared by the shipping local product and labeled replay.
+  Product restart/exit invalidates stale capture receipts; replay restart
+  invalidates stale adapters and event generations.
+- Replay truthfulness: the fallback has a separate visual copy path and a
+  permanent `REPLAY · NO EN VIVO` badge. It performs no audio, permission,
+  microphone, network, or planner operation; its four attempts and next action
+  are explicitly fixed sample data. The binding floor capability now records
+  `characterization_only_partial`, matching the zero-trial Gate 0 verdict.
+- Privacy and accessibility: the remote `gpt-5.6-sol` plan is now an explicit
+  post-proof opt-in after the deterministic local action is already useful.
+  Delete-all clears profile/onboarding/scene state and the device credential.
+  `PrivacyInfo.xcprivacy` declares no tracking, the optional aggregate product
+  interaction/usage data, and the app-only UserDefaults reason. Natural and
+  resume audio have captions; motion is gated; primary controls scale; and
+  microphone denial exposes Settings recovery.
+- Verification: the final serialized strict MA run passed 113 Swift tests in
+  20 suites plus 4 UI tests with complete concurrency checking and warnings as
+  errors. Its result is
+  `Test-MA-2026.07.14_06-21-31--0600.xcresult`. MAAudioProbe passed 47 tests in
+  15 suites at `Test-MAAudioProbe-2026.07.14_06-22-40--0600.xcresult`; the
+  Worker passed 18/18. The privacy manifest, Bash scripts, generated project,
+  whitespace, and current-tree plus all-history secret scan also passed.
+- Independent review: `/root/replay_contract_audit` returned PASS after root
+  closed replay resume, capability, provenance, cancellation, stale-event, UI,
+  and stale-capture gaps. `/root/wp67_submission_gap_audit` reviewed the
+  documentation, privacy, accessibility, evidence, and external-gate boundary
+  without editing core code.
+- Physical evidence: `scripts/device-ma.sh` dynamically found the iPhone 17 Pro
+  on iOS 27.0, then built, signed, and installed exact commit `c344a67` in
+  product and replay modes. Private evidence directories are
+  `20260714T122325Z-product` and `20260714T122345Z-replay`. Both launches were
+  denied by SpringBoard because the phone remained locked, so audio, microphone,
+  route, interruption, deletion, accessibility, planner provisioning, learner,
+  and replay runtime checks remain open.
+- Submission preparation: the claim matrix, Devpost draft, demo and reviewer
+  runbooks, privacy disclosure, rehearsal/cold-viewer protocols, English
+  subtitles, release checklist, dynamic device tool, secret scanner, and clean
+  archive/checksum tool are tracked. No repository push/share, video upload,
+  `/feedback`, public URL, or Devpost submission was performed.
+- GPT-5.6 use at this milestone: `gpt-5.6-sol` with ultra reasoning powered the
+  root implementation task. The product calls `gpt-5.6-sol` only after explicit
+  learner opt-in and retains its deterministic local fallback.
 
 ## Final feedback preparation
 
