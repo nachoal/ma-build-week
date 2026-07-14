@@ -47,10 +47,10 @@ Append exact evidence after each milestone.
 |---|---|---|---|---|
 | Gate 0 probe and written verdict | Clock started 2026-07-14 01:18:10 CST; hard stop 2026-07-15 01:18:10 CST | `0432b6f` | physical protocol pending | in progress |
 | Selected one-owner audio topology | pending | pending | pending | pending |
-| Realtime transport/event normalization | pending | pending | pending | pending |
+| Realtime transport/event normalization | Root added a bounded, monotonic diagnostic stream and generic provider-event redaction before transport binding | `d2e85d3` | 3 diagnostic tests; transport integration pending | in progress |
 | Local cue classifier/floor policy | pending | pending | pending | pending |
-| Render ledger/ring buffer/repair replay | pending | pending | pending | pending |
-| Session broker and secret handling | Root implemented the fixed-policy Worker, private install-token boundary, stable safety identifier, rate-limit binding, bounded response, and redacted evidence | `9d5cb2e` | 7/7 contract/security tests; Wrangler dry run; live health 200, unauthorized 401, caller override 400, authorized mint 200 | complete with recorded Gate limitation |
+| Render ledger/ring buffer/repair replay | Root implemented a bounded rendered-only ring with wraparound and explicit future/overwritten-window rejection | `12f3e65` | 4 ring-buffer tests; graph/physical evidence pending | in progress |
+| Session broker and secret handling | Root implemented the fixed-policy Worker, private install-token boundary, stable safety identifier, rate-limit binding, bounded response, iOS broker client, and this-device-only Keychain provisioning | `9d5cb2e`, `b0d1977` | Worker 7/7; iOS probe 5/5; Wrangler dry run; live health 200, unauthorized 401, caller override 400, authorized mint 200 | complete with recorded Gate limitation |
 | Real offline first-minute playback/capture | pending | pending | pending | pending |
 | Repair/resume and next-attempt evidence | pending | pending | pending | pending |
 | GPT-5.6 planner integration/guardrails | pending | pending | pending | pending |
@@ -150,6 +150,25 @@ For each material decision, capture:
   shaped encrypted secret handling, Wrangler verification, and the explicit
   rate-limit caveat.
 - Broker commit: `9d5cb2e` (`feat: deploy Gate 0 session broker`).
+- Root then added the topology-neutral iOS broker client. It sends no caller
+  policy, bounds response size/expiry, maps errors without exposing bodies, and
+  provisions the revocable token only from a device launch environment into
+  this-device-only Keychain storage. Five probe tests passed. Client commit:
+  `b0d1977` (`feat: add private probe broker client`).
+- The probe now bootstraps the token from a one-time launch environment into
+  this-device-only Keychain storage and reports only credential state. The
+  signed build installed on the iPhone, but the first provisioning launch was
+  correctly denied because the phone was locked; no secret appeared in output.
+  Device-shell commit: `a51dbd2`.
+- Root added a 20,000-event bounded diagnostic recorder with a relative
+  monotonic clock, sanitized metadata, provider JSON redaction, and bounded
+  export encoding. It retains event/control identifiers while removing media,
+  transcript, prompt, token, and secret values. Commit: `d2e85d3`.
+- Root added the rendered-only ring algorithm before graph binding. Its tests
+  prove wraparound, exact-duration extraction, non-finite sample neutralization,
+  and rejection of decoded/scheduled future frames or overwritten history.
+  This is code evidence only until a mixer render tap feeds it on the iPhone.
+  Commit: `12f3e65`.
 
 ## Final feedback preparation
 
