@@ -48,11 +48,11 @@ Append exact evidence after each milestone.
 | Gate 0 probe and written verdict | Clock started 2026-07-14 01:18:10 CST; the fixed native-WebRTC audit completed without rounding its 29m48s root capture; root bound and hardened the provisional graph, then wrote automatic PARTIAL at the mandatory 04:18:10 hour-3 cutoff when no physical topology had launched | `0432b6f`, `ecddafc`, `f8fda5d`, `2c2c3fd`, `d4db899` | 0/0/0 physical trials; every post-freeze launch lock-denied; all physical criteria false | PARTIAL complete |
 | Selected one-owner audio topology | Root rejected stock native WebRTC after its public/binary surface exposed none of the three required hooks together; implemented direct GA WebSocket plus one app-owned AVAudioEngine/VoiceProcessingIO graph, JIT permission, processed-input and mixer taps, built-in-route enforcement, route teardown, runtime hash, and revocable playout epochs | `ecddafc`, `f8fda5d`, `2c2c3fd` | strict signed device build only; no runtime route/render proof | developer probe only; not permitted in MA |
 | Realtime transport/event normalization | Root added bounded monotonic diagnostics, provider redaction, effective-policy verification, typed/deduplicated events, bounded commands, and a cancellation-safe URLSession WebSocket actor that exposes no event before `session.created` policy verification; one outbound serializer makes cancel-plus-truncate atomic against mic appends and a response gate rejects duplicate/concurrent/stopped output | `d2e85d3`, `4966eb0`, `38f4686`, `2c95b6f`, `8081de1`, `30cb963`, `f8fda5d`, `36e6f3a`, `2c2c3fd` | strict probe suite 47/47; no physical live session | product transport permission false |
-| Local cue classifier/floor policy | pending | pending | pending | pending |
+| Local cue classifier/floor policy | The mandatory Gate 0 PARTIAL cut left post-AEC phrase classification unproved and therefore unavailable to MA; root removed the overlap path from product scope and uses one explicit local stop control instead | `d4db899`, `cb9d8bd` | no classifier trial; explicit-stop state guards covered in the strict product suite | automatic PARTIAL cut; not a product claim |
 | Render ledger/ring buffer/repair replay | Root implemented a bounded rendered-only ring plus a gap-aware player-timeline ledger that rejects future/backward/stale-epoch cursors and derives item-relative truncation milliseconds only from marked-rendered frames; live exact-window exposure is deliberately disabled because the asynchronous mixer handoff is not a device-boundary freeze barrier | `12f3e65`, `9ac69d3`, `f8fda5d`, `4e7855c`, `2c2c3fd` | deterministic mapping/ring tests; Experiment D n=0 | characterization code complete; exact replay permission false |
 | Session broker and secret handling | Root implemented the fixed-policy Worker, private install-token boundary, stable safety identifier, rate-limit binding, bounded response, iOS broker client, and this-device-only Keychain provisioning | `9d5cb2e`, `b0d1977` | Worker 7/7; iOS probe 5/5; Wrangler dry run; live health 200, unauthorized 401, caller override 400, authorized mint 200 | complete with recorded Gate limitation |
-| Real offline first-minute playback/capture | pending | pending | pending | pending |
-| Repair/resume and next-attempt evidence | pending | pending | pending | pending |
+| Real offline first-minute playback/capture | Root replaced the fixture-only production route with a zero-beginner local-audio path: all four bundled assets have a validated manifest, one MA audio owner performs audible-completion playback, JIT permission, bounded 8-second capture, aggregate speech-presence/onset extraction, explicit self-assessment, and no retained PCM or file | `cb9d8bd` | complete strict scheme 90/90; signed iPhone 17 Pro build and install succeeded, but launch was lock-denied before any runtime/audio claim | code and simulator complete; physical Gate 1 pending |
+| Repair/resume and next-attempt evidence | Root bound the natural local tutor turn to real playback state, admits pause only while it is active, plays one complete controlled segment labeled `REPLAY · DEMOSTRACIÓN`, resumes the same obligation only after playback completion, captures a new no-text attempt, and gates proof on the full stop/segment/resume chain | `cb9d8bd` | adversarial re-audit PASS; focused strict tests 11/11 and product UI smoke 1/1; no physical learner run yet | code and simulator complete; physical Gate 2 pending |
 | GPT-5.6 planner integration/guardrails | pending | pending | pending | pending |
 | Physical-device validation and replay fallback | pending | pending | pending | pending |
 | Demo/submission evidence | pending | pending | pending | pending |
@@ -73,6 +73,7 @@ audited. Core implementation remains in the root task.
 | `/root/wp3_partial_arch_audit` | Read-only automatic-PARTIAL product integration audit | No files; offline Kaiwa Loop file/test sequence only | no |
 | `tmux:ma-adversary` | Persistent independent evidence and public-claim reviewer | Read-only verdict/ledger audit; no core edits permitted | no |
 | `/root/offline_audio_test_design` | Read-only PARTIAL product audio test-seam audit | No files; injectable offline playback/capture test design only | no |
+| `/root/wp3_product_integrity_audit` | Read-only post-implementation and post-fix WP-3 audio/state/claim integrity audit | No files; found four lifecycle/proof risks, then re-audited root fixes and returned PASS with only device checks open | no |
 
 ## Codex implementation journal
 
@@ -299,6 +300,43 @@ For each material decision, capture:
   wording.
 - GPT-5.6 use at this milestone: `gpt-5.6-sol` with ultra reasoning powered the
   root implementation task. GPT-5.6 was not yet called by the MA product.
+
+### 2026-07-14 — WP-3/WP-4 local Kaiwa Loop product slice
+
+- Intended outcome: turn the fixture baseline into the honest PARTIAL product
+  branch without importing any unproved live, overlap, or exact-replay claim.
+- Root implementation: commit `cb9d8bd` adds MA's sole product
+  `AudioGraphController`, a verified four-asset catalog, audible-completion
+  playback, just-in-time microphone permission, mutually exclusive bounded
+  learner capture, aggregate presence/onset evidence, explicit self-assessment,
+  and unconditional raw-audio non-retention. Production navigation now opens
+  the real local Kaiwa Loop while the original fixture reducer remains available
+  only to its deterministic tests and replay-oriented screens.
+- Beginner path: the learner hears and rehearses `一人です` through full,
+  rhythm-only, and no-text scaffolds before entering a natural-speed local tutor
+  turn. The product teaches one explicit pause control instead of pretending to
+  recognize an overlapped cue.
+- Repair integrity: pause is admitted only while `tutor-turn.m4a` is actually
+  playing; the repair uses the complete prepared `repair-beat.m4a` segment with
+  `REPLAY · DEMOSTRACIÓN`; resume requires that segment's played-back callback,
+  preserves `restaurant.party-size.one`, and reaches proof only after the
+  resumed audio completes and a post-repair no-text attempt is self-confirmed.
+- Test evidence: the full MA scheme passed 90/90 on the iPhone 17 simulator
+  (iOS 26.5) with complete Swift concurrency and compiler warnings treated as
+  errors. The focused audio/state suite passed 11/11 and the new product smoke
+  UI test passed 1/1.
+- Adversarial result: the read-only `/root/wp3_product_integrity_audit` first
+  found delayed-permission resurrection, self-induced route teardown, lingering
+  session ownership, and incomplete proof-gating risks. Root fixed all four;
+  its second pass returned PASS with no P0/P1 remaining in code.
+- Physical evidence: a fresh signed build for the dynamically discovered paired
+  iPhone 17 Pro succeeded and installed as `com.ia.ma`. Launch was denied because
+  the phone remained locked, so audibility, microphone indication, route changes,
+  session release, learner completion, repair, and better-attempt claims remain
+  explicitly open.
+- GPT-5.6 use at this milestone: `gpt-5.6-sol` with ultra reasoning powered the
+  root implementation task. The MA product still made no GPT-5.6 request; that
+  integration begins in WP-5.
 
 ## Final feedback preparation
 
