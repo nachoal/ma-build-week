@@ -891,6 +891,11 @@ For each material decision, capture:
   simulator journey then passed 1/1 in 51.205 seconds at
   `.build/test-results/MA-live-spanish-timeout-fix-simulator.xcresult`, including
   a non-fallback `gpt-5.6-sol` plan.
+- After committing the correction, root reran the entire standard no-secret MA
+  scheme from the clean candidate. It passed 206/206 executions with zero skips
+  (177 test definitions, including parameterized cases) at
+  `.build/test-results/MA-final-planner-timeout-standard.xcresult`; the isolated
+  credentialed `MALive` target was absent.
 - Read-only audit session `019f6286-a9de-7510-809f-bb634b902599`
   independently accepted the two-by-ten-second policy, rejected a third attempt,
   and proposed the adversarial retry matrix that root implemented. The

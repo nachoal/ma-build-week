@@ -17,10 +17,10 @@ Devpost submission. Those require Ignacio's explicit approval.
 
 ## Automated and service evidence
 
-- [x] Exact documented, no-secret MA result bundle after the
-      production-Realtime corrections: 206/206 executions, 0 skipped (177 test
-      definitions); the isolated private `MALive` target was absent at
-      `.build/test-results/MA-standard-no-secret.xcresult`
+- [x] Exact documented, no-secret final-candidate MA result bundle: 206/206
+      executions, 0 skipped (177 test definitions); the isolated private
+      `MALive` target was absent at
+      `.build/test-results/MA-final-planner-timeout-standard.xcresult`
 - [x] Production-realistic bilingual simulator gate uses the private broker,
       `gpt-realtime-2.1`, structured validator, response audio, waiter turn, two
       reviews, and `gpt-5.6-sol` planner; 10/10 repetitions passed (five English,

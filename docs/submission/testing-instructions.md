@@ -46,8 +46,9 @@ scripts/device-ma.sh product
 
 Keep the iPhone unlocked and awake.
 
-The two automated physical checks use the same dynamic discovery and fail
-before building if the phone is locked:
+The two automated physical checks use the same dynamic discovery, compile
+without requiring the phone to remain awake, then fail immediately before
+install/provision/test if the phone is locked:
 
 ```sh
 scripts/test-live-guided-device.sh
