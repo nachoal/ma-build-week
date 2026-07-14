@@ -45,11 +45,11 @@ Append exact evidence after each milestone.
 
 | Component | Root-task evidence | Commit | Device/test evidence | Status |
 |---|---|---|---|---|
-| Gate 0 probe and written verdict | Clock started 2026-07-14 01:18:10 CST; hard stop 2026-07-15 01:18:10 CST; fixed native-WebRTC audit completed without rounding its 29m48s root capture; root bound the frozen graph to the dedicated probe | `0432b6f`, `ecddafc`, `f8fda5d` | physical protocol pending | in progress |
-| Selected one-owner audio topology | Root rejected stock native WebRTC after its public/binary surface exposed none of the three required hooks together; implemented direct GA WebSocket plus one app-owned AVAudioEngine/VoiceProcessingIO graph, JIT permission, processed-input and mixer taps, built-in-route enforcement, route teardown, runtime hash, and revocable playout epochs | `ecddafc`, `f8fda5d`, `2c2c3fd` | strict signed device build; physical route/render proof pending | in progress |
-| Realtime transport/event normalization | Root added bounded monotonic diagnostics, provider redaction, effective-policy verification, typed/deduplicated events, bounded commands, and a cancellation-safe URLSession WebSocket actor that exposes no event before `session.created` policy verification; one outbound serializer makes cancel-plus-truncate atomic against mic appends and a response gate rejects duplicate/concurrent/stopped output | `d2e85d3`, `4966eb0`, `38f4686`, `2c95b6f`, `8081de1`, `30cb963`, `f8fda5d`, `36e6f3a`, `2c2c3fd` | strict probe suite 47/47; live transport pending | in progress |
+| Gate 0 probe and written verdict | Clock started 2026-07-14 01:18:10 CST; the fixed native-WebRTC audit completed without rounding its 29m48s root capture; root bound and hardened the provisional graph, then wrote automatic PARTIAL at the mandatory 04:18:10 hour-3 cutoff when no physical topology had launched | `0432b6f`, `ecddafc`, `f8fda5d`, `2c2c3fd`; verdict commit follows this ledger entry | 0/0/0 physical trials; every post-freeze launch lock-denied; all physical criteria false | PARTIAL complete |
+| Selected one-owner audio topology | Root rejected stock native WebRTC after its public/binary surface exposed none of the three required hooks together; implemented direct GA WebSocket plus one app-owned AVAudioEngine/VoiceProcessingIO graph, JIT permission, processed-input and mixer taps, built-in-route enforcement, route teardown, runtime hash, and revocable playout epochs | `ecddafc`, `f8fda5d`, `2c2c3fd` | strict signed device build only; no runtime route/render proof | developer probe only; not permitted in MA |
+| Realtime transport/event normalization | Root added bounded monotonic diagnostics, provider redaction, effective-policy verification, typed/deduplicated events, bounded commands, and a cancellation-safe URLSession WebSocket actor that exposes no event before `session.created` policy verification; one outbound serializer makes cancel-plus-truncate atomic against mic appends and a response gate rejects duplicate/concurrent/stopped output | `d2e85d3`, `4966eb0`, `38f4686`, `2c95b6f`, `8081de1`, `30cb963`, `f8fda5d`, `36e6f3a`, `2c2c3fd` | strict probe suite 47/47; no physical live session | product transport permission false |
 | Local cue classifier/floor policy | pending | pending | pending | pending |
-| Render ledger/ring buffer/repair replay | Root implemented a bounded rendered-only ring plus a gap-aware player-timeline ledger that rejects future/backward/stale-epoch cursors and derives item-relative truncation milliseconds only from marked-rendered frames; live exact-window exposure is deliberately disabled because the asynchronous mixer handoff is not a device-boundary freeze barrier | `12f3e65`, `9ac69d3`, `f8fda5d`, `4e7855c`, `2c2c3fd` | deterministic mapping/ring tests; exact replay not permitted | in progress |
+| Render ledger/ring buffer/repair replay | Root implemented a bounded rendered-only ring plus a gap-aware player-timeline ledger that rejects future/backward/stale-epoch cursors and derives item-relative truncation milliseconds only from marked-rendered frames; live exact-window exposure is deliberately disabled because the asynchronous mixer handoff is not a device-boundary freeze barrier | `12f3e65`, `9ac69d3`, `f8fda5d`, `4e7855c`, `2c2c3fd` | deterministic mapping/ring tests; Experiment D n=0 | characterization code complete; exact replay permission false |
 | Session broker and secret handling | Root implemented the fixed-policy Worker, private install-token boundary, stable safety identifier, rate-limit binding, bounded response, iOS broker client, and this-device-only Keychain provisioning | `9d5cb2e`, `b0d1977` | Worker 7/7; iOS probe 5/5; Wrangler dry run; live health 200, unauthorized 401, caller override 400, authorized mint 200 | complete with recorded Gate limitation |
 | Real offline first-minute playback/capture | pending | pending | pending | pending |
 | Repair/resume and next-attempt evidence | pending | pending | pending | pending |
@@ -269,6 +269,36 @@ For each material decision, capture:
   errors. The signed `2c2c3fd` build installed on the physical iPhone, but every
   launch retry remained blocked by the locked phone. No runtime, audio, live
   transport, learner, or exact-replay checkbox was upgraded from code evidence.
+
+### 2026-07-14 — Gate 0 hour-3 automatic PARTIAL
+
+- The mandatory topology deadline was 04:18:10 CST. The verdict became
+  effective then and was persisted at 04:18:17, on the first tool return after
+  the boundary, against clean snapshot `7585e63`.
+- Every post-freeze attempt to launch the signed probe on the dynamically
+  discovered iPhone 17 Pro was denied because the phone remained locked. The
+  final retry began at 04:17:04. No physical audio graph, microphone permission,
+  tutor render, route, local stop, AEC, transport media, or learner trial ran.
+- Explicit consent for external diagnostic recording was not received, so no
+  acoustic recording was made. Held-out counts are honestly 0/0/0 and the
+  characterization tier was not met.
+- Root applied the written kill rule rather than extending Gate 0. PASS was
+  already disqualified by the ephemeral-secret logging incident; Experiment 0
+  additionally left live transport permission false, and Experiment D left
+  exact rendered-window replay permission false.
+- The product branch is now bundled local tutor audio, explicit tap/stop,
+  controlled complete segments labeled `REPLAY · DEMOSTRACIÓN`, same-obligation
+  repair/resume, and bounded provider-free local learner capture with explicit
+  self-assessment and no retained raw audio. The post-lesson, non-audio
+  `/learning/next` call remains permitted. No “live,” “exact,” “validated on
+  device,” overlap, or full-duplex claim is permitted.
+- The persistent `ma-adversary` independently froze the same four conclusions
+  before the boundary. Its post-write audit found and closed two permission
+  ambiguities plus one label mismatch, then returned CLEAN for the verdict,
+  zero-trial evidence record, permission cuts, provenance taxonomy, and public
+  wording.
+- GPT-5.6 use at this milestone: `gpt-5.6-sol` with ultra reasoning powered the
+  root implementation task. GPT-5.6 was not yet called by the MA product.
 
 ## Final feedback preparation
 

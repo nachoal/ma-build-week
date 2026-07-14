@@ -5,9 +5,12 @@ Owner and first learner: Ignacio
 Hackathon track: Education  
 Working title: MA  
 Build Week deadline: 2026-07-21 17:00 PDT / 18:00 Mexico City  
-Current state: Gate 0 plan ready; operational WP-0 readiness pending; clock not
-started; fixture UI authorized; live product integration blocked pending verdict  
-Gate 0 clock: not started; once started it ends exactly 24 clock hours later
+Current state: Gate 0 recorded PARTIAL at the mandatory hour-3 topology cutoff;
+Kaiwa Loop is the product branch, using bundled local tutor audio and controlled
+labeled-segment repair. Live Realtime and exact rendered-window replay are not
+permitted in MA.
+Gate 0 clock: started 2026-07-14 01:18:10 CST; PARTIAL became effective at
+2026-07-14 04:18:10 CST under the hour-3 kill rule, so overlap tuning stopped
 
 ## 0. The decision
 
@@ -747,7 +750,8 @@ PASS:
 
 PARTIAL:
 
-- This is automatic at hour 24 if any PASS criterion is missing.
+- This is immediate at hour 3 if Experiment 0 has no defensible physical-device
+  topology, and otherwise automatic at hour 24 if any PASS criterion is missing.
 - Build Kaiwa Loop immediately. Transport eligibility and replay eligibility
   are independent: if Experiment 0 proved the selected topology, Kaiwa Loop may
   use live Realtime with explicit non-overlap floor control; otherwise use
@@ -765,27 +769,31 @@ FAIL:
 
 ### Gate 0 implementation checklist
 
-- [ ] Copy docs/poc/verdict-template.md to docs/poc/verdict.md and timestamp it.
+- [x] Copy docs/poc/verdict-template.md to docs/poc/verdict.md and timestamp it.
 - [x] Generate/build/test MAAudioProbe; discover the paired iPhone dynamically.
 - [ ] Complete Experiment 0 and record the immutable topology.
-- [ ] Implement the authenticated short-lived-secret broker for
+- [x] Implement the authenticated short-lived-secret broker for
   gpt-realtime-2.1.
-- [ ] Add just-in-time mic permission, denial recovery, and one audio owner.
-- [ ] Preserve raw provider events and post-AEC mic/render timing.
+- [x] Add just-in-time mic permission, denial recovery, and one audio owner.
+- [x] Preserve bounded redacted provider events and post-AEC mic/render timing
+  in code; physical observability remained unproven.
 - [ ] Add structured export plus synchronized external evidence markers.
 - [ ] Implement and test app-to-external clock alignment; reject residuals over
   20 ms.
 - [ ] Run A, then controlled B; add C only as needed.
-- [ ] Add transport-specific local-first cancel/flush/truncate behavior and
+- [x] Add transport-specific local-first cancel/flush/truncate behavior and
       duplicate-response tests.
 - [ ] Implement the rendered-sample ring buffer and waveform-aligned replay.
-- [ ] Pass ring-buffer wraparound, unplayed-audio exclusion, and beat-window unit
+- [x] Pass ring-buffer wraparound, unplayed-audio exclusion, and beat-window unit
   tests before trusting any Experiment D trial.
 - [ ] Freeze the configuration and run the full first-attempt held-out protocol.
 - [ ] Run echo, noise, resume, route, interruption, network, and buffer controls.
-- [ ] Complete the aggregate table and choose exactly one verdict by hour 24.
-- [ ] Ask the persistent Claude adversary to audit raw evidence and claims.
-- [ ] Unlock product work only under PASS, or Kaiwa Loop under automatic PARTIAL.
+- [x] Record the zero-trial aggregate and choose PARTIAL at the mandatory hour-3
+  cutoff.
+- [x] Ask the persistent Claude adversary to audit the zero-trial evidence
+  record, permission cuts, canonical provenance labels, and public claims.
+- [x] Unlock Kaiwa Loop only under automatic PARTIAL, with live and exact replay
+  permissions explicitly false.
 
 ## 8. Product requirements after Gate 0
 
@@ -1275,7 +1283,7 @@ Exit: one useful exchange learned by a real zero beginner.
 
 ### Phase 2 — live scene and repair
 
-- [ ] If Experiment 0 passed, bind Realtime21Adapter to the already-built
+- [x] If Experiment 0 passed, bind Realtime21Adapter to the already-built
       Realtime client-secret broker; otherwise keep the selected product path
       local-only. The later `/learning/next` broker path remains required for
       Phase 3 in either branch.
