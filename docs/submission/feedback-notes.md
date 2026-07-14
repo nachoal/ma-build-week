@@ -47,7 +47,7 @@ Append exact evidence after each milestone.
 |---|---|---|---|---|
 | Gate 0 probe and written verdict | Clock started 2026-07-14 01:18:10 CST; hard stop 2026-07-15 01:18:10 CST | `0432b6f` | physical protocol pending | in progress |
 | Selected one-owner audio topology | pending | pending | pending | pending |
-| Realtime transport/event normalization | Root added a bounded, monotonic diagnostic stream and generic provider-event redaction before transport binding | `d2e85d3` | 3 diagnostic tests; transport integration pending | in progress |
+| Realtime transport/event normalization | Root added bounded monotonic diagnostics, generic provider redaction, effective-policy verification, typed server events, duplicate rejection, and bounded client commands | `d2e85d3`, `4966eb0`, `38f4686`, `2c95b6f` | probe suite 24/24; live transport pending | in progress |
 | Local cue classifier/floor policy | pending | pending | pending | pending |
 | Render ledger/ring buffer/repair replay | Root implemented a bounded rendered-only ring with wraparound and explicit future/overwritten-window rejection | `12f3e65` | 4 ring-buffer tests; graph/physical evidence pending | in progress |
 | Session broker and secret handling | Root implemented the fixed-policy Worker, private install-token boundary, stable safety identifier, rate-limit binding, bounded response, iOS broker client, and this-device-only Keychain provisioning | `9d5cb2e`, `b0d1977` | Worker 7/7; iOS probe 5/5; Wrangler dry run; live health 200, unauthorized 401, caller override 400, authorized mint 200 | complete with recorded Gate limitation |
@@ -169,6 +169,12 @@ For each material decision, capture:
   and rejection of decoded/scheduled future frames or overwritten history.
   This is code evidence only until a mixer render tap feeds it on the iPhone.
   Commit: `12f3e65`.
+- The iOS client now hashes the exact projected Realtime policy and matches the
+  Worker's independently computed canonical hash, normalizes provider control
+  events without retaining human-readable error detail, rejects duplicate
+  event IDs in a bounded window, and encodes explicit append/clear/commit,
+  create/cancel, and render-derived truncate commands. Commits: `4966eb0`,
+  `38f4686`, and `2c95b6f`. The complete probe suite reached 24/24 passing.
 
 ## Final feedback preparation
 
