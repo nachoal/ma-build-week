@@ -46,10 +46,10 @@ Append exact evidence after each milestone.
 | Component | Root-task evidence | Commit | Device/test evidence | Status |
 |---|---|---|---|---|
 | Gate 0 probe and written verdict | Clock started 2026-07-14 01:18:10 CST; hard stop 2026-07-15 01:18:10 CST; fixed native-WebRTC audit completed without rounding its 29m48s root capture; root bound the frozen graph to the dedicated probe | `0432b6f`, `ecddafc`, `f8fda5d` | physical protocol pending | in progress |
-| Selected one-owner audio topology | Root rejected stock native WebRTC after its public/binary surface exposed none of the three required hooks together; implemented direct GA WebSocket plus one app-owned AVAudioEngine/VoiceProcessingIO graph, JIT permission, processed-input and mixer taps, route teardown, and runtime hash | `ecddafc`, `f8fda5d` | strict signed device build; physical route/render proof pending | in progress |
-| Realtime transport/event normalization | Root added bounded monotonic diagnostics, provider redaction, effective-policy verification, typed/deduplicated events, bounded commands, and a cancellation-safe URLSession WebSocket actor that exposes no event before `session.created` policy verification; one outbound serializer makes cancel-plus-truncate atomic against mic appends | `d2e85d3`, `4966eb0`, `38f4686`, `2c95b6f`, `8081de1`, `30cb963`, `f8fda5d` | probe suite 38/38; live transport pending | in progress |
+| Selected one-owner audio topology | Root rejected stock native WebRTC after its public/binary surface exposed none of the three required hooks together; implemented direct GA WebSocket plus one app-owned AVAudioEngine/VoiceProcessingIO graph, JIT permission, processed-input and mixer taps, built-in-route enforcement, route teardown, runtime hash, and revocable playout epochs | `ecddafc`, `f8fda5d`, `2c2c3fd` | strict signed device build; physical route/render proof pending | in progress |
+| Realtime transport/event normalization | Root added bounded monotonic diagnostics, provider redaction, effective-policy verification, typed/deduplicated events, bounded commands, and a cancellation-safe URLSession WebSocket actor that exposes no event before `session.created` policy verification; one outbound serializer makes cancel-plus-truncate atomic against mic appends and a response gate rejects duplicate/concurrent/stopped output | `d2e85d3`, `4966eb0`, `38f4686`, `2c95b6f`, `8081de1`, `30cb963`, `f8fda5d`, `36e6f3a`, `2c2c3fd` | strict probe suite 47/47; live transport pending | in progress |
 | Local cue classifier/floor policy | pending | pending | pending | pending |
-| Render ledger/ring buffer/repair replay | Root implemented a bounded rendered-only ring plus a gap-aware player-timeline ledger that rejects future/backward cursors and derives item-relative truncation milliseconds only from marked-rendered frames; the mixer tap now feeds the rendered ring | `12f3e65`, `9ac69d3`, `f8fda5d` | deterministic mapping/ring tests; physical exactness pending | in progress |
+| Render ledger/ring buffer/repair replay | Root implemented a bounded rendered-only ring plus a gap-aware player-timeline ledger that rejects future/backward/stale-epoch cursors and derives item-relative truncation milliseconds only from marked-rendered frames; live exact-window exposure is deliberately disabled because the asynchronous mixer handoff is not a device-boundary freeze barrier | `12f3e65`, `9ac69d3`, `f8fda5d`, `4e7855c`, `2c2c3fd` | deterministic mapping/ring tests; exact replay not permitted | in progress |
 | Session broker and secret handling | Root implemented the fixed-policy Worker, private install-token boundary, stable safety identifier, rate-limit binding, bounded response, iOS broker client, and this-device-only Keychain provisioning | `9d5cb2e`, `b0d1977` | Worker 7/7; iOS probe 5/5; Wrangler dry run; live health 200, unauthorized 401, caller override 400, authorized mint 200 | complete with recorded Gate limitation |
 | Real offline first-minute playback/capture | pending | pending | pending | pending |
 | Repair/resume and next-attempt evidence | pending | pending | pending | pending |
@@ -69,6 +69,8 @@ audited. Core implementation remains in the root task.
 | `/root/av_audio_evidence_audit` | Read-only Apple audio-evidence API audit | No files; primary-source research only | no |
 | `/root/product_gap_audit` | Read-only WP-3 through WP-5 fixture integration audit | No files; product/test gap map only | no |
 | `/root/audio_graph_test_audit` | Read-only Swift 6 audio-graph compile/runtime and test-risk audit | No files; implementation risk checklist only | no |
+| `/root/gate0_integrity_reaudit` | Read-only post-binding Gate 0 evidence-integrity audit | No files; physical-proof correctness review only | no |
+| `/root/wp3_partial_arch_audit` | Read-only automatic-PARTIAL product integration audit | No files; offline Kaiwa Loop file/test sequence only | no |
 
 ## Codex implementation journal
 
@@ -238,6 +240,33 @@ For each material decision, capture:
   dynamically rediscovered iPhone 17 Pro / iOS 27.0 beta. The phone auto-locked
   before either process launch, so this milestone records install success and a
   launch blocker—not runtime, microphone, graph, transport, or learner proof.
+
+### 2026-07-14 — Gate 0 evidence-integrity hardening
+
+- Root added protected redacted evidence export in `fa265c7`, then made exact
+  replay fail closed on any mixer drop in `4e7855c`. The archive performs a
+  second compound-credential scan before writing and stores no raw audio.
+- Root added a one-response admission gate in `36e6f3a`; repeated requests,
+  competing response IDs, missing IDs, and chunks from a locally stopped
+  response cannot enter playout.
+- The read-only `/root/gate0_integrity_reaudit` found that an already admitted
+  chunk could still resume after `localStop()` while `schedule()` was suspended
+  at the evidence actor. It also found that the asynchronous mixer stream could
+  not honestly freeze a device-boundary replay window. Root fixed the first
+  defect with matching graph/ledger playout epochs in `2c2c3fd` and made the
+  second capability unconditionally unavailable. This intentionally revokes
+  exact replay permission unless a later Experiment D implements and proves a
+  real freeze barrier.
+- The same hardening commit enforces exactly one built-in microphone and one
+  built-in speaker, subtracts the player output-presentation latency from the
+  truncation cursor, logs normalized tap/stop host times, and rejects stale
+  epoch schedules. The automated launch/stop sequence waits for scheduled PCM
+  only; it is convenience automation and cannot count as audible-render proof
+  without external recording and render-tap correlation.
+- MAAudioProbe passed 47/47 under complete Swift concurrency with warnings as
+  errors. The signed `2c2c3fd` build installed on the physical iPhone, but every
+  launch retry remained blocked by the locked phone. No runtime, audio, live
+  transport, learner, or exact-replay checkbox was upgraded from code evidence.
 
 ## Final feedback preparation
 
