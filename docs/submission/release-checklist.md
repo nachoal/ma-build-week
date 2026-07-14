@@ -5,12 +5,12 @@ Devpost submission. Those require Ignacio's explicit approval.
 
 ## Freeze identity
 
-- [ ] Refresh the frozen implementation/archive from current implementation
-      commit `80c6eeec543c213e2e95611e1bbc9bc7441405a7`; the prior `bebac3c`
-      archive is retained only as superseded evidence
+- [x] Frozen implementation/archive commit:
+      `29be3826a816827f3734f486852abedd7e7619a0` (includes implementation
+      commit `80c6eeec543c213e2e95611e1bbc9bc7441405a7`)
 - [x] Xcode/Swift/iOS build versions recorded in the candidate packet
-- [ ] Release `.xcarchive` rebuilt from the final clean commit
-- [ ] `PrivacyInfo.xcprivacy` reverified inside the refreshed `MA.app`
+- [x] Release `.xcarchive` rebuilt from that clean commit
+- [x] `PrivacyInfo.xcprivacy` reverified inside the refreshed `MA.app`
 - [ ] Signed physical install/launch verified on the dynamically discovered device
 - [x] `scripts/scan-secrets.sh` rerun after the frozen implementation commit,
       including the archived app and compiled executable
@@ -39,7 +39,8 @@ Devpost submission. Those require Ignacio's explicit approval.
       exact policy-hash, and guided-planner verification
 - [x] Secret scan passes the current candidate, staged inputs, reachable
       history, and the current compiled simulator executable after the 206/206,
-      10/10, and 1/1 gates; the final archived executable rerun remains required
+      10/10, and 1/1 gates; the refreshed archive bundle and compiled executable
+      also passed
 
 ## Physical and human evidence
 
@@ -79,7 +80,7 @@ the archive tool rejects paths outside its canonical roots, records the build
 environment and exact commit, and rescans staged copy.
 
 - [x] Archive checksum:
-      `3f14ecf07eaf8e594622df8f9ae43d33d3788f6117c7d7652cffd0352427605c`
+      `64449aa947c886006c1100984eff8cf6bc561934f1ffd0556bbdaa4ff2f29e45`
 - [ ] Video checksum: `________________`
 - [ ] Subtitle checksum: `________________`
 - [ ] Sanitized fixture checksum(s): `________________`

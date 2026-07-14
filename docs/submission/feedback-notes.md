@@ -896,6 +896,14 @@ For each material decision, capture:
   (177 test definitions, including parameterized cases) at
   `.build/test-results/MA-final-planner-timeout-standard.xcresult`; the isolated
   credentialed `MALive` target was absent.
+- The iOS shipping preflight then produced a refreshed signed Release archive
+  from clean commit `29be3826a816827f3734f486852abedd7e7619a0` at
+  `.build/submission/candidate-29be3826a816827f3734f486852abedd7e7619a0/`.
+  Its embedded privacy manifest, deep signature, and
+  `ITSAppUsesNonExemptEncryption=false` declaration passed. All 26 checksum
+  entries rehashed, the staged bundle plus compiled executable secret scan
+  passed, and `MA.xcarchive.zip` SHA-256 is
+  `64449aa947c886006c1100984eff8cf6bc561934f1ffd0556bbdaa4ff2f29e45`.
 - Read-only audit session `019f6286-a9de-7510-809f-bb634b902599`
   independently accepted the two-by-ten-second policy, rejected a third attempt,
   and proposed the adversarial retry matrix that root implemented. The
