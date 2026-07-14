@@ -66,6 +66,8 @@ audited. Core implementation remains in the root task.
 |---|---|---|---|
 | `/root/wp0_readiness_audit` | Read-only adversarial WP-0 completeness audit | No files; repo/readiness evidence only | no |
 | `/root/webrtc_hook_audit` | Read-only, 30-minute native-WebRTC evidence-hook audit | No files; primary-source research only | no |
+| `/root/av_audio_evidence_audit` | Read-only Apple audio-evidence API audit | No files; primary-source research only | no |
+| `/root/product_gap_audit` | Read-only WP-3 through WP-5 fixture integration audit | No files; product/test gap map only | no |
 
 ## Codex implementation journal
 
