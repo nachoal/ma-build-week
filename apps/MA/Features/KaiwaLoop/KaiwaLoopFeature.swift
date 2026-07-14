@@ -9,6 +9,7 @@ final class KaiwaLoopFeature {
     @ObservationIgnored private let audio: any ProductAudioControlling
     @ObservationIgnored private let learningPlanner: any LearningPlanning
     @ObservationIgnored private var operationTask: Task<Void, Never>?
+    @ObservationIgnored private var resetTask: Task<Void, Never>?
     @ObservationIgnored private var eventTask: Task<Void, Never>?
     @ObservationIgnored private var plannerTask: Task<Void, Never>?
     @ObservationIgnored private var replayTask: Task<Void, Never>?
@@ -50,6 +51,7 @@ final class KaiwaLoopFeature {
 
     deinit {
         operationTask?.cancel()
+        resetTask?.cancel()
         eventTask?.cancel()
         plannerTask?.cancel()
         replayTask?.cancel()
@@ -135,8 +137,11 @@ final class KaiwaLoopFeature {
             plannerTask?.cancel()
             activeCaptureRequestID = nil
             state = KaiwaLoopState()
-            operationTask = Task { [weak self] in
+            let precedingReset = resetTask
+            resetTask = Task { [weak self] in
                 guard let self else { return }
+                _ = await precedingReset?.result
+                guard !Task.isCancelled else { return }
                 await audio.stop(.restart)
             }
         }
@@ -152,6 +157,8 @@ final class KaiwaLoopFeature {
             await replayAdapter.disconnect()
             self.replayAdapter = nil
         }
+        _ = await resetTask?.result
+        resetTask = nil
         await audio.stop(.exit)
         state = KaiwaLoopState()
     }
@@ -208,8 +215,11 @@ final class KaiwaLoopFeature {
         onFinished: (@MainActor () -> Void)? = nil
     ) {
         operationTask?.cancel()
+        let pendingReset = resetTask
         operationTask = Task { [weak self] in
             guard let self else { return }
+            _ = await pendingReset?.result
+            guard !Task.isCancelled else { return }
             state.lastError = nil
             do {
                 try await audio.play(prompt)
@@ -235,8 +245,11 @@ final class KaiwaLoopFeature {
         )
         activeCaptureRequestID = request.id
         operationTask?.cancel()
+        let pendingReset = resetTask
         operationTask = Task { [weak self] in
             guard let self else { return }
+            _ = await pendingReset?.result
+            guard !Task.isCancelled else { return }
             state.lastError = nil
             do {
                 try await audio.startCapture(request)

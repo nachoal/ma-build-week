@@ -368,7 +368,9 @@ private struct KaiwaSetupScreen: View {
             } label: {
                 Label(
                     state.audioState == .playing(.hitoriDesu)
-                        ? "Escuchando…" : "Escuchar el modelo",
+                        ? "Escuchando…"
+                        : (state.playedPrompts.contains(.hitoriDesu)
+                            ? "Escuchar de nuevo" : "Escuchar el modelo"),
                     systemImage: state.audioState == .playing(.hitoriDesu)
                         ? "waveform" : "speaker.wave.2"
                 )
@@ -378,10 +380,16 @@ private struct KaiwaSetupScreen: View {
                 .frame(minHeight: 52)
                 .padding(.vertical, 4)
                 .background(MATheme.ai, in: Capsule())
+                .contentShape(Capsule())
             }
             .buttonStyle(.plain)
-            .disabled(state.isCapturing)
+            .disabled(state.isCapturing || state.isRequestingPermission || state.isPlaying)
             .accessibilityIdentifier("kaiwa.audio.modelo")
+            .accessibilityValue(
+                state.audioState == .playing(.hitoriDesu)
+                    ? "Reproduciendo"
+                    : (state.playedPrompts.contains(.hitoriDesu) ? "Reproducido" : "Listo")
+            )
             MicroCapsLabel(text: BundledPrompt.hitoriDesu.provenanceLabel, color: MATheme.ai)
         }
         .padding(20)
@@ -455,13 +463,22 @@ private struct KaiwaCoachedScreen: View {
             Button {
                 send(.playModel)
             } label: {
-                Label("Escuchar el modelo", systemImage: "speaker.wave.2")
+                Label(
+                    state.audioState == .playing(.hitoriDesu)
+                        ? "Escuchando…"
+                        : (state.playedPrompts.contains(.hitoriDesu)
+                            ? "Escuchar de nuevo" : "Escuchar el modelo"),
+                    systemImage: state.audioState == .playing(.hitoriDesu)
+                        ? "waveform" : "speaker.wave.2"
+                )
                     .font(MATheme.caption(.semibold))
                     .foregroundStyle(MATheme.ai)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .frame(minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .disabled(state.isCapturing)
+            .disabled(state.isCapturing || state.isRequestingPermission || state.isPlaying)
         }
     }
 

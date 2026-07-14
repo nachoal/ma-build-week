@@ -1,24 +1,28 @@
 @preconcurrency import AVFAudio
 import Foundation
+import OSLog
 import UIKit
 
 /// The submission app's sole AVAudioSession/AVAudioEngine owner. Playback and
 /// learner capture are intentionally mutually exclusive in the PARTIAL branch.
 @MainActor
-final class AudioGraphController: ProductAudioControlling {
+final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlayerDelegate {
     private let session: AVAudioSession
     private let center: NotificationCenter
     private let permission: any RecordPermissionProviding
     private let eventContinuation: AsyncStream<ProductAudioEvent>.Continuation
+    private let logger = Logger(subsystem: "com.ia.ma", category: "ProductAudio")
 
     let events: AsyncStream<ProductAudioEvent>
     private(set) var state: ProductAudioState = .idle
 
     private var engine: AVAudioEngine?
-    private var player: AVAudioPlayerNode?
+    private var playbackPlayer: AVAudioPlayer?
+    private var playbackPrompt: BundledPrompt?
     private var notificationTokens: [NSObjectProtocol] = []
     private var playbackGeneration: UInt64 = 0
     private var playbackContinuation: CheckedContinuation<Void, Error>?
+    private var playbackTimeoutTask: Task<Void, Never>?
     private var captureGeneration: UInt64 = 0
     private var captureWorker: LearnerCaptureWorker?
     private var captureRequest: CaptureRequest?
@@ -40,6 +44,7 @@ final class AudioGraphController: ProductAudioControlling {
         )
         events = pair.stream
         eventContinuation = pair.continuation
+        super.init()
         observeLifecycle()
     }
 
@@ -48,6 +53,7 @@ final class AudioGraphController: ProductAudioControlling {
             center.removeObserver(token)
         }
         eventContinuation.finish()
+        playbackTimeoutTask?.cancel()
         captureTimeoutTask?.cancel()
     }
 
@@ -62,9 +68,9 @@ final class AudioGraphController: ProductAudioControlling {
             await stop(.replacement)
         }
 
-        let file: AVAudioFile
+        let player: AVAudioPlayer
         do {
-            file = try AVAudioFile(forReading: AudioAssetCatalog.url(for: prompt))
+            player = try AVAudioPlayer(contentsOf: AudioAssetCatalog.url(for: prompt))
         } catch let error as ProductAudioFailure {
             setState(.failed(error))
             throw error
@@ -72,41 +78,54 @@ final class AudioGraphController: ProductAudioControlling {
             setState(.failed(.invalidAudioFormat))
             throw ProductAudioFailure.invalidAudioFormat
         }
-        guard file.length > 0 else {
+        guard player.duration > 0 else {
             setState(.failed(.invalidAudioFormat))
             throw ProductAudioFailure.invalidAudioFormat
         }
 
         do {
-            try configureSession()
-            let (engine, player) = try ensureGraph(format: file.processingFormat)
-            if !engine.isRunning {
-                engine.prepare()
-                try engine.start()
+            try configurePlaybackSession()
+            player.delegate = self
+            player.numberOfLoops = 0
+            player.volume = 1
+            guard player.prepareToPlay() else {
+                throw ProductAudioFailure.hardwareUnavailable
             }
+
             playbackGeneration &+= 1
             let generation = playbackGeneration
+            playbackPlayer = player
+            playbackPrompt = prompt
             setState(.playing(prompt))
+            logger.notice("Starting bundled prompt \(prompt.rawValue, privacy: .public)")
 
             try await withCheckedThrowingContinuation { continuation in
                 playbackContinuation = continuation
-                player.scheduleFile(
-                    file,
-                    at: nil,
-                    completionCallbackType: .dataPlayedBack
-                ) { [weak self] _ in
-                    Task { @MainActor [weak self] in
-                        self?.completePlayback(prompt: prompt, generation: generation)
-                    }
+                guard player.play() else {
+                    playbackContinuation = nil
+                    playbackPlayer = nil
+                    playbackPrompt = nil
+                    setState(.failed(.hardwareUnavailable))
+                    try? session.setActive(false, options: [.notifyOthersOnDeactivation])
+                    continuation.resume(throwing: ProductAudioFailure.hardwareUnavailable)
+                    return
                 }
-                player.play()
+                schedulePlaybackTimeout(duration: player.duration, generation: generation)
             }
         } catch let error as ProductAudioFailure {
+            playbackPlayer?.delegate = nil
+            playbackPlayer = nil
+            playbackPrompt = nil
+            try? session.setActive(false, options: [.notifyOthersOnDeactivation])
             if error != .interrupted {
                 setState(.failed(error))
             }
             throw error
         } catch {
+            playbackPlayer?.delegate = nil
+            playbackPlayer = nil
+            playbackPrompt = nil
+            try? session.setActive(false, options: [.notifyOthersOnDeactivation])
             setState(.failed(.hardwareUnavailable))
             throw ProductAudioFailure.hardwareUnavailable
         }
@@ -138,9 +157,8 @@ final class AudioGraphController: ProductAudioControlling {
         }
 
         do {
-            try configureSession()
-            let captureFormat = sessionCaptureFormat()
-            let (engine, _) = try ensureGraph(format: captureFormat)
+            try configureCaptureSession()
+            let engine = ensureCaptureGraph()
             let input = engine.inputNode
             let inputFormat = input.outputFormat(forBus: 0)
             guard inputFormat.sampleRate > 0, inputFormat.channelCount > 0 else {
@@ -152,27 +170,13 @@ final class AudioGraphController: ProductAudioControlling {
                 inputTapInstalled = false
             }
             let worker = LearnerCaptureWorker()
-            input.installTap(onBus: 0, bufferSize: 2_048, format: inputFormat) {
-                buffer, _ in
-                let frameCount = min(Int(buffer.frameLength), 8_192)
-                guard frameCount > 0, let channels = buffer.floatChannelData else { return }
-                let channelCount = max(1, Int(buffer.format.channelCount))
-                var mono = [Float](repeating: 0, count: frameCount)
-                if channelCount == 1 {
-                    mono.withUnsafeMutableBufferPointer { destination in
-                        destination.baseAddress?.update(from: channels[0], count: frameCount)
-                    }
-                } else {
-                    for frame in 0..<frameCount {
-                        var sum: Float = 0
-                        for channel in 0..<channelCount {
-                            sum += channels[channel][frame]
-                        }
-                        mono[frame] = sum / Float(channelCount)
-                    }
-                }
-                worker.enqueue(samples: mono, sampleRate: buffer.format.sampleRate)
-            }
+            let captureTap = Self.makeCaptureTap(worker: worker)
+            input.installTap(
+                onBus: 0,
+                bufferSize: 2_048,
+                format: inputFormat,
+                block: captureTap
+            )
             inputTapInstalled = true
             captureWorker = worker
             captureRequest = request
@@ -243,7 +247,12 @@ final class AudioGraphController: ProductAudioControlling {
     func stop(_ reason: AudioStopReason) async {
         playbackGeneration &+= 1
         captureGeneration &+= 1
-        player?.stop()
+        playbackTimeoutTask?.cancel()
+        playbackTimeoutTask = nil
+        playbackPlayer?.stop()
+        playbackPlayer?.delegate = nil
+        playbackPlayer = nil
+        playbackPrompt = nil
         if let continuation = playbackContinuation {
             playbackContinuation = nil
             continuation.resume(throwing: ProductAudioFailure.interrupted)
@@ -270,7 +279,16 @@ final class AudioGraphController: ProductAudioControlling {
         eventContinuation.yield(.stateChanged(newState))
     }
 
-    private func configureSession() throws {
+    private func configurePlaybackSession() throws {
+        do {
+            try session.setCategory(.playback, mode: .spokenAudio)
+            try session.setActive(true)
+        } catch {
+            throw ProductAudioFailure.hardwareUnavailable
+        }
+    }
+
+    private func configureCaptureSession() throws {
         do {
             try session.setCategory(
                 .playAndRecord,
@@ -285,24 +303,12 @@ final class AudioGraphController: ProductAudioControlling {
         }
     }
 
-    private func ensureGraph(
-        format: AVAudioFormat
-    ) throws -> (AVAudioEngine, AVAudioPlayerNode) {
-        if let engine, let player {
-            return (engine, player)
-        }
-        guard format.sampleRate > 0, format.channelCount > 0 else {
-            throw ProductAudioFailure.invalidAudioFormat
-        }
+    private func ensureCaptureGraph() -> AVAudioEngine {
+        if let engine { return engine }
         let engine = AVAudioEngine()
-        let player = AVAudioPlayerNode()
-        engine.attach(player)
-        engine.connect(player, to: engine.mainMixerNode, format: format)
         _ = engine.inputNode
-        _ = engine.outputNode
         self.engine = engine
-        self.player = player
-        return (engine, player)
+        return engine
     }
 
     private func sessionCaptureFormat() -> AVAudioFormat {
@@ -314,15 +320,45 @@ final class AudioGraphController: ProductAudioControlling {
         ) ?? AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 1)!
     }
 
-    private func completePlayback(prompt: BundledPrompt, generation: UInt64) {
-        guard generation == playbackGeneration,
+    private func completePlayback(successfully: Bool) {
+        guard let prompt = playbackPrompt,
               case .playing(prompt) = state,
               let continuation = playbackContinuation else { return }
+        playbackTimeoutTask?.cancel()
+        playbackTimeoutTask = nil
         playbackContinuation = nil
-        deactivateGraphWhenIdle()
-        setState(.idle)
-        eventContinuation.yield(.playbackFinished(prompt))
-        continuation.resume()
+        playbackPlayer?.delegate = nil
+        playbackPlayer = nil
+        playbackPrompt = nil
+        try? session.setActive(false, options: [.notifyOthersOnDeactivation])
+        logger.notice(
+            "Bundled prompt \(prompt.rawValue, privacy: .public) finished, success=\(successfully)"
+        )
+        if successfully {
+            setState(.idle)
+            eventContinuation.yield(.playbackFinished(prompt))
+            continuation.resume()
+        } else {
+            setState(.failed(.hardwareUnavailable))
+            continuation.resume(throwing: ProductAudioFailure.hardwareUnavailable)
+        }
+    }
+
+    private func schedulePlaybackTimeout(duration: TimeInterval, generation: UInt64) {
+        playbackTimeoutTask?.cancel()
+        let timeoutMilliseconds = Int64(
+            max(2, duration + session.outputLatency + 1.5) * 1_000
+        )
+        playbackTimeoutTask = Task { [weak self] in
+            try? await ContinuousClock().sleep(for: .milliseconds(timeoutMilliseconds))
+            guard !Task.isCancelled,
+                  let self,
+                  generation == playbackGeneration,
+                  playbackContinuation != nil else { return }
+            logger.error("Bundled prompt completion timed out")
+            playbackPlayer?.stop()
+            completePlayback(successfully: false)
+        }
     }
 
     private func removeInputTap() {
@@ -344,10 +380,8 @@ final class AudioGraphController: ProductAudioControlling {
 
     private func teardownGraph() {
         removeInputTap()
-        player?.stop()
         engine?.stop()
         engine = nil
-        player = nil
     }
 
     private func deactivateGraphWhenIdle() {
@@ -355,18 +389,66 @@ final class AudioGraphController: ProductAudioControlling {
         try? session.setActive(false, options: [.notifyOthersOnDeactivation])
     }
 
+    nonisolated func audioPlayerDidFinishPlaying(
+        _ player: AVAudioPlayer,
+        successfully flag: Bool
+    ) {
+        Task { @MainActor [weak self] in
+            self?.completePlayback(successfully: flag)
+        }
+    }
+
+    nonisolated func audioPlayerDecodeErrorDidOccur(
+        _ player: AVAudioPlayer,
+        error: (any Error)?
+    ) {
+        Task { @MainActor [weak self] in
+            self?.playbackPlayer?.stop()
+            self?.completePlayback(successfully: false)
+        }
+    }
+
     nonisolated static func shouldTearDownForRouteChange(
         _ reason: AVAudioSession.RouteChangeReason
     ) -> Bool {
         switch reason {
-        case .categoryChange, .override:
+        // These can be emitted by this controller's own category, preferred-I/O,
+        // and speaker configuration while the physical ports remain unchanged.
+        case .categoryChange, .override, .routeConfigurationChange:
             false
         case .unknown, .newDeviceAvailable, .oldDeviceUnavailable,
-             .wakeFromSleep, .noSuitableRouteForCategory,
-             .routeConfigurationChange:
+             .wakeFromSleep, .noSuitableRouteForCategory:
             true
         @unknown default:
             true
+        }
+    }
+
+    /// AVFAudio invokes input taps on its realtime messenger queue. Constructing
+    /// the callback inside this nonisolated function prevents it from inheriting
+    /// `AudioGraphController`'s main-actor executor requirement.
+    nonisolated static func makeCaptureTap(
+        worker: LearnerCaptureWorker
+    ) -> @Sendable (AVAudioPCMBuffer, AVAudioTime) -> Void {
+        { @Sendable buffer, _ in
+            let frameCount = min(Int(buffer.frameLength), 8_192)
+            guard frameCount > 0, let channels = buffer.floatChannelData else { return }
+            let channelCount = max(1, Int(buffer.format.channelCount))
+            var mono = [Float](repeating: 0, count: frameCount)
+            if channelCount == 1 {
+                mono.withUnsafeMutableBufferPointer { destination in
+                    destination.baseAddress?.update(from: channels[0], count: frameCount)
+                }
+            } else {
+                for frame in 0..<frameCount {
+                    var sum: Float = 0
+                    for channel in 0..<channelCount {
+                        sum += channels[channel][frame]
+                    }
+                    mono[frame] = sum / Float(channelCount)
+                }
+            }
+            worker.enqueue(samples: mono, sampleRate: buffer.format.sampleRate)
         }
     }
 

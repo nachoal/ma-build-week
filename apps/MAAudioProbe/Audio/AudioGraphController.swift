@@ -350,7 +350,18 @@ final class AudioGraphController {
         format: AVAudioFormat,
         worker: AudioCallbackWorker
     ) {
-        input.installTap(onBus: 0, bufferSize: 4_800, format: format) { buffer, when in
+        input.installTap(
+            onBus: 0,
+            bufferSize: 4_800,
+            format: format,
+            block: Self.makeInputTap(worker: worker)
+        )
+    }
+
+    nonisolated static func makeInputTap(
+        worker: AudioCallbackWorker
+    ) -> @Sendable (AVAudioPCMBuffer, AVAudioTime) -> Void {
+        { @Sendable buffer, when in
             let frameCount = min(Int(buffer.frameLength), 19_200)
             guard frameCount > 0,
                   let channels = buffer.floatChannelData else { return }
@@ -384,7 +395,18 @@ final class AudioGraphController {
         format: AVAudioFormat,
         worker: AudioCallbackWorker
     ) {
-        mixer.installTap(onBus: 0, bufferSize: 4_800, format: format) { buffer, when in
+        mixer.installTap(
+            onBus: 0,
+            bufferSize: 4_800,
+            format: format,
+            block: Self.makeMixerTap(worker: worker)
+        )
+    }
+
+    nonisolated static func makeMixerTap(
+        worker: AudioCallbackWorker
+    ) -> @Sendable (AVAudioPCMBuffer, AVAudioTime) -> Void {
+        { @Sendable buffer, when in
             let frameCount = min(Int(buffer.frameLength), 19_200)
             guard frameCount > 0,
                   let channels = buffer.floatChannelData else { return }
@@ -401,6 +423,20 @@ final class AudioGraphController {
                 mono,
                 timing: Self.timing(from: when, fallbackRate: buffer.format.sampleRate)
             )
+        }
+    }
+
+    nonisolated static func shouldTearDownForRouteChange(
+        _ reason: AVAudioSession.RouteChangeReason
+    ) -> Bool {
+        switch reason {
+        case .categoryChange, .override, .routeConfigurationChange:
+            false
+        case .unknown, .newDeviceAvailable, .oldDeviceUnavailable,
+             .wakeFromSleep, .noSuitableRouteForCategory:
+            true
+        @unknown default:
+            true
         }
     }
 
@@ -490,8 +526,13 @@ final class AudioGraphController {
                 object: session,
                 queue: nil
             ) { [weak self] notification in
-                let reason = notification.userInfo?[AVAudioSessionRouteChangeReasonKey]
-                    .flatMap { $0 as? NSNumber }?.stringValue ?? "unknown"
+                let rawReason = (notification.userInfo?[AVAudioSessionRouteChangeReasonKey]
+                    as? NSNumber)?.uintValue
+                let routeReason = rawReason.flatMap(
+                    AVAudioSession.RouteChangeReason.init(rawValue:)
+                ) ?? .unknown
+                guard Self.shouldTearDownForRouteChange(routeReason) else { return }
+                let reason = rawReason.map(String.init) ?? "unknown"
                 Task { @MainActor [weak self] in
                     await self?.handleLifecycle(kind: .routeChanged, reason: reason)
                 }

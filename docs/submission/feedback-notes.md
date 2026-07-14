@@ -77,6 +77,8 @@ audited. Core implementation remains in the root task.
 | `/root/wp5_planner_contract_audit` | Read-only WP-5 broker/schema/guardrail adversarial audit | No files; planner security, privacy, progression, and test checklist only | no |
 | `/root/wp67_submission_gap_audit` | Read-only WP-6/WP-7 submission and hardening gap audit | No files; documentation, privacy, accessibility, evidence, and external-gate checklist only | no |
 | `/root/replay_contract_audit` | Read-only normalized replay architecture and test audit | No files; smallest honest `ConversationProvider`/capabilities/`ReplayAdapter` contract review only | no |
+| `019f60ef-42d9-70d1-88de-e50c0e53f6dc` (`/root/physical_audio_defects_audit`) | Read-only physical crash and first-tap playback audit | No files; Swift 6 callback-isolation and playback lifecycle review only | no |
+| `019f60fd-740f-7d01-8fd7-05abda774128` (`/root/playback_stall_audit`) | Read-only physical playback-stall audit | No files; output-session, engine lifecycle, asset loudness, watchdog, and device-regression review only | no |
 
 ## Codex implementation journal
 
@@ -461,6 +463,74 @@ For each material decision, capture:
 - GPT-5.6 use at this milestone: `gpt-5.6-sol` with ultra reasoning powered the
   root implementation task. The product calls `gpt-5.6-sol` only after explicit
   learner opt-in and retains its deterministic local fallback.
+
+### 2026-07-14 — Unlocked physical audio defect loop
+
+- First unlocked product run: the signed product launched from
+  `.build/device-evidence/20260714T135644Z-product`. The learner then reported
+  that beginning an answer closed the app. Device incident
+  `F149B847-53EC-44E5-92BC-3E0AAC574D28`, preserved as
+  `.build/device-evidence/20260714T140031Z-capture-crash/MA-2026-07-14-075800.ips`,
+  is `EXC_BREAKPOINT` on `RealtimeMessenger.mServiceQueue`; its
+  `_swift_task_checkIsolatedSwift` stack enters the capture-tap closure created
+  inside the main-actor audio owner. Root replaced the inherited actor closure
+  with an explicitly sendable callback constructed at a nonisolated boundary,
+  applied the same correction to both probe taps, and added background-queue
+  regression tests.
+- First correction was insufficient for playback. In the signed run at
+  `.build/device-evidence/20260714T141507Z-product`, the learner reported that
+  one model-audio tap was silent and a second remained stuck. Before debugger
+  intervention MA was alive as PID 17891 and the device still contained only
+  the earlier 07:58 crash, proving a render/completion stall rather than another
+  termination. A remote LLDB attach could not pause the iOS 27 process and
+  terminated that instance, so no stack snapshot or success claim is derived
+  from it.
+- Evidence changed the design: root removed bundled playback from the duplex
+  AVAudioEngine path. One `AudioGraphController` still owns all product audio,
+  but each local prompt now uses a fresh output-only `AVAudioPlayer` session;
+  input-node initialization and 48 kHz capture preferences occur only for
+  capture. Delegate completion crosses a nonisolated boundary, and a
+  generation-guarded duration-plus-output-latency watchdog converts any future
+  stall into a visible recoverable failure instead of permanent
+  `Escuchando…` state.
+- The shipped assets were also objectively too quiet: the four original means
+  were -24.8 to -27.7 dBFS and the 0.732-second model prompt peaked at -13.5
+  dBFS. Root normalized each mono 22.05 kHz AAC prompt toward -16 LUFS with a
+  -2 dB true-peak ceiling. A strict decoder test now rejects RMS below -22 dBFS
+  or clipping risk. The final strict simulator run passed 117 Swift tests in
+  20 suites plus 4 UI tests at
+  `Test-MA-2026.07.14_08-28-26--0600.xcresult`; MAAudioProbe passed 49 tests
+  in 16 suites at `Test-MAAudioProbe-2026.07.14_08-27-36--0600.xcresult`.
+  The added non-main playback-delegate contract then passed in the focused
+  11/11 suite at `Test-MA-2026.07.14_08-36-39--0600.xcresult`.
+- Physical product evidence: the repaired signed build was installed from
+  `.build/device-evidence/20260714T142658Z-product`. After the earlier crash,
+  silent-first-tap, and stuck-second-tap reports, the learner reported that the
+  app was working. This confirms the repaired controls well enough to continue
+  product evaluation; route/interruption measurements and any stronger audio
+  claims remain open.
+- Independent sessions `019f60ef-42d9-70d1-88de-e50c0e53f6dc` and
+  `019f60fd-740f-7d01-8fd7-05abda774128` only audited evidence and code. Root
+  performed every core audio, state, UI, asset, test, device, and journal edit.
+
+### 2026-07-14 — Learner rejection and guided-Realtime product pivot
+
+- The working physical run exposed a product failure more important than the
+  repaired controls. The absolute-beginner learner explicitly rejected the
+  sequence because MA did not review recorded audio, jumped between listening
+  and recording without feedback, and played a full Japanese situation without
+  explaining either its meaning or the learner's next action.
+- Root accepts this as disconfirming evidence for the fixture-first hero flow.
+  The frozen Gate 0 PARTIAL verdict remains an honest record of the overlap and
+  replay experiment; it no longer selects the primary pedagogy. The replacement
+  is an explicit non-overlap, push-to-talk Realtime teaching loop: Spanish goal,
+  visible Japanese/romaji/meaning, model, deliberate attempt, bounded transcript
+  and correction, retry, then a short captioned situation with one explicit
+  action. No unexplained Japanese monologue, silent phase transition, self-grade,
+  approximate pronunciation score, or fixture presented as live is permitted.
+- The new live path will be verified and claimed separately from Gate 0. Until
+  the signed product completes the loop on the paired iPhone, this entry records
+  direction and acceptance criteria—not completion.
 
 ## Final feedback preparation
 

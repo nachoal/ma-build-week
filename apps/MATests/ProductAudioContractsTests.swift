@@ -1,3 +1,4 @@
+@preconcurrency import AVFAudio
 import Foundation
 import Testing
 @testable import MA
@@ -34,6 +35,35 @@ struct ProductAudioContractsTests {
         for prompt in BundledPrompt.allCases {
             let frames = try AudioAssetCatalog.validate(prompt)
             #expect(frames > 0)
+        }
+    }
+
+    @Test("Bundled speech is normalized for a phone speaker without clipping")
+    func bundledSpeechLoudness() throws {
+        for prompt in BundledPrompt.allCases {
+            let file = try AVAudioFile(forReading: AudioAssetCatalog.url(for: prompt))
+            let buffer = try #require(
+                AVAudioPCMBuffer(
+                    pcmFormat: file.processingFormat,
+                    frameCapacity: AVAudioFrameCount(file.length)
+                )
+            )
+            try file.read(into: buffer)
+            let samples = try #require(buffer.floatChannelData?[0])
+            let frameCount = Int(buffer.frameLength)
+            let power = (0..<frameCount).reduce(Float.zero) { partial, index in
+                partial + samples[index] * samples[index]
+            }
+            let rms = sqrt(power / Float(max(1, frameCount)))
+            let peak = (0..<frameCount).reduce(Float.zero) { partial, index in
+                max(partial, abs(samples[index]))
+            }
+            let rmsDB = 20 * log10(max(rms, .leastNonzeroMagnitude))
+            let peakDB = 20 * log10(max(peak, .leastNonzeroMagnitude))
+
+            #expect(rmsDB > -22, "\(prompt.rawValue) is too quiet at \(rmsDB) dBFS")
+            #expect(peakDB > -6, "\(prompt.rawValue) has insufficient headroom use")
+            #expect(peakDB < -0.5, "\(prompt.rawValue) risks clipping at \(peakDB) dBFS")
         }
     }
 
@@ -76,6 +106,53 @@ struct ProductAudioContractsTests {
         #expect(snapshot.speechPresence)
         #expect(snapshot.estimatedVoiceOnset == 0.01)
         #expect(snapshot.sampleRate == 48_000)
+    }
+
+    @Test("Capture tap callback is safe on AVFAudio's non-main queue")
+    func captureTapIsNonisolated() async {
+        let worker = LearnerCaptureWorker()
+        let tap = AudioGraphController.makeCaptureTap(worker: worker)
+
+        await withCheckedContinuation { continuation in
+            DispatchQueue(label: "com.ia.ma.tests.audio-tap").async {
+                let format = AVAudioFormat(
+                    commonFormat: .pcmFormatFloat32,
+                    sampleRate: 48_000,
+                    channels: 1,
+                    interleaved: false
+                )!
+                let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 960)!
+                buffer.frameLength = 960
+                buffer.floatChannelData?[0].update(
+                    repeating: 0.1,
+                    count: Int(buffer.frameLength)
+                )
+                tap(buffer, AVAudioTime(sampleTime: 0, atRate: 48_000))
+                tap(buffer, AVAudioTime(sampleTime: 960, atRate: 48_000))
+                continuation.resume()
+            }
+        }
+
+        let snapshot = worker.snapshot()
+        #expect(abs(snapshot.duration - 0.04) < 0.0001)
+        #expect(snapshot.speechPresence)
+        #expect(snapshot.estimatedVoiceOnset == 0)
+    }
+
+    @Test("Playback delegate callbacks are safe on AVFAudio's non-main queue")
+    @MainActor
+    func playbackDelegateIsNonisolated() async throws {
+        let controller = AudioGraphController(permission: DeniedRecordPermission())
+        let audioData = try Data(contentsOf: AudioAssetCatalog.url(for: .hitoriDesu))
+
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            DispatchQueue(label: "com.ia.ma.tests.playback-delegate").async {
+                let player = try! AVAudioPlayer(data: audioData)
+                controller.audioPlayerDidFinishPlaying(player, successfully: true)
+                controller.audioPlayerDecodeErrorDidOccur(player, error: nil)
+                continuation.resume()
+            }
+        }
     }
 
     @Test("Controller permission denial is recoverable before hardware starts")
@@ -128,14 +205,14 @@ struct ProductAudioContractsTests {
         #expect(controller.state == .idle)
     }
 
-    @Test("Only external route changes tear down the graph")
+    @Test("Only port-loss or external device route changes tear down the graph")
     @MainActor
     func routeChangePolicy() {
         #expect(!AudioGraphController.shouldTearDownForRouteChange(.categoryChange))
         #expect(!AudioGraphController.shouldTearDownForRouteChange(.override))
         #expect(AudioGraphController.shouldTearDownForRouteChange(.newDeviceAvailable))
         #expect(AudioGraphController.shouldTearDownForRouteChange(.oldDeviceUnavailable))
-        #expect(AudioGraphController.shouldTearDownForRouteChange(.routeConfigurationChange))
+        #expect(!AudioGraphController.shouldTearDownForRouteChange(.routeConfigurationChange))
         #expect(AudioGraphController.shouldTearDownForRouteChange(.unknown))
     }
 

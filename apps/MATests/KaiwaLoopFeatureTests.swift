@@ -78,6 +78,40 @@ struct KaiwaLoopFeatureTests {
         #expect(!feature.state.remotePlannerRequestAttempted)
     }
 
+    @Test("One model-audio tap waits for scene reset and plays exactly once")
+    func oneTapWaitsForSceneReset() async {
+        let audio = FakeProductAudioController()
+        audio.holdRestart = true
+        let feature = KaiwaLoopFeature(audio: audio)
+
+        feature.send(.restart)
+        #expect(await eventually { audio.restartStopStarted })
+        feature.send(.playModel)
+        for _ in 0..<20 { await Task.yield() }
+        #expect(audio.playedPrompts.isEmpty)
+
+        audio.releaseRestart()
+        #expect(await eventually { audio.playedPrompts == [.hitoriDesu] })
+    }
+
+    @Test("One capture tap waits for scene reset and starts exactly once")
+    func oneCaptureTapWaitsForSceneReset() async {
+        let audio = FakeProductAudioController()
+        audio.holdRestart = true
+        let feature = KaiwaLoopFeature(audio: audio)
+
+        feature.send(.restart)
+        #expect(await eventually { audio.restartStopStarted })
+        feature.send(.beginCoachedPractice)
+        feature.send(.startAttempt)
+        for _ in 0..<20 { await Task.yield() }
+        #expect(audio.captureRequests.isEmpty)
+
+        audio.releaseRestart()
+        #expect(await eventually { feature.state.isCapturing })
+        #expect(audio.captureRequests.count == 1)
+    }
+
     @Test("Microphone denial stays recoverable and cannot fabricate an attempt")
     func microphoneDenied() async {
         let audio = FakeProductAudioController()
@@ -241,9 +275,13 @@ private final class FakeProductAudioController: ProductAudioControlling {
     private(set) var state: ProductAudioState = .idle
     private(set) var playedPrompts: [BundledPrompt] = []
     private(set) var stopReasons: [AudioStopReason] = []
+    private(set) var captureRequests: [CaptureRequest] = []
     var startCaptureFailure: ProductAudioFailure?
+    var holdRestart = false
+    private(set) var restartStopStarted = false
     private var activeRequest: CaptureRequest?
     private var heldPlaybackContinuation: CheckedContinuation<Void, Error>?
+    private var heldRestartContinuation: CheckedContinuation<Void, Never>?
 
     init() {
         let pair = AsyncStream.makeStream(
@@ -275,6 +313,7 @@ private final class FakeProductAudioController: ProductAudioControlling {
             continuation.yield(.stateChanged(state))
             throw startCaptureFailure
         }
+        captureRequests.append(request)
         activeRequest = request
         state = .capturing(request)
         continuation.yield(.stateChanged(state))
@@ -294,6 +333,12 @@ private final class FakeProductAudioController: ProductAudioControlling {
 
     func stop(_ reason: AudioStopReason) async {
         stopReasons.append(reason)
+        if reason == .restart, holdRestart {
+            restartStopStarted = true
+            await withCheckedContinuation { continuation in
+                heldRestartContinuation = continuation
+            }
+        }
         if let heldPlaybackContinuation {
             self.heldPlaybackContinuation = nil
             heldPlaybackContinuation.resume(throwing: ProductAudioFailure.interrupted)
@@ -301,6 +346,13 @@ private final class FakeProductAudioController: ProductAudioControlling {
         activeRequest = nil
         state = .idle
         continuation.yield(.stateChanged(state))
+    }
+
+    func releaseRestart() {
+        holdRestart = false
+        let continuation = heldRestartContinuation
+        heldRestartContinuation = nil
+        continuation?.resume()
     }
 
     func handleLifecycle(_ event: AudioLifecycleEvent) async {
