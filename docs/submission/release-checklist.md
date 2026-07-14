@@ -5,16 +5,15 @@ Devpost submission. Those require Ignacio's explicit approval.
 
 ## Freeze identity
 
-- [ ] Frozen implementation/archive commit: refresh pending after hardening
-      commit `cf96ce08f7a8dc5c740d44197c4fa3499f4a2227`; prior archive commit
-      `29be3826a816827f3734f486852abedd7e7619a0` is superseded
+- [x] Frozen implementation/archive commit:
+      `f9f7a7f9fdd2ae649ac20bb18392ab14f2b6047c`
 - [x] Xcode/Swift/iOS build versions recorded in the candidate packet
-- [ ] Release `.xcarchive` rebuilt from the new clean commit
-- [ ] `PrivacyInfo.xcprivacy` reverified inside the refreshed `MA.app`
+- [x] Release `.xcarchive` rebuilt from the clean frozen commit
+- [x] `PrivacyInfo.xcprivacy` reverified inside the refreshed `MA.app`
 - [x] Signed physical install/launch verified on the dynamically discovered
       iPhone 17 Pro running iOS 27.0 from exact commit
       `bd668041d00d5ca7334a94da9e15ead409f5630c`
-- [ ] `scripts/scan-secrets.sh` rerun after the new frozen implementation
+- [x] `scripts/scan-secrets.sh` rerun after the new frozen implementation
       commit, including the archived app and compiled executable
 
 ## Automated and service evidence
@@ -41,14 +40,14 @@ Devpost submission. Those require Ignacio's explicit approval.
       definitions, characterization only) at
       `.build/test-results/MAAudioProbe-final-hardening.xcresult`
 - [x] Worker 35/35 low-reasoning and bounded-planner-retry contract output at
-      `.build/test-results/MAWorker-final-retry-policy.tap`; private version
+      `.build/test-results/MAWorker-final-freeze.tap`; private version
       `57d49379-af1f-4160-8e88-ec611ab9a1d7`
 - [x] Live private health, malformed-media rejection, Realtime mint,
       exact policy-hash, and guided-planner verification
 - [x] Secret scan passes the current candidate, staged inputs, reachable
       history, and the current compiled simulator executable after the 213/213,
       10/10, and 1/1 gates; the refreshed archive bundle and compiled executable
-      scan remains pending until the clean freeze commit exists
+      scan also passed from the exact frozen commit
 
 ## Physical and human evidence
 
@@ -92,13 +91,19 @@ Stage optional redacted logs/video under ignored `.build/submission-inputs/`;
 the archive tool rejects paths outside its canonical roots, records the build
 environment and exact commit, and rescans staged copy.
 
-- [ ] Refreshed archive checksum: `________________`
-- [x] Superseded archive checksum retained for audit only:
-      `64449aa947c886006c1100984eff8cf6bc561934f1ffd0556bbdaa4ff2f29e45`
+- [x] Refreshed archive checksum:
+      `91c251a7d51a58c8375c9ab8bf27d85bccc51a101f3158dd90a1fc07c64d96e9`
+- [x] Latest superseded archive checksum retained for audit only:
+      `a224cb1ac7fa329bd4da09c6b9ca2b2c64af95965fd798153eb34e8564c9a5db`
 - [ ] Video checksum: `________________`
-- [ ] Subtitle checksum: `________________`
-- [ ] Sanitized fixture checksum(s): `________________`
-- [ ] Final checksum manifest reviewed
+- [x] Subtitle checksum:
+      `cde50e3d8f0219ba032a6d4ad55e77088dd277542ae42599c223e4a83cb97891`
+- [x] Sanitized fixture checksums:
+      `ConversationEvent.swift` —
+      `6d0479cf791f0a74607db27c80beac9454a8409684d8c8054a507970c73b6abe`;
+      `KaiwaLoopReplayFixture.swift` —
+      `2fd876b1f55aaadff58c2c3f8d52c83d7df5a4d9667316309f25cc2cfb78164e`
+- [x] Final 26-entry checksum manifest reviewed and rehashed
 
 ## Final external actions
 

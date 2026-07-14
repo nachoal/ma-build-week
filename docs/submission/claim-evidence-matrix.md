@@ -34,7 +34,7 @@ code inspection, service verification, or simulator output.
 
 | Area | Evidence to show | Remaining gate |
 |---|---|---|
-| Implementation | Guided state machine, one audio owner, private broker, enum review, bilingual UI, aggregate planner, tests | Refreshed final archive; broader route/interruption/human evidence remains separate |
+| Implementation | Guided state machine, one audio owner, private broker, enum review, bilingual UI, aggregate planner, tests, exact-commit signed archive | Broader route/interruption/human evidence remains separate |
 | Design | Meaning before Japanese, explicit controls, visible support, actionable review, captions, no score | Physical accessibility sweep and cold-viewer comprehension |
 | Impact | Learner understands what MA heard and what to do next in one useful restaurant exchange | Real learner observation; no learning claim before it |
 | Idea/novelty | Realtime as a didactic loop—model, attempt, grounded feedback, retry, transfer—not an open chat | Cold-viewer comprehension and final demo |

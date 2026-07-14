@@ -61,7 +61,7 @@ Append exact evidence after each milestone.
 | Current guided device/submission evidence | Root generated, signed, and installed the guided build, rewrote the submission story around the actual bilingual two-review product, and made the operator-only replay's not-live badge bilingual | `a9eb988` | Later retained evidence records physical English/Spanish deterministic-input routes plus real capture/stop on iPhone 17 Pro/iOS 27.0 | physical bounded provider/control paths complete; human/Japanese review, broader device matrix, video, `/feedback`, and submission remain gated |
 | Production-realistic simulator and policy closure | Root added a DEBUG-only harness that substitutes only deterministic bundled microphone input while retaining the production broker, `gpt-realtime-2.1` WebSocket, effective-policy verifier, structured two-turn review, spoken feedback, waiter audio, shipping playout, and `gpt-5.6-sol` planner. Root fixed cross-runtime hash normalization, pinned `reasoning.effort=low` in the broker-owned policy, and rejects client attempts to weaken it | `bebac3c` | Live smoke 2/2; repeated bilingual journey 10/10 (five English, five Spanish) at `.build/test-results/MA-live-low-reasoning-bilingual-stress5.xcresult`; real simulator permission/capture 1/1; current standard no-secret suite 213/213 executions; Worker 35/35 | simulator/code/service complete; broader physical route/human quality evidence remains gated |
 | Physical live automation and final evidence hardening | Root ran the credentialed lesson on the paired iPhone, distinguished a SpringBoard interruption from app behavior, removed every second-tap recovery so one dispatched tap is the invariant, disabled privileged failure diagnostics, widened the existing two planner attempts from 7 to 10 seconds after a reproduced 14.183-second broker 502, narrowed retries to 408/409/500/502/503/504, and made both live runners fail unless the app verifies test-credential deletion | `80c6eee`, `cf96ce0` | Physical English passed in 47.506 seconds and Spanish passed in 53.729 seconds with deterministic bundled learner input. Exact `bd66804` physical real-audio capture/stop passed 1/1 in 17.484 seconds with verified cleanup; current standard MA 213/213; probe 51/51; Worker 35/35; private Worker version `57d49379-af1f-4160-8e88-ec611ab9a1d7` | deterministic physical bilingual provider path and physical capture/stop complete; JIT prompt, route breadth, human audibility/teaching, real-mic semantic review, and broader device matrix remain gated |
-| Verified product data deletion | Root replaced best-effort profile reset with a fail-closed transaction: delete and reload the this-device-only Keychain item first, reset local state only after verified absence, and preserve profile/sheet state with fixed English/Spanish recovery copy on any failure | pending final implementation freeze | Focused 7/7 plus complete uncontended MA 213/213; four transaction/real-Keychain tests and three bilingual UI journeys | simulator/code/Keychain complete; final signed-device execution and archive refresh pending |
+| Verified product data deletion | Root replaced best-effort profile reset with a fail-closed transaction: delete and reload the this-device-only Keychain item first, reset local state only after verified absence, and preserve profile/sheet state with fixed English/Spanish recovery copy on any failure | `f9f7a7f` | Focused 7/7 plus complete uncontended MA 213/213; four transaction/real-Keychain tests and three bilingual UI journeys; signed physical test bundle compiled | simulator/code/Keychain complete; final signed-device execution pending; archive refreshed |
 
 ## Delegated tasks and sessions
 
@@ -1018,6 +1018,20 @@ For each material decision, capture:
   external gates and returned `CLEAN`. It made no edits and ran no build or
   test. Video/repository URLs, human/device breadth, `/feedback`, approvals,
   publication, and Devpost submission remain explicitly open.
+- Root froze the implementation at exact commit
+  `f9f7a7f9fdd2ae649ac20bb18392ab14f2b6047c`. The shipping preflight built
+  `.build/submission/MA.xcarchive`, recorded that exact commit and the current
+  Xcode/Swift/iPhoneOS SDK environment, verified the app's deep signature,
+  linted the embedded privacy manifest, required
+  `ITSAppUsesNonExemptEncryption=false`, scanned the staged packet/app/Mach-O,
+  and rehashed all 26 manifest entries. `MA.xcarchive.zip` SHA-256 is
+  `91c251a7d51a58c8375c9ab8bf27d85bccc51a101f3158dd90a1fc07c64d96e9`.
+  The repository remains private and has no remote; nothing was pushed or
+  published.
+- The unchanged Worker source was rerun after the implementation freeze and
+  passed 35/35 at `.build/test-results/MAWorker-final-freeze.tap`, preserving
+  the fixed Realtime/planner policy, exact retry allowlist, privacy guards, and
+  permanent-error no-retry coverage used by the deployed private version.
 
 ## Final feedback preparation
 
