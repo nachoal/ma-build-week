@@ -141,8 +141,8 @@ DEVICECTL_CHILD_MA_UI_TEST_PROVISION_ONLY=true \
     --json-output "$RAW_LAUNCH_JSON" \
     --log-output "$RAW_LAUNCH_LOG" \
     com.ia.ma >/dev/null
-if contains_private_value "$RAW_LAUNCH_JSON" || contains_private_value "$RAW_LAUNCH_LOG"; then
-  printf 'Private launch credential reached device-tool output; refusing to retain or continue.\n' >&2
+if contains_private_value "$RAW_LAUNCH_LOG"; then
+  printf 'Private launch credential reached the device-tool log; refusing to continue.\n' >&2
   exit 78
 fi
 
@@ -165,6 +165,18 @@ done
   printf 'The physical app did not confirm value-free credential provisioning.\n' >&2
   exit 79
 }
+
+# CoreDevice currently serializes the launch environment into its JSON result.
+# That raw file is always temporary and is deleted before the test. Retained
+# evidence must still be independently proven not to contain the exact token.
+rm -f "$RAW_LAUNCH_JSON" "$RAW_LAUNCH_LOG"
+while IFS= read -r -d '' retained_path; do
+  if contains_private_value "$retained_path"; then
+    printf 'Private launch credential reached retained physical evidence; deleting the run.\n' >&2
+    rm -rf "$EVIDENCE_DIR"
+    exit 78
+  fi
+done < <(find "$EVIDENCE_DIR" -type f -print0)
 unset DEVICECTL_CHILD_MA_INSTALL_TOKEN DEVICECTL_CHILD_MA_UI_TEST_DELETE_INSTALL_TOKEN \
   DEVICECTL_CHILD_MA_UI_TEST_PROVISION_ONLY token
 
