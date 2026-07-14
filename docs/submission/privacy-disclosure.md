@@ -100,11 +100,14 @@ re-audited if the data flow, provider controls, or dependencies change.
 ## Deletion and control
 
 The profile sheet exposes **Delete all my data / Borrar todos mis datos** with
-confirmation. It clears onboarding/profile choices, returns to the initial
-flow, resets the current scene and interface language, and deletes the iOS
-Keychain credential. The app has no saved recording or transcript to delete.
-This local action cannot delete provider abuse-monitoring logs governed by
-OpenAI's API data controls.
+confirmation. The app first deletes the iOS Keychain credential and reloads
+Keychain to verify that it is absent. Only after that verification succeeds
+does it clear onboarding/profile choices, return to the initial flow, and reset
+the current scene and interface language. If deletion, reload, or verification
+fails, the profile remains intact and the sheet shows a fixed bilingual error
+without exposing credential values or system error details. The app has no
+saved recording or transcript to delete. This local action cannot delete
+provider abuse-monitoring logs governed by OpenAI's API data controls.
 
 The learner can deny microphone permission and use the provided Settings action
 to recover. No recording begins automatically after tutor playback.

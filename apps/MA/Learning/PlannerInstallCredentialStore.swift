@@ -5,6 +5,7 @@ import Security
 enum PlannerCredentialError: Error, Equatable, Sendable {
     case invalidProvisioningToken
     case keychain(OSStatus)
+    case deletionNotVerified
 }
 
 protocol PlannerInstallCredentialLoading: Sendable {
@@ -15,8 +16,16 @@ protocol PlannerInstallCredentialLoading: Sendable {
 struct PlannerInstallCredentialStore: PlannerInstallCredentialLoading {
     static let environmentKey = "MA_INSTALL_TOKEN"
 
-    private let service = "com.ia.ma.learning-planner.session-broker"
-    private let account = "private-install-token"
+    private let service: String
+    private let account: String
+
+    init(
+        service: String = "com.ia.ma.learning-planner.session-broker",
+        account: String = "private-install-token"
+    ) {
+        self.service = service
+        self.account = account
+    }
 
     func provisionFromProcessEnvironment() throws {
         defer { unsetenv(Self.environmentKey) }
@@ -57,6 +66,32 @@ struct PlannerInstallCredentialStore: PlannerInstallCredentialLoading {
             throw PlannerCredentialError.keychain(status)
         }
     }
+
+    func deleteTokenAndVerify() throws {
+        try Self.verifyDeletion(
+            delete: { try deleteToken() },
+            load: { try loadToken() }
+        )
+    }
+
+    static func verifyDeletion(
+        delete: () throws -> Void,
+        load: () throws -> String?
+    ) throws {
+        try delete()
+        guard try load() == nil else {
+            throw PlannerCredentialError.deletionNotVerified
+        }
+    }
+
+    #if DEBUG
+    func saveTokenForTesting(_ token: String) throws {
+        guard Self.isValid(token: token) else {
+            throw PlannerCredentialError.invalidProvisioningToken
+        }
+        try save(token)
+    }
+    #endif
 
     static func isValid(token: String) -> Bool {
         (32...512).contains(token.count)

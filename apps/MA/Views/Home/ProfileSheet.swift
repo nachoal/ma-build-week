@@ -5,8 +5,9 @@ struct ProfileSheet: View {
     let profile: LearnerProfile
     let onReplayOnboarding: () -> Void
     let onResetChoices: () -> Void
-    let onDeleteAllData: () -> Void
+    let onDeleteAllData: () throws -> Void
     @State private var confirmingDelete = false
+    @State private var deletionFailed = false
     @Environment(\.maInterfaceLanguage) private var language
 
     private var chosenInterests: String {
@@ -131,13 +132,31 @@ struct ProfileSheet: View {
                 english: "Delete all my data",
                 spanish: "Borrar todos mis datos"
             ), role: .destructive) {
-                onDeleteAllData()
+                do {
+                    try onDeleteAllData()
+                } catch {
+                    deletionFailed = true
+                }
             }
             Button(language.text(english: "Cancel", spanish: "Cancelar"), role: .cancel) {}
         } message: {
             Text(language.text(
                 english: "MA will delete the local profile, introduction progress, and private credential. The app does not store recordings or transcripts on this iPhone.",
                 spanish: "MA borrará el perfil local, el avance de introducción y la credencial privada. La app no guarda grabaciones ni transcripciones en este iPhone."
+            ))
+        }
+        .alert(
+            language.text(
+                english: "Couldn’t delete all data",
+                spanish: "No se pudieron borrar todos los datos"
+            ),
+            isPresented: $deletionFailed
+        ) {
+            Button(language.text(english: "OK", spanish: "Aceptar"), role: .cancel) {}
+        } message: {
+            Text(language.text(
+                english: "MA couldn’t verify that the private credential was deleted, so your profile was not reset. Please try again.",
+                spanish: "MA no pudo verificar que se borró la credencial privada, así que tu perfil no se restableció. Inténtalo de nuevo."
             ))
         }
     }

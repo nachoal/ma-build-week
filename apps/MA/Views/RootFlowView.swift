@@ -17,6 +17,15 @@ struct RootFlowView: View {
     @State private var replayFeature = KaiwaLoopFeature.labeledReplay()
     @State private var isOpeningScene = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private let deleteCredential: () throws -> Void
+
+    init() {
+        deleteCredential = Self.deleteProductionCredential
+    }
+
+    init(deleteCredential: @escaping () throws -> Void) {
+        self.deleteCredential = deleteCredential
+    }
 
     private var profile: LearnerProfile {
         .fromRaw(
@@ -90,7 +99,7 @@ struct RootFlowView: View {
                                 save(.standard)
                             },
                             onDeleteAllData: {
-                                deleteAllData()
+                                try deleteAllData()
                             }
                         )
                         .navigationDestination(for: SceneID.self) { _ in
@@ -121,13 +130,24 @@ struct RootFlowView: View {
         rawDailyMinutes = profile.rawDailyMinutes
     }
 
-    private func deleteAllData() {
-        try? PlannerInstallCredentialStore().deleteToken()
-        guidedFeature.send(.restart)
-        path.removeAll()
-        save(.standard)
-        rawInterfaceLanguage = MAInterfaceLanguage.defaultLanguage.rawValue
-        onboardingCompleted = false
+    private func deleteAllData() throws {
+        try LocalDataDeletionTransaction(deleteCredential: deleteCredential).perform {
+            guidedFeature.send(.restart)
+            path.removeAll()
+            save(.standard)
+            rawInterfaceLanguage = MAInterfaceLanguage.defaultLanguage.rawValue
+            onboardingCompleted = false
+        }
+    }
+
+    private static func deleteProductionCredential() throws {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["MA_UI_TEST_FORCE_CREDENTIAL_DELETE_FAILURE"]
+            == "true" {
+            throw PlannerCredentialError.deletionNotVerified
+        }
+        #endif
+        try PlannerInstallCredentialStore().deleteTokenAndVerify()
     }
 
     private func toggleLanguage() {
@@ -142,6 +162,15 @@ struct RootFlowView: View {
         } else {
             withAnimation(.easeInOut(duration: 0.25)) { change() }
         }
+    }
+}
+
+struct LocalDataDeletionTransaction {
+    let deleteCredential: () throws -> Void
+
+    func perform(resetLocalData: () -> Void) throws {
+        try deleteCredential()
+        resetLocalData()
     }
 }
 

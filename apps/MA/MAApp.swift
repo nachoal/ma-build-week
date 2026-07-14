@@ -49,6 +49,10 @@ struct MAApp: App {
         }
 
         #if DEBUG
+        if ProcessInfo.processInfo.environment["MA_UI_TEST_SEED_ONBOARDING_COMPLETED"]
+            == "true" {
+            UserDefaults.standard.set(true, forKey: "ma.onboarding.completed")
+        }
         if ProcessInfo.processInfo.environment["MA_UI_TEST_RESET_INTERFACE_LANGUAGE"] == "true" {
             UserDefaults.standard.removeObject(forKey: "ma.interface.language")
         }
@@ -64,10 +68,7 @@ struct MAApp: App {
             // Delete the old proof first. A crash or a locked-device launch can
             // therefore never leave a stale marker that looks like success.
             try removeItemIfPresent(at: credentialDeletedSentinelURL)
-            try credentialStore.deleteToken()
-            guard try credentialStore.loadToken() == nil else {
-                throw CredentialConfirmationError.deletionNotVerified
-            }
+            try credentialStore.deleteTokenAndVerify()
             try removeItemIfPresent(at: credentialReadySentinelURL)
             if !provisioningWillFollow {
                 try Data("deleted".utf8).write(
@@ -101,10 +102,6 @@ struct MAApp: App {
     private static var credentialDeletedSentinelURL: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("ma-private-credential-deleted")
-    }
-
-    private enum CredentialConfirmationError: Error {
-        case deletionNotVerified
     }
     #endif
 

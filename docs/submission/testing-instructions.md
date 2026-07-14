@@ -21,6 +21,19 @@ fixtures. The real-audio integration test exercises the shipping audio owner
 and accepts the simulator's honest recoverable no-speech/provider-unavailable
 state; it does not claim a successful semantic review.
 
+The standard `MA` suite also exercises local deletion as a transaction: four
+unit/Keychain tests prove delete-before-reset ordering, error propagation,
+retained-token rejection, and an isolated real Keychain round trip; three UI
+tests cover English failure, Spanish failure, and verified success returning to
+onboarding. To run only this focused gate:
+
+```sh
+xcodebuild test -project MA.xcodeproj -scheme MA \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest' \
+  -only-testing:MATests/LocalDataDeletionTests \
+  -only-testing:MAUITests/LocalDataDeletionUITests
+```
+
 On the authorized development Mac, the production-realistic gate provisions
 the separately revocable product credential from macOS Keychain without
 printing it, runs the complete `MALive` journey, then requires the app to prove
@@ -97,6 +110,10 @@ version, route, network, commit, and evidence path.
   safely, rejects stale results, and exposes a recovery action.
 - Go offline after completion: local next practice remains; the optional
   planner does not erase it.
+- Force local credential deletion to fail in the DEBUG UI seam: the bilingual
+  error appears, the profile sheet stays open, and onboarding/profile choices
+  remain unchanged. With normal deletion, verified Keychain absence returns
+  the app to onboarding.
 
 ## Historical deterministic replay
 

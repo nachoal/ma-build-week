@@ -8,7 +8,7 @@ struct HomeView: View {
     let onStartScene: (SceneID) -> Void
     let onReplayOnboarding: () -> Void
     let onResetChoices: () -> Void
-    let onDeleteAllData: () -> Void
+    let onDeleteAllData: () throws -> Void
     @State private var showingProfile = false
     @Environment(\.maInterfaceLanguage) private var language
 
@@ -47,8 +47,8 @@ struct HomeView: View {
                     onResetChoices()
                 },
                 onDeleteAllData: {
+                    try onDeleteAllData()
                     showingProfile = false
-                    onDeleteAllData()
                 }
             )
             .presentationDetents([.medium, .large])

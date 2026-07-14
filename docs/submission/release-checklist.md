@@ -19,14 +19,19 @@ Devpost submission. Those require Ignacio's explicit approval.
 
 ## Automated and service evidence
 
-- [x] Exact documented, no-secret hardened-candidate MA result bundle: 206/206
-      executions, 0 skipped (177 test definitions); the isolated private
+- [x] Exact documented, no-secret hardened-candidate MA result bundle: 213/213
+      executions, 0 skipped (184 test definitions); the isolated private
       `MALive` target was absent at
-      `.build/test-results/MA-final-credential-cleanup-standard.xcresult`
+      `.build/test-results/MA-final-verified-deletion-standard.xcresult`
+- [x] Focused local-deletion gate: 7/7 (four transaction/Keychain tests and
+      three bilingual UI journeys) at
+      `.build/test-results/MA-local-data-deletion-focused.xcresult`; the same
+      seven tests also passed inside the uncontended complete MA run
 - [x] Production-realistic bilingual simulator gate uses the private broker,
       `gpt-realtime-2.1`, structured validator, response audio, waiter turn, two
-      reviews, and `gpt-5.6-sol` planner; 10/10 repetitions passed (five English,
-      five Spanish) at
+      reviews, and `gpt-5.6-sol` planner; two test definitions each ran five
+      times with `MA_LIVE_SIM_ITERATIONS=5`, and all 10 journeys passed (five
+      English, five Spanish) at
       `.build/test-results/MA-live-low-reasoning-bilingual-stress5.xcresult`
 - [x] Separate real-audio simulator result includes English permission
       disclosure, one-tap model completion, real AVAudio capture, and stop; 1/1
@@ -41,9 +46,9 @@ Devpost submission. Those require Ignacio's explicit approval.
 - [x] Live private health, malformed-media rejection, Realtime mint,
       exact policy-hash, and guided-planner verification
 - [x] Secret scan passes the current candidate, staged inputs, reachable
-      history, and the current compiled simulator executable after the 206/206,
+      history, and the current compiled simulator executable after the 213/213,
       10/10, and 1/1 gates; the refreshed archive bundle and compiled executable
-      also passed
+      scan remains pending until the clean freeze commit exists
 
 ## Physical and human evidence
 
@@ -67,13 +72,13 @@ Devpost submission. Those require Ignacio's explicit approval.
 
 ## Public claim audit
 
-- [ ] Every narration/subtitle/README/Devpost claim appears as Allowed in
+- [x] Every narration/subtitle/README/Devpost claim appears as Allowed in
       `claim-evidence-matrix.md`
-- [ ] Bounded product Realtime is described only as explicit non-overlap
-- [ ] No full-duplex overlap, AEC/no-echo, exact-heard replay, numeric latency,
+- [x] Bounded product Realtime is described only as explicit non-overlap
+- [x] No full-duplex overlap, AEC/no-echo, exact-heard replay, numeric latency,
       exact transcript, score, mastery, or learner-outcome claim
-- [ ] No claim that audio stays on-device or that GPT-5.6 reviews audio
-- [ ] Historical replay is unmistakably labeled **REPLAY · NOT LIVE / NO EN VIVO**
+- [x] No claim that audio stays on-device or that GPT-5.6 reviews audio
+- [x] Historical replay is unmistakably labeled **REPLAY · NOT LIVE / NO EN VIVO**
 - [ ] Video/repository URLs replace placeholders only after approval
 
 ## Archive contents and checksums

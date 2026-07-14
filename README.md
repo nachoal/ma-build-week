@@ -123,9 +123,11 @@ learner-audio, or exact-heard claims.
   for up to 30 days; this build does not claim Zero Data Retention approval.
 - External planning is a separate, explicit learner action. The broker uses
   `store: false`, a strict schema, bounded input/output, and no transcript.
-- **Delete all my data / Borrar todos mis datos** clears onboarding/profile
-  state and the iOS Keychain credential; the app retains no audio file or
-  transcript to delete.
+- **Delete all my data / Borrar todos mis datos** deletes the iOS Keychain
+  credential, reloads Keychain to verify absence, and only then clears local
+  onboarding/profile state. A deletion or verification failure preserves the
+  profile and shows a bilingual recovery message. The app retains no audio file
+  or transcript to delete.
 - No tracking SDK, account, analytics warehouse, or raw private probe evidence
   is included.
 - Simulator tests are necessary but do not satisfy physical audio, route,
