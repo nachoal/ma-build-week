@@ -9,6 +9,8 @@ TEST_SELECTION="${MA_LIVE_DEVICE_TEST:-MALiveUITests/GuidedProductionRealtimeUIT
 TEST_SCHEME="MALive"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="$ROOT_DIR/.build/device-evidence/$RUN_ID-live-ui"
+CREDENTIAL_READY_SENTINEL="ma-private-credential-ready"
+CREDENTIAL_DELETED_SENTINEL="ma-private-credential-deleted"
 
 case "$TEST_SELECTION" in
   MALiveUITests/GuidedProductionRealtimeUITests | \
@@ -31,6 +33,7 @@ FILES_JSON="$(mktemp -t ma-live-device-files.XXXXXX.json)"
 DELETE_JSON="$(mktemp -t ma-live-device-delete.XXXXXX.json)"
 DELETE_LOG="$(mktemp -t ma-live-device-delete.XXXXXX.log)"
 PROVISIONING_STARTED=false
+CREDENTIAL_CLEANUP_VERIFIED=false
 
 contains_private_value() {
   local path="$1"
@@ -41,21 +44,60 @@ contains_private_value() {
   return 1
 }
 
-cleanup() {
-  unset DEVICECTL_CHILD_MA_INSTALL_TOKEN DEVICECTL_CHILD_MA_UI_TEST_DELETE_INSTALL_TOKEN \
-    DEVICECTL_CHILD_MA_UI_TEST_PROVISION_ONLY
-  if [[ -n "${DEVICE_ID:-}" && "$PROVISIONING_STARTED" == "true" ]]; then
-    DEVICECTL_CHILD_MA_UI_TEST_DELETE_INSTALL_TOKEN=true \
+delete_device_credential() {
+  rm -f "$DELETE_JSON" "$DELETE_LOG"
+  if ! DEVICECTL_CHILD_MA_UI_TEST_DELETE_INSTALL_TOKEN=true \
       xcrun devicectl device process launch \
         --device "$DEVICE_ID" \
         --terminate-existing \
         --json-output "$DELETE_JSON" \
         --log-output "$DELETE_LOG" \
-        com.ia.ma >/dev/null 2>&1 || true
+        com.ia.ma >/dev/null 2>&1; then
+    return 1
+  fi
+
+  for _ in {1..50}; do
+    if xcrun devicectl device info files \
+        --device "$DEVICE_ID" \
+        --domain-type appDataContainer \
+        --domain-identifier com.ia.ma \
+        --subdirectory Documents \
+        --json-output "$FILES_JSON" >/dev/null 2>&1; then
+      if jq -e --arg marker "$CREDENTIAL_DELETED_SENTINEL" \
+          '.. | strings | select(endswith($marker))' "$FILES_JSON" >/dev/null \
+        && ! jq -e --arg marker "$CREDENTIAL_READY_SENTINEL" \
+          '.. | strings | select(endswith($marker))' "$FILES_JSON" >/dev/null; then
+        return 0
+      fi
+    fi
+    sleep 0.1
+  done
+  return 1
+}
+
+cleanup() {
+  local original_status=$?
+  local cleanup_failed=false
+  trap - EXIT
+  unset DEVICECTL_CHILD_MA_INSTALL_TOKEN DEVICECTL_CHILD_MA_UI_TEST_DELETE_INSTALL_TOKEN \
+    DEVICECTL_CHILD_MA_UI_TEST_PROVISION_ONLY
+  if [[ -n "${DEVICE_ID:-}" \
+      && "$PROVISIONING_STARTED" == "true" \
+      && "$CREDENTIAL_CLEANUP_VERIFIED" != "true" ]]; then
+    if delete_device_credential; then
+      CREDENTIAL_CLEANUP_VERIFIED=true
+    else
+      cleanup_failed=true
+      printf 'WARNING: could not verify deletion of the physical test credential. Unlock the phone and rerun cleanup before treating this run as releasable evidence.\n' >&2
+    fi
   fi
   unset token
   rm -f "$DEVICE_JSON" "$LOCK_JSON" "$RAW_LAUNCH_JSON" "$RAW_LAUNCH_LOG" \
     "$FILES_JSON" "$DELETE_JSON" "$DELETE_LOG"
+  if [[ "$original_status" == "0" && "$cleanup_failed" == "true" ]]; then
+    exit 80
+  fi
+  exit "$original_status"
 }
 trap cleanup EXIT
 
@@ -156,8 +198,10 @@ for _ in {1..50}; do
       --domain-identifier com.ia.ma \
       --subdirectory Documents \
       --json-output "$FILES_JSON" >/dev/null 2>&1 \
-    && jq -e '.. | strings | select(endswith("ma-private-credential-ready"))' \
-      "$FILES_JSON" >/dev/null; then
+    && jq -e --arg marker "$CREDENTIAL_READY_SENTINEL" \
+      '.. | strings | select(endswith($marker))' "$FILES_JSON" >/dev/null \
+    && ! jq -e --arg marker "$CREDENTIAL_DELETED_SENTINEL" \
+      '.. | strings | select(endswith($marker))' "$FILES_JSON" >/dev/null; then
     sentinel_ready=true
     break
   fi
@@ -193,6 +237,12 @@ xcodebuild test-without-building \
   >>"$LOG_PATH" 2>&1
 
 cp "$LOG_PATH" "$EVIDENCE_DIR/test.log"
+if ! delete_device_credential; then
+  printf 'The app did not prove deletion of the physical test credential. This run is not a passing release gate.\n' >&2
+  exit 80
+fi
+CREDENTIAL_CLEANUP_VERIFIED=true
+printf 'Verified physical test-credential deletion.\n'
 scripts/scan-secrets.sh "$EVIDENCE_DIR"
 printf 'Physical %s on iOS %s passed: %s\n' "$TEST_SCHEME" "$DEVICE_OS" "$TEST_SELECTION"
 xcrun xcresulttool get test-results summary \

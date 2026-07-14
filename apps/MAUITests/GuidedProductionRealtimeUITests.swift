@@ -122,9 +122,9 @@ final class GuidedProductionRealtimeUITests: XCTestCase {
         add(attachment)
     }
 
-    /// SpringBoard banners can arrive between XCTest resolving an element and
-    /// dispatching its tap on a physical phone. Preserve the one-tap product
-    /// assertion: retry only when a real system banner is found and dismissed.
+    /// Remove a banner that already exists, prove it is gone, then dispatch
+    /// exactly one tap. A later OS interruption is evidence for a separate
+    /// rerun, never permission to hide a possible product failure with a retry.
     @MainActor
     private func switchToSpanish(_ language: XCUIElement, in app: XCUIApplication) {
         _ = dismissNotificationBannerIfPresent(timeout: 0.2)
@@ -132,20 +132,9 @@ final class GuidedProductionRealtimeUITests: XCTestCase {
         XCTAssertTrue(language.isHittable, "The language control is not tappable")
 
         language.tap()
-        if waitForLabel("Cambiar a inglés", on: language, timeout: 2) {
-            return
-        }
-
-        XCTAssertTrue(
-            dismissNotificationBannerIfPresent(timeout: 1),
-            "The language control ignored one unobstructed tap"
-        )
-        app.activate()
-        XCTAssertTrue(language.isHittable, "The language control did not recover after the system banner")
-        language.tap()
         XCTAssertTrue(
             waitForLabel("Cambiar a inglés", on: language, timeout: 5),
-            "The language control did not switch after the intercepted tap was retried"
+            "The one dispatched language tap did not switch. Inspect OS interruption evidence and rerun separately; the test will not tap twice."
         )
     }
 
@@ -157,6 +146,15 @@ final class GuidedProductionRealtimeUITests: XCTestCase {
             .firstMatch
         guard banner.waitForExistence(timeout: timeout) else { return false }
         banner.swipeUp()
+        let disappeared = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == false"),
+            object: banner
+        )
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [disappeared], timeout: 2),
+            .completed,
+            "A pre-existing system notification did not leave before the product tap"
+        )
         return true
     }
 

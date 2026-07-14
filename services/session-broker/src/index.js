@@ -735,7 +735,14 @@ function isGuidedActionReasonSupported(action, reason, report) {
 function isRetryableUpstreamStatus(status) {
   // An immediate retry cannot honor an upstream Retry-After window and can
   // double spend under the install-scoped limiter, so 429 fails closed.
-  return status === 408 || status === 409 || status >= 500;
+  return (
+    status === 408 ||
+    status === 409 ||
+    status === 500 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504
+  );
 }
 
 function parseLearningRecommendation(payload, report) {

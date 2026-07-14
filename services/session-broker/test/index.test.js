@@ -1144,8 +1144,31 @@ describe("MA session broker", () => {
     assert.equal(JSON.stringify(body).includes("private upstream diagnostic"), false);
   });
 
+  it("retries every allowlisted guided upstream status exactly once", async () => {
+    for (const status of [408, 409, 500, 502, 503, 504]) {
+      let calls = 0;
+      const response = await handleRequest(
+        request("/learning/guided-next", {
+          method: "POST",
+          headers: authorizedHeaders(),
+          body: JSON.stringify(validGuidedLearningReport()),
+        }),
+        environment(),
+        async () => {
+          calls += 1;
+          return calls === 1
+            ? new Response("transient body must stay private", { status })
+            : guidedLearningUpstreamResponse();
+        },
+      );
+
+      assert.equal(calls, 2, `status ${status}`);
+      assert.equal(response.status, 200, `status ${status}`);
+    }
+  });
+
   it("does not retry permanent or rate-limited guided upstream failures", async () => {
-    for (const status of [400, 401, 403, 422, 429]) {
+    for (const status of [400, 401, 403, 422, 429, 501, 505]) {
       let calls = 0;
       const response = await handleRequest(
         request("/learning/guided-next", {

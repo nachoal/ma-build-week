@@ -29,7 +29,7 @@ The Worker calls the Responses API with:
 - fixed model `gpt-5.6-sol`;
 - strict `text.format` JSON Schema;
 - `store: false` and a salted safety identifier;
-- low reasoning effort, 320 maximum output tokens, two attempts of seven seconds;
+- low reasoning effort, 320 maximum output tokens, two attempts of ten seconds;
 - no transcript, raw audio, heard-Japanese text, free-form feedback, learner
   name, email, or attempt/report UUID in guided model input.
 

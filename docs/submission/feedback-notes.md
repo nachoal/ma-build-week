@@ -100,6 +100,7 @@ audited. Core implementation remains in the root task.
 | `019f6260-11a2-7650-b1ee-7b4baddc9134` (`/root/simulator_evidence_audit`) | Read-only result-bundle and live-journey evidence audit | No files; independently reconciled 2/2 smoke, 10/10 bilingual stress, 1/1 audio integration, 205 parameterized deterministic executions, assertions, warnings, and physical-evidence qualifications | no |
 | `/root/candidate_hygiene_audit` (coordination API exposed no opaque ID) | Read-only current candidate secret, logging, artifact, signing, and release-tool audit | No files; found provider-controlled public logging and compiled-binary scan gaps, both corrected by root; otherwise clean | no |
 | `019f6286-a9de-7510-809f-bb634b902599` (`/root/planner_retry_audit`) | Read-only post-502 planner retry and timeout-budget audit | No files; independently accepted the root's two-by-ten-second policy, rejected a third attempt, and identified transient/permanent/status/privacy test gaps that root closed | no |
+| `019f6294-e73b-7613-9f26-4584b9eadac1` (`/root/final_delta_audit`) | Read-only final candidate delta and evidence audit | No files; found the potentially masking language-tap retry, unverified test-credential cleanup, overbroad permanent-5xx retries, and two documentation drifts; root removed or corrected each item | no |
 
 ## Codex implementation journal
 
