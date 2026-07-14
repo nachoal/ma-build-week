@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum ProbeGateState {
     static let liveProductBindingUnlocked = false
@@ -7,6 +8,7 @@ enum ProbeGateState {
 
 struct ProbeGateView: View {
     let model: ProbeAppModel
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         NavigationStack {
@@ -32,8 +34,62 @@ struct ProbeGateView: View {
                     )
                     LabeledContent("Target", value: "Physical iPhone")
                     LabeledContent("Broker credential", value: model.credentialStatus.label)
-                    Text("Fixture product UI is authorized. Live microphone/provider binding and overlap claims stay gated until the written verdict permits them.")
+                    LabeledContent("Probe", value: model.runStatus.label)
+                    LabeledContent("Graph hash", value: String(model.graphConfigurationHash.prefix(12)))
+                    LabeledContent(
+                        "Mic PCM sent",
+                        value: "\(model.sentMicrophoneFrameCount) frames"
+                    )
+                    LabeledContent(
+                        "Tutor PCM scheduled",
+                        value: "\(model.scheduledTutorFrameCount) frames"
+                    )
+                    LabeledContent(
+                        "Last stop cursor",
+                        value: model.renderedCursorMilliseconds.map { "\($0) ms" } ?? "none"
+                    )
+                    LabeledContent(
+                        "Four-second window",
+                        value: model.renderedWindowAvailable ? "captured" : "not proven"
+                    )
+                    Text(model.activityLabel)
                         .foregroundStyle(.secondary)
+                    Text("This dedicated probe may exercise the live microphone and provider. MA product binding and overlap claims remain gated by the written verdict.")
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("Physical probe controls") {
+                    Button("Start live probe") {
+                        Task { await model.startLiveProbe() }
+                    }
+                    .disabled(
+                        model.credentialStatus != .ready
+                            || !(model.runStatus == .idle
+                                || model.runStatus == .failed
+                                || model.runStatus == .permissionDenied)
+                    )
+
+                    Button("Request tutor") {
+                        Task { await model.requestTutor() }
+                    }
+                    .disabled(model.runStatus != .active)
+
+                    Button("Local stop", role: .destructive) {
+                        Task { await model.localStop() }
+                    }
+                    .disabled(model.runStatus != .active)
+
+                    Button("Stop probe") {
+                        Task { await model.stopLiveProbe() }
+                    }
+                    .disabled(model.runStatus == .idle)
+
+                    if model.runStatus == .permissionDenied,
+                       let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                        Button("Open microphone settings") {
+                            openURL(settingsURL)
+                        }
+                    }
                 }
             }
             .navigationTitle("MA Audio Probe")

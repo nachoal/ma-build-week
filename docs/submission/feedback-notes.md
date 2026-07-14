@@ -68,6 +68,7 @@ audited. Core implementation remains in the root task.
 | `/root/webrtc_hook_audit` | Read-only, 30-minute native-WebRTC evidence-hook audit | No files; primary-source research only | no |
 | `/root/av_audio_evidence_audit` | Read-only Apple audio-evidence API audit | No files; primary-source research only | no |
 | `/root/product_gap_audit` | Read-only WP-3 through WP-5 fixture integration audit | No files; product/test gap map only | no |
+| `/root/audio_graph_test_audit` | Read-only Swift 6 audio-graph compile/runtime and test-risk audit | No files; implementation risk checklist only | no |
 
 ## Codex implementation journal
 

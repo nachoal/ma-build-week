@@ -56,19 +56,25 @@ enum RealtimeServerEventParser {
         case "session.created", "session.updated":
             return .sessionConfiguration(type: type, eventID: eventID, rawEvent: data)
         case "response.output_audio.delta":
-            guard let encoded = event["delta"] as? String,
+            guard let eventID, !eventID.isEmpty,
+                  let responseID = event["response_id"] as? String, !responseID.isEmpty,
+                  let itemID = event["item_id"] as? String, !itemID.isEmpty,
+                  let outputIndex = event["output_index"] as? Int, outputIndex >= 0,
+                  let contentIndex = event["content_index"] as? Int, contentIndex >= 0,
+                  let encoded = event["delta"] as? String,
                   let audio = Data(base64Encoded: encoded),
                   !audio.isEmpty,
+                  audio.count <= 48_000,
                   audio.count.isMultiple(of: MemoryLayout<Int16>.size) else {
                 throw RealtimeServerEventParserError.invalidAudioDelta
             }
             return .outputAudio(
                 RealtimeOutputAudioChunk(
                     eventID: eventID,
-                    responseID: event["response_id"] as? String,
-                    itemID: event["item_id"] as? String,
-                    outputIndex: event["output_index"] as? Int,
-                    contentIndex: event["content_index"] as? Int,
+                    responseID: responseID,
+                    itemID: itemID,
+                    outputIndex: outputIndex,
+                    contentIndex: contentIndex,
                     pcm16Data: audio
                 )
             )

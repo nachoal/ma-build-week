@@ -39,6 +39,20 @@ struct RealtimeServerEventTests {
         }
     }
 
+    @Test("Decoded tutor chunks over one second fail closed")
+    func oversizedDecodedAudioDelta() {
+        let delta = Data(repeating: 0, count: 48_002).base64EncodedString()
+        let data = Data(
+            """
+            {"type":"response.output_audio.delta","event_id":"evt_oversized","response_id":"resp_1","item_id":"item_1","output_index":0,"content_index":0,"delta":"\(delta)"}
+            """.utf8
+        )
+
+        #expect(throws: RealtimeServerEventParserError.invalidAudioDelta) {
+            try RealtimeServerEventParser.parse(data)
+        }
+    }
+
     @Test("Provider errors discard private human-readable messages")
     func providerErrorIsSanitized() throws {
         let data = Data(

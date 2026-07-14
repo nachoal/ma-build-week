@@ -1,0 +1,184 @@
+@preconcurrency import AVFAudio
+import Foundation
+
+struct CapturedFloatFrame: Sendable {
+    let samples: [Float]
+    let sampleRate: Double
+    let timing: AudioTapTiming
+}
+
+final class AudioCallbackWorker: @unchecked Sendable {
+    typealias InputSink = @Sendable (Data) async -> Void
+
+    private struct ConvertedInput: Sendable {
+        let data: Data
+        let sourceRate: Double
+    }
+
+    private struct RenderedPacket: Sendable {
+        let samples: [Float]
+        let timing: AudioTapTiming
+    }
+
+    private let queue = DispatchQueue(
+        label: "com.ia.ma.audio-probe.callback-worker",
+        qos: .userInteractive
+    )
+    private let inputSink: InputSink
+    private let evidenceStore: AudioGraphEvidenceStore
+    private let diagnostics: ProbeDiagnostics
+    private let inputContinuation: AsyncStream<ConvertedInput>.Continuation
+    private let renderedContinuation: AsyncStream<RenderedPacket>.Continuation
+    private var inputConsumerTask: Task<Void, Never>?
+    private var renderedConsumerTask: Task<Void, Never>?
+    private var converter: AVAudioConverter?
+    private var converterInputRate: Double = 0
+    private let outputFormat = AVAudioFormat(
+        commonFormat: .pcmFormatInt16,
+        sampleRate: 24_000,
+        channels: 1,
+        interleaved: false
+    )!
+
+    init(
+        inputSink: @escaping InputSink,
+        evidenceStore: AudioGraphEvidenceStore,
+        diagnostics: ProbeDiagnostics
+    ) {
+        let (inputStream, inputContinuation) = AsyncStream.makeStream(
+            of: ConvertedInput.self,
+            bufferingPolicy: .bufferingNewest(32)
+        )
+        let (renderedStream, renderedContinuation) = AsyncStream.makeStream(
+            of: RenderedPacket.self,
+            bufferingPolicy: .bufferingNewest(64)
+        )
+        self.inputSink = inputSink
+        self.evidenceStore = evidenceStore
+        self.diagnostics = diagnostics
+        self.inputContinuation = inputContinuation
+        self.renderedContinuation = renderedContinuation
+
+        inputConsumerTask = Task { [inputSink, diagnostics] in
+            for await input in inputStream {
+                await diagnostics.record(
+                    .microphoneFrame,
+                    details: [
+                        "bytes": String(input.data.count),
+                        "source_rate": String(Int(input.sourceRate)),
+                    ]
+                )
+                await inputSink(input.data)
+            }
+        }
+        renderedConsumerTask = Task { [evidenceStore, diagnostics] in
+            for await packet in renderedStream {
+                await evidenceStore.appendRenderedMixerSamples(
+                    packet.samples,
+                    timing: packet.timing
+                )
+                await diagnostics.record(
+                    .playbackRendered,
+                    details: [
+                        "frames": String(packet.samples.count),
+                        "rate": String(Int(packet.timing.sampleRate)),
+                    ]
+                )
+            }
+        }
+    }
+
+    deinit {
+        inputContinuation.finish()
+        renderedContinuation.finish()
+        inputConsumerTask?.cancel()
+        renderedConsumerTask?.cancel()
+    }
+
+    func enqueueInput(_ frame: CapturedFloatFrame) {
+        queue.async { [self] in
+            guard let data = convertToPCM16(frame), !data.isEmpty else { return }
+            inputContinuation.yield(
+                ConvertedInput(data: data, sourceRate: frame.sampleRate)
+            )
+        }
+    }
+
+    func enqueueRendered(_ samples: [Float], timing: AudioTapTiming) {
+        queue.async { [renderedContinuation] in
+            renderedContinuation.yield(
+                RenderedPacket(samples: samples, timing: timing)
+            )
+        }
+    }
+
+    private func convertToPCM16(_ frame: CapturedFloatFrame) -> Data? {
+        guard frame.sampleRate.isFinite,
+              frame.sampleRate > 0,
+              !frame.samples.isEmpty,
+              frame.samples.count <= 19_200,
+              let inputFormat = AVAudioFormat(
+                  commonFormat: .pcmFormatFloat32,
+                  sampleRate: frame.sampleRate,
+                  channels: 1,
+                  interleaved: false
+              ),
+              let inputBuffer = AVAudioPCMBuffer(
+                  pcmFormat: inputFormat,
+                  frameCapacity: AVAudioFrameCount(frame.samples.count)
+              ),
+              let inputChannel = inputBuffer.floatChannelData?[0] else {
+            return nil
+        }
+
+        inputBuffer.frameLength = AVAudioFrameCount(frame.samples.count)
+        frame.samples.withUnsafeBufferPointer { source in
+            inputChannel.update(from: source.baseAddress!, count: source.count)
+        }
+
+        if converter == nil || converterInputRate != frame.sampleRate {
+            converter = AVAudioConverter(from: inputFormat, to: outputFormat)
+            converter?.primeMethod = .none
+            converterInputRate = frame.sampleRate
+        }
+        guard let converter else { return nil }
+
+        let ratio = outputFormat.sampleRate / frame.sampleRate
+        let outputCapacity = AVAudioFrameCount(
+            max(1, Int((Double(frame.samples.count) * ratio).rounded(.up)) + 32)
+        )
+        guard let outputBuffer = AVAudioPCMBuffer(
+            pcmFormat: outputFormat,
+            frameCapacity: outputCapacity
+        ) else {
+            return nil
+        }
+
+        let supplyState = ConverterInputSupplyState()
+        var conversionError: NSError?
+        let status = converter.convert(to: outputBuffer, error: &conversionError) {
+            _, inputStatus in
+            if supplyState.suppliedInput {
+                inputStatus.pointee = .noDataNow
+                return nil
+            }
+            supplyState.suppliedInput = true
+            inputStatus.pointee = .haveData
+            return inputBuffer
+        }
+        guard conversionError == nil,
+              status != .error,
+              outputBuffer.frameLength > 0,
+              let channel = outputBuffer.int16ChannelData?[0] else {
+            return nil
+        }
+        return Data(
+            bytes: channel,
+            count: Int(outputBuffer.frameLength) * MemoryLayout<Int16>.size
+        )
+    }
+}
+
+private final class ConverterInputSupplyState: @unchecked Sendable {
+    var suppliedInput = false
+}
