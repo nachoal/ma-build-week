@@ -11,7 +11,7 @@ struct RootFlowView: View {
     @AppStorage("ma.profile.dailyMinutes") private var rawDailyMinutes = LearnerProfile.standard.rawDailyMinutes
 
     @State private var path: [SceneID] = []
-    @State private var practiceFeature = PracticeFeature()
+    @State private var kaiwaFeature = KaiwaLoopFeature()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var profile: LearnerProfile {
@@ -47,7 +47,7 @@ struct RootFlowView: View {
                         profile: profile,
                         onStartScene: { sceneID in
                             guard SceneCatalog.info(for: sceneID)?.available == true else { return }
-                            practiceFeature.send(.restart)
+                            kaiwaFeature.send(.restart)
                             path.append(sceneID)
                         },
                         onReplayOnboarding: {
@@ -58,8 +58,8 @@ struct RootFlowView: View {
                         }
                     )
                     .navigationDestination(for: SceneID.self) { _ in
-                        PracticeRootView(feature: practiceFeature) {
-                            practiceFeature.send(.restart)
+                        KaiwaLoopView(feature: kaiwaFeature) {
+                            kaiwaFeature.send(.restart)
                             path.removeAll()
                         }
                         .toolbar(.hidden, for: .navigationBar)

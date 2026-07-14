@@ -76,7 +76,7 @@ struct ChromeBar: View {
         .padding(.horizontal, 9)
         .overlay(Capsule().stroke(MATheme.hairline, lineWidth: 1))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Estado de la maqueta: \(badge). Nada de esto es audio en vivo.")
+        .accessibilityLabel("Fuente de esta pantalla: \(badge). MA identifica por separado el audio local y las demostraciones.")
         .accessibilityIdentifier("chrome.badge")
     }
 

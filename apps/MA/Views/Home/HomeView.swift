@@ -12,7 +12,10 @@ struct HomeView: View {
     var body: some View {
         AdaptiveScreen {
             VStack(alignment: .leading, spacing: 0) {
-                ChromeBar(badge: "PROTOTIPO", onProfile: { showingProfile = true })
+                ChromeBar(
+                    badge: PracticeCapabilities.gate0Partial.tutorBadge,
+                    onProfile: { showingProfile = true }
+                )
                 header
                 HeroSceneCard(scene: SceneCatalog.hero) {
                     onStartScene(SceneCatalog.hero.id)
@@ -95,7 +98,7 @@ struct HomeView: View {
     }
 
     private var footer: some View {
-        Text("Prototipo · tus elecciones se guardan solo en este iPhone.")
+        Text("Audio incluido · tus elecciones se guardan solo en este iPhone.")
             .font(MATheme.caption())
             .foregroundStyle(MATheme.stone)
             .frame(maxWidth: .infinity)
