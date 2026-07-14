@@ -53,7 +53,7 @@ Append exact evidence after each milestone.
 | Session broker and secret handling | Root implemented the fixed-policy Worker, private install-token boundary, stable safety identifier, rate-limit binding, bounded response, iOS broker client, and this-device-only Keychain provisioning | `9d5cb2e`, `b0d1977` | Worker 7/7; iOS probe 5/5; Wrangler dry run; live health 200, unauthorized 401, caller override 400, authorized mint 200 | complete with recorded Gate limitation |
 | Real offline first-minute playback/capture | Root replaced the fixture-only production route with a zero-beginner local-audio path: all four bundled assets have a validated manifest, one MA audio owner performs audible-completion playback, JIT permission, bounded 8-second capture, aggregate speech-presence/onset extraction, explicit self-assessment, and no retained PCM or file | `cb9d8bd` | complete strict scheme 90/90; signed iPhone 17 Pro build and install succeeded, but launch was lock-denied before any runtime/audio claim | code and simulator complete; physical Gate 1 pending |
 | Repair/resume and next-attempt evidence | Root bound the natural local tutor turn to real playback state, admits pause only while it is active, plays one complete controlled segment labeled `REPLAY · DEMOSTRACIÓN`, resumes the same obligation only after playback completion, captures a new no-text attempt, and gates proof on the full stop/segment/resume chain | `cb9d8bd` | adversarial re-audit PASS; focused strict tests 11/11 and product UI smoke 1/1; no physical learner run yet | code and simulator complete; physical Gate 2 pending |
-| GPT-5.6 planner integration/guardrails | pending | pending | pending | pending |
+| GPT-5.6 planner integration/guardrails | Root added versioned `ScenePlan`, `Attempt`, `LearningReport`, and `NextLearningAction` contracts; an immediate deterministic policy; a Keychain-backed broker client; report-generation cancellation; and double validation that binds every action/reason pair to the same observed obligation. The Worker fixes `gpt-5.6-sol`, strict structured output, `store: false`, bounded input/output/timeout/retry, canonical evidence copy, privacy-preserving safety ID, and endpoint-scoped product authentication | `64e8532` | Worker 18/18; complete strict MA scheme 104/104 test cases (106 parameterized executions); shared Swift/Worker fixtures; live private `gpt-5.6-sol` response validated; product token rejected by Realtime endpoint with 401 | code, broker, and live contract complete; physical product provisioning pending |
 | Physical-device validation and replay fallback | pending | pending | pending | pending |
 | Demo/submission evidence | pending | pending | pending | pending |
 
@@ -74,6 +74,7 @@ audited. Core implementation remains in the root task.
 | `tmux:ma-adversary` | Persistent independent evidence and public-claim reviewer | Read-only verdict/ledger audit; no core edits permitted | no |
 | `/root/offline_audio_test_design` | Read-only PARTIAL product audio test-seam audit | No files; injectable offline playback/capture test design only | no |
 | `/root/wp3_product_integrity_audit` | Read-only post-implementation and post-fix WP-3 audio/state/claim integrity audit | No files; found four lifecycle/proof risks, then re-audited root fixes and returned PASS with only device checks open | no |
+| `/root/wp5_planner_contract_audit` | Read-only WP-5 broker/schema/guardrail adversarial audit | No files; planner security, privacy, progression, and test checklist only | no |
 
 ## Codex implementation journal
 
@@ -337,6 +338,56 @@ For each material decision, capture:
 - GPT-5.6 use at this milestone: `gpt-5.6-sol` with ultra reasoning powered the
   root implementation task. The MA product still made no GPT-5.6 request; that
   integration begins in WP-5.
+
+### 2026-07-14 — WP-5 bounded GPT-5.6 pedagogy planner
+
+- Intended outcome: let GPT-5.6 recommend one post-lesson action without giving
+  it authority over learner evidence, obligation completion, product audio, or
+  the hero path.
+- Root implementation: commit `64e8532` adds Codable/schema-backed `ScenePlan`,
+  `Attempt`, `LearningReport`, and `NextLearningAction`; a deterministic
+  pedagogy policy; a resilient planner wrapper; an endpoint-specific broker
+  client; and this-device-only Keychain provisioning. The proof screen receives
+  a deterministic recommendation synchronously, then accepts a remote result
+  only when its report UUID, model, source, obligation, action, reason, and
+  evidence semantics all revalidate against the still-current report.
+- Broker boundary: `/learning/next` accepts one exact versioned report, strips
+  report/attempt UUIDs before model input, sends no transcript or raw audio,
+  fixes `gpt-5.6-sol`, uses strict Responses structured output, `store: false`,
+  a salted safety identifier, 320 output tokens, seven-second attempts, and a
+  single retry. Refusal, incomplete output, unexpected content, invalid JSON,
+  extra fields, invented evidence, contradictory progression, or upstream
+  failure returns a generic error and therefore the local policy.
+- Credential correction: the inherited probe token was unavailable in this
+  root shell, so root created a separately revocable product token without
+  rotating or invalidating the probe. Its value exists only in Cloudflare's
+  encrypted secret store and the local macOS Keychain. The final Worker accepts
+  the probe token only on `/realtime/client-secret` and the product token only
+  on `/learning/next`; cross-role authorization is rejected.
+- Test evidence: the Worker passed 18/18 tests, including all action/reason
+  combinations, raw-audio rejection, refusal/incomplete output, one-retry
+  budget, and cross-token denial. The full strict MA scheme passed 104/104 test
+  cases (106 parameterized executions), including shared Worker/Swift request
+  and response fixtures, stale-result cancellation, missing-token fallback,
+  broker error mapping, and all UI tests.
+- Live evidence: deployed private Worker version
+  `e883b190-1a60-4431-ac61-d9a35abbb8f1` returned `source=model`,
+  `model=gpt-5.6-sol`, `action=advance`, and
+  `reason=completed_after_repair` for the canonical bounded report. The same
+  product token received 401 from the Realtime secret endpoint. No token,
+  standard API key, raw audio, transcript, provider request ID, or upstream
+  error body appeared in output.
+- Adversarial result: `/root/wp5_planner_contract_audit` first caught the
+  independent action/reason semantic hole, then caught endpoint-role leakage
+  and premature GPT pending copy. Root closed all three; the final re-audit
+  returned PASS with no P0/P1 remaining.
+- Physical evidence: the final signed planner build installed on the paired
+  iPhone 17 Pro, but its provisioning launch was lock-denied. Device Keychain
+  persistence, model-source UI labeling, tokenless fallback, and live product
+  planner behavior remain open physical checks.
+- GPT-5.6 use at this milestone: `gpt-5.6-sol` with ultra reasoning powered the
+  root implementation task, and MA's private broker made the product's first
+  bounded `gpt-5.6-sol` Responses request.
 
 ## Final feedback preparation
 
