@@ -30,6 +30,7 @@ RAW_LAUNCH_LOG="$(mktemp -t ma-live-device-launch.XXXXXX.log)"
 FILES_JSON="$(mktemp -t ma-live-device-files.XXXXXX.json)"
 DELETE_JSON="$(mktemp -t ma-live-device-delete.XXXXXX.json)"
 DELETE_LOG="$(mktemp -t ma-live-device-delete.XXXXXX.log)"
+PROVISIONING_STARTED=false
 
 contains_private_value() {
   local path="$1"
@@ -43,7 +44,7 @@ contains_private_value() {
 cleanup() {
   unset DEVICECTL_CHILD_MA_INSTALL_TOKEN DEVICECTL_CHILD_MA_UI_TEST_DELETE_INSTALL_TOKEN \
     DEVICECTL_CHILD_MA_UI_TEST_PROVISION_ONLY
-  if [[ -n "${DEVICE_ID:-}" ]]; then
+  if [[ -n "${DEVICE_ID:-}" && "$PROVISIONING_STARTED" == "true" ]]; then
     DEVICECTL_CHILD_MA_UI_TEST_DELETE_INSTALL_TOKEN=true \
       xcrun devicectl device process launch \
         --device "$DEVICE_ID" \
@@ -87,14 +88,6 @@ DEVICE_ID="$(jq -r '.result.devices[] | select(
 DEVICE_OS="$(jq -r --arg id "$DEVICE_ID" '.result.devices[] |
   select(.identifier == $id) | .deviceProperties.osVersionNumber' "$DEVICE_JSON")"
 
-xcrun devicectl device info lockState \
-  --device "$DEVICE_ID" \
-  --json-output "$LOCK_JSON" >/dev/null
-[[ "$(jq -r '.result.passcodeRequired' "$LOCK_JSON")" == "false" ]] || {
-  printf 'The paired iPhone is locked. Unlock it and keep it awake before running physical UI evidence.\n' >&2
-  exit 71
-}
-
 token="$(security find-generic-password \
   -a private-product-install-token \
   -s com.ia.ma.learning-planner.deployment \
@@ -106,7 +99,6 @@ token="$(security find-generic-password \
 
 mkdir -p "$(dirname "$RESULT_PATH")" "$DERIVED_DATA" "$EVIDENCE_DIR"
 rm -rf "$RESULT_PATH"
-cp "$LOCK_JSON" "$EVIDENCE_DIR/lock-state.json"
 cd "$ROOT_DIR"
 xcodegen generate >"$EVIDENCE_DIR/xcodegen.log" 2>&1
 if [[ -n "$(git status --porcelain=v1 --untracked-files=all)" ]]; then
@@ -121,6 +113,15 @@ xcodebuild build-for-testing \
   -derivedDataPath "$DERIVED_DATA" \
   >"$LOG_PATH" 2>&1
 
+xcrun devicectl device info lockState \
+  --device "$DEVICE_ID" \
+  --json-output "$LOCK_JSON" >/dev/null
+[[ "$(jq -r '.result.passcodeRequired' "$LOCK_JSON")" == "false" ]] || {
+  printf 'The paired iPhone is locked. Unlock it and keep it awake before running physical UI evidence.\n' >&2
+  exit 71
+}
+cp "$LOCK_JSON" "$EVIDENCE_DIR/lock-state.json"
+
 APP_PATH="$DERIVED_DATA/Build/Products/Debug-iphoneos/MA.app"
 [[ -d "$APP_PATH" ]] || {
   printf 'The signed physical-device app was not built.\n' >&2
@@ -132,6 +133,7 @@ xcrun devicectl device install app \
   --log-output "$EVIDENCE_DIR/install.log" \
   "$APP_PATH" >/dev/null
 
+PROVISIONING_STARTED=true
 DEVICECTL_CHILD_MA_INSTALL_TOKEN="$token" \
 DEVICECTL_CHILD_MA_UI_TEST_DELETE_INSTALL_TOKEN=true \
 DEVICECTL_CHILD_MA_UI_TEST_PROVISION_ONLY=true \
