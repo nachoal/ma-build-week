@@ -148,10 +148,13 @@ if [[ -n "$(git status --porcelain=v1 --untracked-files=all)" ]]; then
   exit 65
 fi
 git rev-parse HEAD >"$EVIDENCE_DIR/GIT_COMMIT"
+# Xcode advertises both arm64e and arm64 destinations for the paired iPhone.
+# The generated XCTest bundle is arm64; leaving the architecture unspecified
+# can select arm64e and make XCTest injection fail with "Bad CPU type".
 xcodebuild build-for-testing \
   -project MA.xcodeproj \
   -scheme "$TEST_SCHEME" \
-  -destination "platform=iOS,id=$DEVICE_ID" \
+  -destination "platform=iOS,arch=arm64,id=$DEVICE_ID" \
   -derivedDataPath "$DERIVED_DATA" \
   >"$LOG_PATH" 2>&1
 
@@ -229,7 +232,7 @@ unset DEVICECTL_CHILD_MA_INSTALL_TOKEN DEVICECTL_CHILD_MA_UI_TEST_DELETE_INSTALL
 xcodebuild test-without-building \
   -project MA.xcodeproj \
   -scheme "$TEST_SCHEME" \
-  -destination "platform=iOS,id=$DEVICE_ID" \
+  -destination "platform=iOS,arch=arm64,id=$DEVICE_ID" \
   -derivedDataPath "$DERIVED_DATA" \
   -collect-test-diagnostics never \
   -only-testing:"$TEST_SELECTION" \
