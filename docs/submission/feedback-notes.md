@@ -71,6 +71,8 @@ audited. Core implementation remains in the root task.
 | `/root/audio_graph_test_audit` | Read-only Swift 6 audio-graph compile/runtime and test-risk audit | No files; implementation risk checklist only | no |
 | `/root/gate0_integrity_reaudit` | Read-only post-binding Gate 0 evidence-integrity audit | No files; physical-proof correctness review only | no |
 | `/root/wp3_partial_arch_audit` | Read-only automatic-PARTIAL product integration audit | No files; offline Kaiwa Loop file/test sequence only | no |
+| `tmux:ma-adversary` | Persistent independent evidence and public-claim reviewer | Read-only verdict/ledger audit; no core edits permitted | no |
+| `/root/offline_audio_test_design` | Read-only PARTIAL product audio test-seam audit | No files; injectable offline playback/capture test design only | no |
 
 ## Codex implementation journal
 
