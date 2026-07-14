@@ -60,6 +60,7 @@ Append exact evidence after each milestone.
 | Guided aggregate planner and hardened product broker | Root added separate v2 aggregate-only guided planning, explicit opt-in, deterministic local fallback, cancellation/generation fencing, a fixed `gpt-5.6-sol` Responses contract, and an independently re-audited product Realtime mint/review policy. Authenticated quota is consumed before bounded body parsing; exact JSON media types and enum-only review arguments fail closed | `a9eb988` | Worker 30/30; security re-audit DEPLOY; live version `e45a3b92-217b-4830-8841-a50a7465a6da` passed health, invalid-media 400, exact-key mint, local policy-hash match, and bilingual guided-plan validation | complete for authorized private single-device demo; not public/TestFlight auth |
 | Current guided device/submission evidence | Root generated, signed, and installed the guided build, rewrote the submission story around the actual bilingual two-review product, and made the operator-only replay's not-live badge bilingual | `a9eb988` | `.build/device-evidence/20260714T160140Z-product`: build/install succeeded; launch was denied because the iPhone re-locked. The frozen simulator evidence is `.build/test-results/MA-complete-freeze-20260714.xcresult` (175/175), `.build/test-results/MAAudioProbe-freeze-20260714.xcresult` (49/49), and `.build/evidence/MA-complete-freeze-attachments-20260714/` | simulator/service complete; unlocked physical runtime, human/Japanese review, video, archive refresh, `/feedback`, and submission remain gated |
 | Production-realistic simulator and policy closure | Root added a DEBUG-only harness that substitutes only deterministic bundled microphone input while retaining the production broker, `gpt-realtime-2.1` WebSocket, effective-policy verifier, structured two-turn review, spoken feedback, waiter audio, shipping playout, and `gpt-5.6-sol` planner. Root fixed cross-runtime hash normalization, pinned `reasoning.effort=low` in the broker-owned policy, and rejects client attempts to weaken it | `bebac3c` | Live smoke 2/2; repeated bilingual journey 10/10 (five English, five Spanish) at `.build/test-results/MA-live-low-reasoning-bilingual-stress5.xcresult`; real simulator permission/capture 1/1; standard no-secret suite 206/206 executions; Worker 30/30 | simulator/code/service complete; physical microphone/route/human quality remain gated |
+| Physical live automation and planner-timeout hardening | Root ran the credentialed lesson on the paired iPhone, distinguished a SpringBoard notification interception from app behavior, added a banner-evidence-only bounded tap retry, disabled post-failure sysdiagnose collection, and widened the existing two planner attempts from 7 to 10 seconds after a reproduced 14.183-second broker 502. Immediate upstream 429 retries now fail closed | `80c6eee` | Physical English production-Realtime lesson passed in 47.506 seconds; Spanish was interrupted before its language tap by `NotificationShortLookView`. Corrected Spanish live simulator journey passed 1/1 at `.build/test-results/MA-live-spanish-timeout-fix-simulator.xcresult`; Worker 34/34; Swift planner 6/6; private Worker version `59fa3f6f-0ead-421a-bb16-2b64fd8db1ff` | code/service/simulator corrected; bounded Spanish physical rerun pending |
 
 ## Delegated tasks and sessions
 
@@ -98,6 +99,7 @@ audited. Core implementation remains in the root task.
 | `019f6245-5309-7aa1-9038-8eea09eb02eb` (`/root/realtime_reasoning_policy_audit`) | Read-only current OpenAI Realtime reasoning-policy audit | No files; verified official session/response placement, recommended low voice-agent effort, override risk, and required deployment/live verification | no |
 | `019f6260-11a2-7650-b1ee-7b4baddc9134` (`/root/simulator_evidence_audit`) | Read-only result-bundle and live-journey evidence audit | No files; independently reconciled 2/2 smoke, 10/10 bilingual stress, 1/1 audio integration, 205 parameterized deterministic executions, assertions, warnings, and physical-evidence qualifications | no |
 | `/root/candidate_hygiene_audit` (coordination API exposed no opaque ID) | Read-only current candidate secret, logging, artifact, signing, and release-tool audit | No files; found provider-controlled public logging and compiled-binary scan gaps, both corrected by root; otherwise clean | no |
+| `019f6286-a9de-7510-809f-bb634b902599` (`/root/planner_retry_audit`) | Read-only post-502 planner retry and timeout-budget audit | No files; independently accepted the root's two-by-ten-second policy, rejected a third attempt, and identified transient/permanent/status/privacy test gaps that root closed | no |
 
 ## Codex implementation journal
 
@@ -848,6 +850,54 @@ For each material decision, capture:
   the staged packet plus compiled executable scan passed, and
   `MA.xcarchive.zip` SHA-256 is
   `3f14ecf07eaf8e594622df8f9ae43d33d3788f6117c7d7652cffd0352427605c`.
+
+### 2026-07-14 — First automated physical live pass and bounded recovery
+
+- Root's physical runner built, signed, installed, provisioned, and launched the
+  exact clean candidate on the dynamically discovered iPhone 17 Pro running
+  iOS 27.0. The English production-Realtime lesson passed in 47.506 seconds,
+  including one-tap model playback, two valid structured reviews, two completed
+  spoken explanations, waiter playback, and a model-backed next plan.
+- A real SpringBoard banner then appeared over the Spanish language control.
+  XCTest recorded `NotificationShortLookView`; the tap never reached MA, and
+  Spanish failed at the unchanged English accessibility label after 4.310
+  seconds. This is retained as an automation failure, not counted as a Spanish
+  product pass. Xcode's default failure diagnostics then invoked a privileged
+  device diagnostic and waited at a password prompt; root entered no password,
+  terminated that diagnostic, and preserved the sanitized test log.
+- Root changed the Spanish test to clear any existing banner and preserve the
+  one-tap product assertion. A second tap is permitted only when a SpringBoard
+  banner is positively found and dismissed after the first dispatch; an
+  unobstructed ignored tap still fails. Both device and simulator runners now
+  use `-collect-test-diagnostics never`, avoiding the privileged post-failure
+  prompt and unbounded diagnostic collection.
+- The first corrected Spanish simulator journey verified the one-tap language
+  switch and completed both live Realtime reviews, spoken feedback, and waiter
+  turn, then exposed a separate final-planner 502. Exported simulator logs
+  showed one app-to-Worker request lasting 14.183 seconds, matching exhaustion
+  of the Worker's two seven-second provider timeouts; the app correctly
+  preserved its local safe plan instead of hanging.
+- Root kept the two-attempt security/cost ceiling, widened each provider attempt
+  to ten seconds, and widened the iOS outer request budget to 27 seconds, still
+  below the 35-second learner-visible terminal wait. Immediate upstream 429
+  retry was removed because it cannot honor `Retry-After` and could double
+  provider work under the install-scoped limiter. Worker tests now cover a
+  timeout-shaped `DOMException`, `502` recovery/exhaustion, permanent-status
+  no-retry, identical sanitized retry bodies, one limiter charge, and generic
+  error collapse without upstream bodies or credentials.
+- Worker 34/34 and focused Swift planner 6/6 passed. Root deployed private
+  Worker version `59fa3f6f-0ead-421a-bb16-2b64fd8db1ff`; health returned the
+  expected secret-free response. The corrected Spanish production-realistic
+  simulator journey then passed 1/1 in 51.205 seconds at
+  `.build/test-results/MA-live-spanish-timeout-fix-simulator.xcresult`, including
+  a non-fallback `gpt-5.6-sol` plan.
+- Read-only audit session `019f6286-a9de-7510-809f-bb634b902599`
+  independently accepted the two-by-ten-second policy, rejected a third attempt,
+  and proposed the adversarial retry matrix that root implemented. The
+  Cloudflare deployment skill required an authenticated preflight and shaped
+  the private versioned deployment. Root performed every implementation,
+  deployment, test, and device action. Local commit `80c6eee` contains the
+  correction; nothing was pushed.
 
 ## Final feedback preparation
 

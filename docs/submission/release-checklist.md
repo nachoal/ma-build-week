@@ -5,11 +5,12 @@ Devpost submission. Those require Ignacio's explicit approval.
 
 ## Freeze identity
 
-- [x] Frozen implementation/archive commit:
-      `bebac3c47c4846cbc339ae130978f0384115bbef`
+- [ ] Refresh the frozen implementation/archive from current implementation
+      commit `80c6eeec543c213e2e95611e1bbc9bc7441405a7`; the prior `bebac3c`
+      archive is retained only as superseded evidence
 - [x] Xcode/Swift/iOS build versions recorded in the candidate packet
-- [x] Release `.xcarchive` built from that clean commit
-- [x] `PrivacyInfo.xcprivacy` verified inside `MA.app`
+- [ ] Release `.xcarchive` rebuilt from the final clean commit
+- [ ] `PrivacyInfo.xcprivacy` reverified inside the refreshed `MA.app`
 - [ ] Signed physical install/launch verified on the dynamically discovered device
 - [x] `scripts/scan-secrets.sh` rerun after the frozen implementation commit,
       including the archived app and compiled executable
@@ -31,8 +32,9 @@ Devpost submission. Those require Ignacio's explicit approval.
 - [x] Complete MAAudioProbe result bundle (51/51 executions, 49 test
       definitions, characterization only) at
       `.build/test-results/MAAudioProbe-current.xcresult`
-- [x] Worker 30/30 low-reasoning policy contract output at
-      `.build/test-results/MAWorker-low-reasoning-20260714.tap`
+- [x] Worker 34/34 low-reasoning and bounded-planner-retry contract output at
+      `.build/test-results/MAWorker-planner-timeout-20260714.tap`; private
+      version `59fa3f6f-0ead-421a-bb16-2b64fd8db1ff`
 - [x] Live private health, malformed-media rejection, Realtime mint,
       exact policy-hash, and guided-planner verification
 - [x] Secret scan passes the current candidate, staged inputs, reachable
