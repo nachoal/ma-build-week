@@ -23,7 +23,8 @@ state; it does not claim a successful semantic review.
 
 On the authorized development Mac, the production-realistic gate provisions
 the separately revocable product credential from macOS Keychain without
-printing it, runs the complete `MALive` journey, and deletes the simulator copy:
+printing it, runs the complete `MALive` journey, then requires the app to prove
+Keychain deletion with a value-free deleted marker before reporting success:
 
 ```sh
 scripts/test-live-guided-simulator.sh
@@ -61,7 +62,8 @@ bundled learner input. The second uses the actual microphone permission and
 capture graph and accepts an honest silence/recoverable-review result. Neither
 automated check can establish human audibility, Japanese teaching quality,
 route-change recovery, or learner outcome; record those observations
-separately.
+separately. A passing runner also requires value-free proof that its temporary
+device Keychain credential was deleted; a locked cleanup launch fails the gate.
 
 1. Confirm a fresh install starts in English. Toggle to Spanish and back; the
    current route and lesson phase must remain unchanged.

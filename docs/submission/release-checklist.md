@@ -5,22 +5,22 @@ Devpost submission. Those require Ignacio's explicit approval.
 
 ## Freeze identity
 
-- [x] Frozen implementation/archive commit:
-      `29be3826a816827f3734f486852abedd7e7619a0` (includes implementation
-      commit `80c6eeec543c213e2e95611e1bbc9bc7441405a7`)
+- [ ] Frozen implementation/archive commit: refresh pending after hardening
+      commit `cf96ce08f7a8dc5c740d44197c4fa3499f4a2227`; prior archive commit
+      `29be3826a816827f3734f486852abedd7e7619a0` is superseded
 - [x] Xcode/Swift/iOS build versions recorded in the candidate packet
-- [x] Release `.xcarchive` rebuilt from that clean commit
-- [x] `PrivacyInfo.xcprivacy` reverified inside the refreshed `MA.app`
+- [ ] Release `.xcarchive` rebuilt from the new clean commit
+- [ ] `PrivacyInfo.xcprivacy` reverified inside the refreshed `MA.app`
 - [ ] Signed physical install/launch verified on the dynamically discovered device
-- [x] `scripts/scan-secrets.sh` rerun after the frozen implementation commit,
-      including the archived app and compiled executable
+- [ ] `scripts/scan-secrets.sh` rerun after the new frozen implementation
+      commit, including the archived app and compiled executable
 
 ## Automated and service evidence
 
-- [x] Exact documented, no-secret final-candidate MA result bundle: 206/206
+- [x] Exact documented, no-secret hardened-candidate MA result bundle: 206/206
       executions, 0 skipped (177 test definitions); the isolated private
       `MALive` target was absent at
-      `.build/test-results/MA-final-planner-timeout-standard.xcresult`
+      `.build/test-results/MA-final-credential-cleanup-standard.xcresult`
 - [x] Production-realistic bilingual simulator gate uses the private broker,
       `gpt-realtime-2.1`, structured validator, response audio, waiter turn, two
       reviews, and `gpt-5.6-sol` planner; 10/10 repetitions passed (five English,
@@ -32,9 +32,9 @@ Devpost submission. Those require Ignacio's explicit approval.
 - [x] Complete MAAudioProbe result bundle (51/51 executions, 49 test
       definitions, characterization only) at
       `.build/test-results/MAAudioProbe-current.xcresult`
-- [x] Worker 34/34 low-reasoning and bounded-planner-retry contract output at
-      `.build/test-results/MAWorker-planner-timeout-20260714.tap`; private
-      version `59fa3f6f-0ead-421a-bb16-2b64fd8db1ff`
+- [x] Worker 35/35 low-reasoning and bounded-planner-retry contract output at
+      `.build/test-results/MAWorker-final-retry-policy.tap`; private version
+      `57d49379-af1f-4160-8e88-ec611ab9a1d7`
 - [x] Live private health, malformed-media rejection, Realtime mint,
       exact policy-hash, and guided-planner verification
 - [x] Secret scan passes the current candidate, staged inputs, reachable
@@ -79,7 +79,8 @@ Stage optional redacted logs/video under ignored `.build/submission-inputs/`;
 the archive tool rejects paths outside its canonical roots, records the build
 environment and exact commit, and rescans staged copy.
 
-- [x] Archive checksum:
+- [ ] Refreshed archive checksum: `________________`
+- [x] Superseded archive checksum retained for audit only:
       `64449aa947c886006c1100984eff8cf6bc561934f1ffd0556bbdaa4ff2f29e45`
 - [ ] Video checksum: `________________`
 - [ ] Subtitle checksum: `________________`
