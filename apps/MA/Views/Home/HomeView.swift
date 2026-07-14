@@ -4,18 +4,24 @@ import SwiftUI
 /// No tabs, no dashboard — one decision.
 struct HomeView: View {
     let profile: LearnerProfile
+    let onToggleLanguage: () -> Void
     let onStartScene: (SceneID) -> Void
     let onReplayOnboarding: () -> Void
     let onResetChoices: () -> Void
     let onDeleteAllData: () -> Void
     @State private var showingProfile = false
+    @Environment(\.maInterfaceLanguage) private var language
 
     var body: some View {
         AdaptiveScreen {
             VStack(alignment: .leading, spacing: 0) {
                 ChromeBar(
-                    badge: PracticeCapabilities.gate0Partial.tutorBadge,
-                    onProfile: { showingProfile = true }
+                    badge: language.text(
+                        english: "GPT REALTIME · GUIDED",
+                        spanish: "GPT REALTIME · GUIADO"
+                    ),
+                    onProfile: { showingProfile = true },
+                    onToggleLanguage: onToggleLanguage
                 )
                 header
                 HeroSceneCard(scene: SceneCatalog.hero) {
@@ -52,8 +58,14 @@ struct HomeView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 12) {
-            MicroCapsLabel(text: "TU PRÓXIMA CONVERSACIÓN", color: MATheme.ai)
-            Text("Una escena real, hoy.")
+            MicroCapsLabel(text: language.text(
+                english: "YOUR NEXT CONVERSATION",
+                spanish: "TU PRÓXIMA CONVERSACIÓN"
+            ), color: MATheme.ai)
+            Text(language.text(
+                english: "One real scene, today.",
+                spanish: "Una escena real, hoy."
+            ))
                 .font(MATheme.display())
                 .tracking(MATheme.tightTracking(fontSize: 34))
                 .foregroundStyle(MATheme.sumi)
@@ -66,7 +78,10 @@ struct HomeView: View {
     private var practiceLine: some View {
         HStack(spacing: 8) {
             Circle().fill(MATheme.ai).frame(width: 5, height: 5)
-            Text("Tu ritmo: \(profile.dailyMinutes.spanishLabel) · \(profile.goal.spanishLabel.lowercased())")
+            Text(language.text(
+                english: "Your pace: \(profile.dailyMinutes.label(in: language)) · \(profile.goal.label(in: language).lowercased())",
+                spanish: "Tu ritmo: \(profile.dailyMinutes.label(in: language)) · \(profile.goal.label(in: language).lowercased())"
+            ))
                 .font(MATheme.caption())
                 .foregroundStyle(MATheme.stone)
                 .lineLimit(2)
@@ -81,10 +96,16 @@ struct HomeView: View {
     private var sceneList: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                MicroCapsLabel(text: "DESPUÉS · PRONTO")
+                MicroCapsLabel(text: language.text(
+                    english: "NEXT · COMING SOON",
+                    spanish: "DESPUÉS · PRONTO"
+                ))
                 Spacer()
                 if !profile.interests.isEmpty {
-                    Text("ordenado por tus intereses")
+                    Text(language.text(
+                        english: "ordered by your interests",
+                        spanish: "ordenado por tus intereses"
+                    ))
                         .font(.system(size: 10))
                         .foregroundStyle(MATheme.stone)
                 }
@@ -103,7 +124,10 @@ struct HomeView: View {
     }
 
     private var footer: some View {
-        Text("Audio incluido · perfil local · plan GPT opcional y explícito.")
+        Text(language.text(
+            english: "Short model · your voice · GPT Realtime review · local profile.",
+            spanish: "Modelo breve · tu voz · revisión GPT Realtime · perfil local."
+        ))
             .font(MATheme.caption())
             .foregroundStyle(MATheme.stone)
             .frame(maxWidth: .infinity)
@@ -118,6 +142,7 @@ struct HomeView: View {
 struct SceneListRow: View {
     let scene: SceneInfo
     let onStart: () -> Void
+    @Environment(\.maInterfaceLanguage) private var language
 
     var body: some View {
         Button(action: onStart) {
@@ -128,10 +153,10 @@ struct SceneListRow: View {
                     .frame(width: 26, alignment: .leading)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(scene.title)
+                    Text(scene.title(in: language))
                         .font(MATheme.body(16, weight: .medium))
                         .foregroundStyle(scene.available ? MATheme.sumi : MATheme.stone)
-                    Text(scene.subtitle)
+                    Text(scene.subtitle(in: language))
                         .font(MATheme.caption())
                         .foregroundStyle(MATheme.stone)
                 }
@@ -144,7 +169,7 @@ struct SceneListRow: View {
                         .frame(width: 28, height: 28)
                         .background(MATheme.ai, in: Circle())
                 } else {
-                    MicroCapsLabel(text: scene.statusLabel)
+                    MicroCapsLabel(text: scene.statusLabel(in: language))
                 }
             }
             .frame(minHeight: 56)
@@ -154,8 +179,14 @@ struct SceneListRow: View {
         .disabled(!scene.available)
         .accessibilityLabel(
             scene.available
-                ? "Escena \(scene.index): \(scene.title). \(scene.subtitle). Disponible."
-                : "Escena \(scene.index): \(scene.title). Próximamente, aún no disponible."
+                ? language.text(
+                    english: "Scene \(scene.index): \(scene.title(in: language)). \(scene.subtitle(in: language)). Available.",
+                    spanish: "Escena \(scene.index): \(scene.title(in: language)). \(scene.subtitle(in: language)). Disponible."
+                )
+                : language.text(
+                    english: "Scene \(scene.index): \(scene.title(in: language)). Coming soon, not available yet.",
+                    spanish: "Escena \(scene.index): \(scene.title(in: language)). Próximamente, aún no disponible."
+                )
         )
         .accessibilityIdentifier("escena.\(scene.id.rawValue)")
         .overlay(Rectangle().fill(MATheme.hairline).frame(height: 1), alignment: .bottom)
@@ -165,6 +196,7 @@ struct SceneListRow: View {
 #Preview("Home") {
     HomeView(
         profile: .standard,
+        onToggleLanguage: {},
         onStartScene: { _ in },
         onReplayOnboarding: {},
         onResetChoices: {},

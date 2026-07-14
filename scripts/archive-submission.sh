@@ -101,6 +101,12 @@ APP_PATH="$ARCHIVE_PATH/Products/Applications/MA.app"
   exit 67
 }
 plutil -lint "$APP_PATH/PrivacyInfo.xcprivacy" >/dev/null
+if ! ENCRYPTION_DECLARATION="$(
+  plutil -extract ITSAppUsesNonExemptEncryption raw -o - "$APP_PATH/Info.plist"
+)" || [[ "$ENCRYPTION_DECLARATION" != "false" ]]; then
+  printf 'Archived MA.app must declare ITSAppUsesNonExemptEncryption=false.\n' >&2
+  exit 67
+fi
 codesign --verify --deep --strict "$APP_PATH"
 
 cp apps/MA/Conversation/KaiwaLoopReplayFixture.swift \

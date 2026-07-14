@@ -1,0 +1,1 @@
+"NSMicrophoneUsageDescription" = "MA uses the microphone only after you tap Record. It sends that short turn directly to OpenAI for transcription and feedback; the app does not save a recording.";

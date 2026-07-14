@@ -1,115 +1,135 @@
 # Devpost draft — MA
 
-Status: copy prepared; publication, repository sharing, video URL, and final
-submission require Ignacio's explicit approval.
+Status: copy prepared. Publication, repository sharing, video upload, `/feedback`,
+and final submission require Ignacio's explicit approval.
 
 ## Submission fields
 
 - Project name: **MA**
 - Track/category: **Education**
-- Tagline: **Practice the moment real Japanese becomes noise.**
+- Tagline: **Hear it, say it, understand the feedback, use it for real.**
 - Video URL: `[PENDING — public upload requires approval]`
 - Repository URL: `[PENDING — private reviewer share or public release requires approval]`
 - Codex `/feedback` Session ID: `[PENDING — run in root task after final evidence freeze]`
 
 ## Short description
 
-MA is an iPhone tutor for a Spanish-speaking absolute beginner traveling to
-Japan. It teaches one immediately useful restaurant exchange, lets the learner
-practice it with disappearing support, turns a breakdown in natural Japanese
-into a tiny repair lesson, and then proves whether the next attempt improved.
+MA is a bilingual iPhone tutor for an English- or Spanish-speaking absolute
+beginner traveling to Japan. It explains one useful response before playing any
+Japanese, lets the learner hear a short model, reviews two explicit speaking
+turns with GPT Realtime, and always makes the next action clear.
 
 ## Inspiration
 
-Most voice tutors begin with a blank prompt: “What do you want to talk about?”
-That is the wrong first minute for someone who knows zero Japanese. MA begins
-with one obligation—ask for a table for one—and builds enough confidence to
-survive that exact moment. The product is designed around the point where
-natural speech stops sounding like language and starts sounding like noise.
+Most voice tutors begin with an empty prompt: “What do you want to talk about?”
+That is the wrong first minute for someone who knows zero Japanese. A beginner
+needs meaning, a model, a safe attempt, useful feedback, and a clear reason to
+try again. MA starts with one concrete obligation—tell a restaurant server that
+you are dining alone—and builds a complete teaching loop around it.
 
 ## What it does
 
-MA first teaches `一人です` with full text, rhythm-only support, and then no
-answer text. The learner records a short local attempt and self-assesses it; MA
-does not pretend to grade pronunciation. A bundled natural-speed restaurant
-turn follows. The learner can stop it locally on an explicit tap, study one
-complete labeled segment, return to the same conversational obligation, and
-try again. The proof screen compares bounded attempt facts such as duration,
-approximate onset, help used, and repair count.
+English is the fresh-install default for American judges. An always-visible
+switch changes the product interface and feedback to Spanish without resetting
+the lesson.
 
-The default next action is deterministic and local. If the learner explicitly
-chooses, MA sends only those structured facts—not audio or a transcript—to a
-private Cloudflare Worker. The Worker calls `gpt-5.6-sol` with strict structured
-output and `store: false`; deterministic guardrails reject unsupported or
-contradictory recommendations.
+MA first shows `一人です`, `hitori desu`, and “One person · I’m dining alone.”
+The learner taps once to hear a bundled model; recording never starts
+automatically. After an explicit push-to-talk attempt, MA labels the Japanese
+transcription as approximate and shows one grounded positive plus one canonical
+retry focus. The learner can retry or continue with the answer still visible.
+
+Before the restaurant turn, MA explains the waiter’s question, its romaji,
+meaning, and the exact response task. GPT Realtime then produces one short,
+captioned waiter turn. The learner explicitly records again and receives a
+second review before the scene completes. There is no score, self-rating,
+phoneme diagnosis, or mastery claim.
+
+The next practice is available locally as soon as the lesson ends. If the
+learner explicitly opts in, MA sends only versioned aggregate facts—stage,
+attempt count, qualitative result, and visible support—to a private Cloudflare
+Worker. The Worker calls `gpt-5.6-sol` with strict structured output and
+`store: false`; it receives no audio, transcript, or free-form Realtime
+feedback.
 
 ## How we built it
 
-The iPhone app is SwiftUI with Swift 6 concurrency. One app-owned
-`AudioGraphController` owns bundled playout and bounded microphone capture.
-Product and deterministic fallback share one pure semantic reducer. The replay
-adapter accepts at most 64 sanitized monotonic events, has no model/audio/floor
-capabilities, and is permanently labeled as not live.
+The iPhone app uses SwiftUI and Swift 6 concurrency. One app-owned
+`AudioGraphController` owns all product playout and microphone capture. Learner
+audio is bounded in memory, sent directly from the phone to OpenAI with a
+short-lived client secret, and never written to a recording file. The private
+Worker holds the standard OpenAI key, fixes the Realtime session policy, and
+returns only the ephemeral secret, expiry, and expected policy hash.
+
+The Realtime review tool returns only four enum codes: phrase ID, assessment,
+evidence, and retry focus. The app treats them as untrusted, validates the exact
+combination against the independent approximate transcript, and renders
+canonical English/Spanish feedback locally. Provider-authored prose never
+becomes scoring or teaching copy.
 
 Codex was the implementation environment for the complete build: physical
-readiness, the timed audio feasibility gate, audio ownership, event contracts,
-replay, the Worker, local pedagogy, privacy, tests, and submission evidence.
-The root Codex task also recorded failed approaches and adversarial reviews so
-the public claim boundary follows evidence rather than the desired demo.
+readiness, the timed audio feasibility gate, the selected one-owner product
+audio path, Realtime transport, the Worker, pedagogy, bilingual UI, planner,
+privacy, tests, and submission evidence. The root task also preserved failed
+approaches and independent audits so public claims follow evidence.
 
 ## Evidence-led scope decision
 
-The 24-hour Gate 0 ended PARTIAL because the mandatory physical overlap and
-exact-render evidence protocol did not run. MA therefore cut live Realtime,
-speech-over-playout classification, and exact heard-window replay from the
-submission product. It ships the defensible branch: bundled local audio,
-non-overlapping capture, explicit stop, and a complete controlled repair
-segment. The deterministic visual replay is a labeled fallback, never a fake
-live demo.
+The 24-hour Gate 0 ended PARTIAL because the mandatory physical overlap/AEC and
+exact-rendered-window protocol did not run. MA permanently cuts full-duplex
+overlap, speech-over-playout classification, and exact heard-window replay.
+That verdict does not prohibit the separate product path: deliberate,
+non-overlapping push-to-talk with one capture, one review, and one response at a
+time. The historical deterministic replay remains isolated and visibly labeled
+as not live.
 
 ## Challenges
 
-- Keeping decoded, scheduled, and actually rendered audio concepts separate.
-- Refusing to infer physical AEC or audible-stop behavior from simulator tests.
-- Making learner evidence understandable without a pronunciation score.
-- Ensuring a cancelled/restarted replay or capture cannot inject stale proof.
-- Keeping the standard OpenAI key server-side while preserving a private,
-  revocable device-testing path.
+- Turning Realtime capability into an actual zero-beginner teaching sequence.
+- Preventing an approximate transcript or model claim from becoming a false
+  pronunciation score.
+- Keeping one owner for local model playback, capture, and Realtime playout.
+- Making cancellation, retry, restart, route loss, and late provider results
+  fail visibly instead of mutating a new lesson phase.
+- Keeping the standard OpenAI key server-side while retaining a private,
+  revocable device-demo boundary.
 
 ## Accomplishments
 
-- A genuine zero-beginner first minute rather than an open-ended chat screen.
-- One-owner local playback/capture with no retained raw learner audio.
-- Repair and resume bound to the same obligation and a second attempt.
-- Bounded normalized replay that reaches the shipping UI without side effects.
-- A strict `gpt-5.6-sol` post-lesson contract with deterministic fallback.
-- Honest UI and documentation that distinguish code, simulator, and physical
-  evidence.
+- A genuine first minute with meaning before Japanese and no ambiguous phase
+  jumps.
+- English-default and Spanish interfaces with phase-preserving switching.
+- One-tap model playback and explicit recording with no auto-start.
+- Two grounded qualitative speaking-turn reviews before completion.
+- A fully briefed and captioned Realtime waiter exchange.
+- Enum-only, app-validated Realtime feedback with no numeric grading.
+- Optional aggregate-only `gpt-5.6-sol` planning with a local fallback.
+- Honest separation of simulator, service, physical, and learner evidence.
 
 ## What we learned
 
-A model's conversational ability does not prove a phone's audio topology. A
-beautiful replay does not prove audio was rendered. And a speech detector does
-not prove a learner completed an obligation. The strongest product came from
-preserving those distinctions and designing a useful learning loop inside the
-evidence we actually had.
+Adding a frontier voice model is not the same as designing a lesson. The key
+building blocks are meaning, modeling, deliberate production, feedback, retry,
+and transfer to a situation the learner understands. Realtime makes those
+blocks responsive; careful product ordering makes them educational.
 
 ## What's next
 
-After the submission build, MA can add more scenes only after the restaurant
-lesson is validated with a real learner and a qualified Japanese speaker. Live
-overlap or exact heard-audio repair remains a future measured capability, not a
-roadmap promise disguised as a current feature.
+More scenes should follow only after the restaurant lesson is validated with
+real zero beginners and a qualified Japanese speaker. Full-duplex overlap,
+exact heard-audio replay, and pronunciation scoring remain outside the current
+claim boundary.
 
 ## Reviewer testing summary
 
-1. Install the provided signed build on an iPhone with microphone permission.
-2. Complete onboarding and open **Restaurante · Una mesa para uno**.
-3. Finish the three self-assessed scaffold attempts.
-4. Start the local natural scene, tap **Pausa y ayuda** while it is playing,
-   play the complete controlled segment, and resume.
-5. Finish the second no-text attempt and inspect the proof.
-6. The optional GPT plan requires the private reviewer credential; the local
-   deterministic result is complete without network access.
-7. If audio or network conditions are unsuitable, launch the permanently
-   labeled replay using the repository runbook. Do not treat it as live evidence.
+1. Launch MA; confirm English appears by default and the English/Spanish switch
+   is always available.
+2. Open **Arriving at a restaurant** and read the objective, Japanese, romaji,
+   and meaning.
+3. Tap the model once, then explicitly record and finish the first attempt.
+4. Inspect the approximate transcript, useful feedback, and retry focus; retry
+   or continue.
+5. Read the waiter briefing and captions before playing Japanese.
+6. Play the waiter turn, explicitly respond, and inspect the second review.
+7. Complete the scene. The optional GPT-5.6 plan is a separate disclosed tap;
+   the local next practice is already available.

@@ -1,56 +1,64 @@
 # Rehearsal and device matrix
 
-Realtime live is **N/A and prohibited by the Gate 0 PARTIAL verdict**. The
-selected hero is local PARTIAL; “live rehearsal” means the real product running
-on the physical iPhone, not a live provider session.
+The selected product topology is bounded, explicit, non-overlapping GPT
+Realtime push-to-talk. Gate 0 permanently prohibits full-duplex overlap,
+speech-over-playout classification, AEC/no-echo claims, and exact rendered-
+window replay. The historical visual replay is isolated and not the guided
+product.
 
-## Codex-complete checks
+## Automated and service checks
 
 | Path | Expected result | Current evidence | Status |
 |---|---|---|---|
-| Selected local PARTIAL, simulator/service seams | Full scaffold → explicit stop → controlled segment → resume → proof | Product/reducer tests | PASS (simulator/code) |
-| Forced planner failure | Local deterministic action remains usable | Planner contract/fallback tests | PASS (simulator/code) |
-| Labeled replay | Same hero semantic state; no audio, microphone, network, or planner | Replay unit + UI smoke | PASS (simulator/code) |
-| Replay restart/cancel | Fresh bounded stream; no duplicate/stale events | Cancellation/restart tests | PASS |
-| Capture restart race | Old receipt cannot enter fresh scene | Stale-capture test | PASS |
-| Privacy manifest | No tracking; actual aggregate declarations; CA92.1 | `plutil` + unit test | PASS (archive verification pending) |
-| Secret scan | Current set plus all reachable history | `scripts/scan-secrets.sh` | PASS at last recorded milestone |
+| Guided state machine | Model gate → explicit attempt → review → briefed waiter → explicit attempt → review → completion | `.build/test-results/MA-complete-freeze-20260714.xcresult`: 175/175 test cases (167 Swift + 8 UI) | PASS (simulator/code) |
+| English/Spanish switch | English fresh default; toggle preserves route, phase, transcript, and feedback semantics | Copy, state, and UI tests | PASS (simulator/code) |
+| Real simulator audio | One model tap completes; English permission disclosure; AVAudio capture/stop exits cleanly | `MA-complete-freeze-20260714.xcresult`: all 8 UI tests, including the real-audio integration test | PASS (simulator only) |
+| Realtime review contract | Enum-only function, ASR grounding, canonical bilingual copy, no provider prose | Swift + Worker contract tests | PASS (code/service) |
+| Guided planner | Local result first; explicit aggregate-only GPT-5.6 request; stale/double-tap fenced | Swift + live Worker verification | PASS (code/service) |
+| Labeled historical replay | No microphone, audio, network, learner, or planner side effect | Replay unit + UI test | PASS (simulator/code) |
+| Privacy manifest and export compliance | No tracking; declared Realtime audio/aggregate use; CA92.1; non-exempt encryption explicitly `NO` | `plutil`, unit tests, generated Info settings; archive recheck pending | PASS before final archive refresh |
+| Secret scan | Current set, staged inputs, and reachable history | `scripts/scan-secrets.sh` after the 175/175 freeze | PASS on current frozen tree; rerun after commit |
 
 ## Physical iPhone matrix
 
-Do not mark a row from simulator output. Record date, commit, iOS version,
-route, evidence path, and exact failure.
+Do not mark a row from code inspection or simulator output. Record date, commit,
+iOS version, route, network, evidence path, and exact failure.
 
 | Case | Required observation | Result | Evidence |
 |---|---|---|---|
-| Clean install / first minute | Ignacio completes no-text exchange | PENDING | — |
-| Built-in speaker + microphone | All prompts audible; bounded capture/self-assessment works | PENDING | — |
-| Explicit local stop | Stops while tutor turn is active; no provider claim | PENDING | — |
-| Controlled repair + resume | Segment audible; same obligation returns | PENDING | — |
-| Better next attempt | Fresh second attempt reaches proof | PENDING | — |
-| Microphone denied | Accurate error and Settings recovery | PENDING | — |
+| Fresh English install | English objective and controls are immediately clear | PENDING | — |
+| Spanish switch | Same lesson phase; all guided review/permission-facing copy coherent | PENDING | — |
+| First-tap bundled model | Audible once; completion unlocks record; no second tap | PENDING | — |
+| JIT microphone permission | Prompt appears only after record; denial/recovery accurate | PENDING | — |
+| First capture/stop | No crash, freeze, duplicate capture, or auto-progress | PENDING | — |
+| First live Realtime review (English) | Approximate transcript + grounded canonical feedback | PENDING | — |
+| First live Realtime review (Spanish) | Same evidence; Spanish rendering/spoken feedback | PENDING | — |
+| Waiter briefing/playback | Meaning/task visible before one audible captioned turn | PENDING | — |
+| Second capture/review | Review completes before scene completion | PENDING | — |
+| Silence/unclear audio | No fabricated match; visible retry path | PENDING | — |
+| Spoken-feedback unavailable | On-screen review remains complete and responsive | PENDING | — |
 | Interruption (call/Siri/alarm) | Audio owner tears down and recovers honestly | PENDING | — |
-| Route change | Safe stop/recovery; no stale attempt or playback | PENDING | — |
-| Wi-Fi | Local hero complete; optional planner succeeds only after tap | PENDING | — |
-| Cellular | Same as Wi-Fi | PENDING | — |
-| Offline | Local hero/proof complete; optional plan falls back | PENDING | — |
+| Route change | Safe stop/recovery; no stale review or playback | PENDING | — |
+| Wi-Fi | Full guided hero and optional planner behave as labeled | PENDING | — |
+| Cellular | Same explicit non-overlap behavior | PENDING | — |
+| Offline | Guided review fails visibly; local post-completion plan persists | PENDING | — |
 | Ten-minute run | No unbounded memory/thermal growth; UI remains responsive | PENDING | — |
-| VoiceOver / AX type / Reduce Motion | Logical order, no clipping, captions, no pulse when reduced | PENDING | — |
+| VoiceOver / AX type / Reduce Motion | Logical order, no clipping, captions, stable reduced motion | PENDING | — |
 
-## Consecutive hero rehearsals
+## Consecutive guided rehearsals
 
-Acceptance is at least 9/10 on one frozen selected path. Failed takes remain in
-the table; do not delete or replace them.
+Acceptance is at least 9/10 on one frozen guided path. Failed takes remain in
+the table.
 
-| Take | Commit/archive | Path | Duration | Pass/fail | Exact issue/evidence |
+| Take | Commit/archive | Language/path | Duration | Pass/fail | Exact issue/evidence |
 |---:|---|---|---:|---|---|
-| 1 | — | local PARTIAL | — | PENDING | — |
-| 2 | — | local PARTIAL | — | PENDING | — |
-| 3 | — | local PARTIAL | — | PENDING | — |
-| 4 | — | local PARTIAL | — | PENDING | — |
-| 5 | — | local PARTIAL | — | PENDING | — |
-| 6 | — | local PARTIAL | — | PENDING | — |
-| 7 | — | local PARTIAL | — | PENDING | — |
-| 8 | — | local PARTIAL | — | PENDING | — |
-| 9 | — | local PARTIAL | — | PENDING | — |
-| 10 | — | local PARTIAL | — | PENDING | — |
+| 1 | — | guided Realtime | — | PENDING | — |
+| 2 | — | guided Realtime | — | PENDING | — |
+| 3 | — | guided Realtime | — | PENDING | — |
+| 4 | — | guided Realtime | — | PENDING | — |
+| 5 | — | guided Realtime | — | PENDING | — |
+| 6 | — | guided Realtime | — | PENDING | — |
+| 7 | — | guided Realtime | — | PENDING | — |
+| 8 | — | guided Realtime | — | PENDING | — |
+| 9 | — | guided Realtime | — | PENDING | — |
+| 10 | — | guided Realtime | — | PENDING | — |

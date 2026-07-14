@@ -1,16 +1,24 @@
 # Reviewer testing instructions
 
-## Local repository
+## Simulator and service checks
+
+From the repository root:
 
 ```sh
 xcodegen generate
 xcodebuild test -project MA.xcodeproj -scheme MA \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest'
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest'
+xcodebuild test -project MA.xcodeproj -scheme MAAudioProbe \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest'
 cd services/session-broker && npm test
 ```
 
-No secret is required for tests. Sample reports and replay events are fixed,
-sanitized fixtures and are labeled as such.
+No secret is required for automated tests. Guided provider responses and the
+historical replay use sanitized deterministic fixtures. A separate UI
+integration test resets the simulator microphone permission, verifies the
+English Apple permission disclosure, exercises the shipping audio owner, and
+proves that one model tap unlocks real capture/stop without a crash or stuck
+control. It does not claim provider or physical-device evidence.
 
 ## Physical product
 
@@ -20,25 +28,52 @@ Use the provided signed build or, on the paired development Mac:
 scripts/device-ma.sh product
 ```
 
-1. Complete the three onboarding choices.
-2. Open the available restaurant scene.
-3. Practice the phrase three times, reducing support, and self-assess each.
-4. Start the natural scene and tap **Pausa y ayuda** while tutor audio is active.
-5. Play the complete controlled segment; it is intentionally not labeled exact.
-6. Resume the same situation, complete the no-text retry, and inspect proof.
-7. Optionally tap the clearly disclosed GPT plan action. Without reviewer
-   credential/network, the deterministic local plan remains complete.
+Keep the iPhone unlocked and awake.
 
-## Deterministic fallback
+1. Confirm a fresh install starts in English. Toggle to Spanish and back; the
+   current route and lesson phase must remain unchanged.
+2. Complete onboarding and open **Arriving at a restaurant**.
+3. Confirm Japanese, romaji, English/Spanish meaning, and the task are visible
+   before any Japanese plays.
+4. Tap the model once. It must be audible and must not start recording.
+5. Explicitly record one short answer, tap **Finish and review**, and inspect
+   the approximate transcript plus canonical qualitative feedback.
+6. Use **Try again** or explicitly continue with the answer visible.
+7. Read the waiter question, romaji, meaning, and response task. Play the short
+   captioned waiter turn only when ready.
+8. Explicitly record the answer and inspect the second review before completing
+   the scene.
+9. Confirm a local next step exists. Optionally request the disclosed GPT-5.6
+   plan; the lesson must remain complete if the network/model is unavailable.
+
+Repeat a reviewed turn in both English and Spanish. Record the device, iOS
+version, route, network, commit, and evidence path.
+
+## Recovery checks
+
+- Deny microphone permission: no capture begins; the error and Settings action
+  are accurate.
+- Grant permission and retry: capture starts only after another explicit tap.
+- Record silence: no fabricated transcript or positive review appears.
+- Fail Realtime/network: the attempt remains unreviewed and recoverable; the app
+  never jumps to the waiter or completion.
+- Make spoken feedback unavailable: on-screen feedback remains usable.
+- Interrupt or change route during playback/capture: the audio owner stops
+  safely, rejects stale results, and exposes a recovery action.
+- Go offline after completion: local next practice remains; the optional
+  planner does not erase it.
+
+## Historical deterministic replay
 
 ```sh
 scripts/device-ma.sh replay
 ```
 
-The fallback is a visual sample only. It must remain labeled
-`REPLAY · NO EN VIVO` and intentionally uses no microphone, audio hardware,
-network, or planner call.
+This operator-only fallback is a visual historical sample. It must remain
+labeled as **REPLAY · NOT LIVE / NO EN VIVO** and invokes no microphone, audio
+hardware, network, learner review, or planner call. It is not the shipping
+guided hero and cannot substitute for physical Realtime evidence.
 
-Gate 0 probe code is included for audit history but is not a product live path.
-Do not infer live Realtime, overlap, AEC, exact rendered replay, or physical
-latency claims from it.
+Gate 0 probe code is retained for audit history. Do not infer overlap, AEC,
+speech-over-playout classification, exact rendered replay, or physical latency
+from simulator/probe output.

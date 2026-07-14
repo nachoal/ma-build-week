@@ -8,6 +8,8 @@ struct ChromeBar: View {
     let badge: String
     var onExit: (() -> Void)? = nil
     var onProfile: (() -> Void)? = nil
+    var onToggleLanguage: (() -> Void)? = nil
+    @Environment(\.maInterfaceLanguage) private var language
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
@@ -23,6 +25,7 @@ struct ChromeBar: View {
             leadingGroup
             Spacer()
             badgeChip
+            languageButton
             profileButton
         }
     }
@@ -32,6 +35,7 @@ struct ChromeBar: View {
             HStack {
                 leadingGroup
                 Spacer()
+                languageButton
                 profileButton
             }
             badgeChip
@@ -48,7 +52,10 @@ struct ChromeBar: View {
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Volver a tus escenas")
+            .accessibilityLabel(language.text(
+                english: "Back to your scenes",
+                spanish: "Volver a tus escenas"
+            ))
             .accessibilityIdentifier("chrome.volver")
             .padding(.leading, -12)
         }
@@ -61,7 +68,10 @@ struct ChromeBar: View {
                 .font(MATheme.jp(11, .w3))
                 .foregroundStyle(MATheme.stone)
         }
-        .accessibilityLabel("MA, prototipo de tutor de japonés")
+        .accessibilityLabel(language.text(
+            english: "MA, Japanese tutor prototype",
+            spanish: "MA, prototipo de tutor de japonés"
+        ))
     }
 
     private var badgeChip: some View {
@@ -76,8 +86,31 @@ struct ChromeBar: View {
         .padding(.horizontal, 9)
         .overlay(Capsule().stroke(MATheme.hairline, lineWidth: 1))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Fuente de esta pantalla: \(badge). MA identifica por separado el audio local y las demostraciones.")
+        .accessibilityLabel(language.text(
+            english: "Source for this screen: \(badge). MA labels local audio and demonstrations separately.",
+            spanish: "Fuente de esta pantalla: \(badge). MA identifica por separado el audio local y las demostraciones."
+        ))
         .accessibilityIdentifier("chrome.badge")
+    }
+
+    @ViewBuilder
+    private var languageButton: some View {
+        if let onToggleLanguage {
+            Button(action: onToggleLanguage) {
+                Text(language.toggled.shortLabel)
+                    .font(MATheme.micro())
+                    .foregroundStyle(MATheme.ai)
+                    .frame(width: 34, height: 32)
+                    .overlay(Capsule().stroke(MATheme.hairline, lineWidth: 1))
+                    .frame(minWidth: 44, minHeight: 44)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(language.text(
+                english: "Switch to Spanish",
+                spanish: "Cambiar a inglés"
+            ))
+            .accessibilityIdentifier("chrome.language")
+        }
     }
 
     @ViewBuilder
@@ -92,7 +125,10 @@ struct ChromeBar: View {
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Tu perfil de práctica")
+            .accessibilityLabel(language.text(
+                english: "Your practice profile",
+                spanish: "Tu perfil de práctica"
+            ))
             .accessibilityIdentifier("chrome.perfil")
             .padding(.trailing, -6)
         }

@@ -4,7 +4,16 @@ import Testing
 
 @Suite("Shipping privacy manifest")
 struct PrivacyManifestTests {
-    @Test("Manifest is bundled, no-tracking, and declares actual aggregate data")
+    @Test("Standard TLS is declared as exempt encryption")
+    func exportCompliance() {
+        #expect(
+            Bundle.main.object(
+                forInfoDictionaryKey: "ITSAppUsesNonExemptEncryption"
+            ) as? Bool == false
+        )
+    }
+
+    @Test("Manifest is bundled, no-tracking, and declares Realtime audio plus aggregates")
     func manifestContract() throws {
         let url = try #require(
             Bundle.main.url(forResource: "PrivacyInfo", withExtension: "xcprivacy")
@@ -22,6 +31,7 @@ struct PrivacyManifestTests {
             root["NSPrivacyCollectedDataTypes"] as? [[String: Any]]
         )
         #expect(Set(collected.compactMap { $0["NSPrivacyCollectedDataType"] as? String }) == [
+            "NSPrivacyCollectedDataTypeAudioData",
             "NSPrivacyCollectedDataTypeProductInteraction",
             "NSPrivacyCollectedDataTypeOtherUsageData",
         ])

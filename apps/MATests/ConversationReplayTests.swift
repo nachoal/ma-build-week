@@ -126,7 +126,7 @@ struct ConversationReplayTests {
         #expect(first == second)
         #expect(first.phase == .proof)
         #expect(first.presentationSource == .labeledReplay)
-        #expect(first.sourceBadge == "REPLAY · NO EN VIVO")
+        #expect(first.sourceBadge == "REPLAY · NOT LIVE / NO EN VIVO")
         #expect(first.attempts.count == 4)
         #expect(first.attempts.allSatisfy { $0.provenance == .replayFixture })
         #expect(first.attempts.allSatisfy { !$0.rawAudioRetained })
@@ -144,7 +144,7 @@ struct ConversationReplayTests {
         state.presentationSource = .labeledReplay
         for event in KaiwaLoopReplayFixture.script.events {
             state = KaiwaLoopReplayReducer.reduce(state, event)
-            #expect(state.sourceBadge == "REPLAY · NO EN VIVO")
+            #expect(state.sourceBadge == "REPLAY · NOT LIVE / NO EN VIVO")
         }
     }
 
@@ -316,8 +316,11 @@ struct LabeledReplayFeatureIsolationTests {
         )
 
         feature.startLabeledReplay(delivery: .immediate)
-        #expect(await eventually { feature.state.phase == .proof })
-        #expect(feature.state.sourceBadge == "REPLAY · NO EN VIVO")
+        #expect(await eventually {
+            feature.state.phase == .proof
+                && feature.state.nextLearningAction?.source == .cachedFixture
+        })
+        #expect(feature.state.sourceBadge == "REPLAY · NOT LIVE / NO EN VIVO")
         #expect(audio.operationCount == 0)
         #expect(await planner.requestCount() == 0)
         #expect(feature.state.learningReport == nil)

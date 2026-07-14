@@ -1,7 +1,7 @@
 # MA demo runbook
 
-Status: prepared for rehearsal. Recording, human performance, YouTube upload,
-and public publication are still external gates.
+Status: prepared for rehearsal. Recording, human performance, public upload,
+and publication remain external gates.
 
 ## One-command physical launch
 
@@ -13,57 +13,57 @@ scripts/device-ma.sh product
 
 The command dynamically discovers the paired iPhone 17 Pro on iOS 27, signs,
 builds, installs, provisions the private product token from macOS Keychain, and
-launches MA. It never prints the token or writes it to files/logs; MA persists
-it only in this-device-only iOS Keychain until Delete all data. Keep the phone
-unlocked.
+launches MA. It never prints or writes the token. Keep the phone unlocked and
+awake.
 
-Fallback, with no microphone/audio/network/planner side effects:
+Operator-only visual fallback:
 
 ```sh
 scripts/device-ma.sh replay
 ```
 
-The fallback must display `REPLAY · NO EN VIVO` throughout. Never narrate it as
-live, recorded learner evidence, or approximate audio replay.
+Never narrate the fallback as live, learner evidence, or replayed audio.
 
 ## Under-three-minute story
 
 | Time | Screen/action | Narration intent | Evidence rule |
 |---|---|---|---|
-| 0:00–0:10 | Home → restaurant scene | “I know zero Japanese. I need one table for one.” | Real product UI |
-| 0:10–0:38 | Full phrase → rhythm → no text | Show the zero-beginner first minute | Ignacio speaks and self-assesses; no pronunciation-score claim |
-| 0:38–0:52 | First success + control explanation | “Now I can answer once; here is my repair control.” | Local aggregates only |
-| 0:52–1:18 | Start bundled natural scene; tap pause | Japanese becomes noise; explicit local stop | Physical take must make the stop audible |
-| 1:18–1:40 | Controlled repair segment | Explain one complete beat in Spanish | Say “controlled segment,” never “exact last seconds” |
-| 1:40–2:05 | Resume same obligation; second attempt | Return to the restaurant task | Same obligation ID; fresh self-assessed attempt |
-| 2:05–2:30 | Proof screen | Compare first and second attempt facts | No mastery or model-confidence claim |
-| 2:30–2:48 | Optional plan | Learner opts in to a GPT-5.6 next action | Structured aggregates only; local result already exists |
-| 2:48–2:58 | Closing frame | “I built the teacher I needed for when real Japanese becomes noise.” | Keep PARTIAL/replay labels visible where applicable |
+| 0:00–0:12 | Fresh English home; briefly show EN/ES switch | “I know zero Japanese, so MA never starts with a blank conversation.” | English default and bilingual UI are visible |
+| 0:12–0:30 | Objective + `一人です` + romaji + meaning | “I understand the task before I hear Japanese.” | No unexplained Japanese |
+| 0:30–0:43 | Tap model once | “One tap gives me a short model; recording does not start itself.” | Physical take must be audible |
+| 0:43–1:03 | Explicit first record/finish | “Now I choose when to speak and when I am done.” | Non-overlapping push-to-talk |
+| 1:03–1:27 | Approximate transcript + feedback | “MA shows what it approximately understood and one useful next focus.” | No score, exact-transcript, or mastery claim |
+| 1:27–1:42 | Retry once or continue | “I act on feedback before the situation moves on.” | Same visible target; no silent phase jump |
+| 1:42–2:03 | Waiter briefing + captions | “Before Japanese plays, I know the question, meaning, and my exact task.” | Captions and support remain visible |
+| 2:03–2:18 | Play short waiter turn | “GPT Realtime gives one bounded restaurant turn.” | Explicit non-overlap; no full-duplex claim |
+| 2:18–2:38 | Explicit second record/review | “MA reviews my response before completion.” | Second independent reviewed turn |
+| 2:38–2:52 | Completion + local next step | “No score—just a completed exchange and a defensible next practice.” | Completion is not mastery |
+| 2:52–2:59 | Optional GPT-5.6 action | “I can opt in to planning from aggregate facts only.” | No audio/transcript reaches planner |
 
-Use [subtitles-en.srt](subtitles-en.srt) as the English working subtitle file.
-The Spanish learner UI stays unchanged.
+Use [subtitles-en.srt](subtitles-en.srt) as the English subtitle file.
 
 ## Before each take
 
-- Confirm `scripts/scan-secrets.sh` passes.
-- Confirm the exact Git commit and archive checksum are recorded.
-- Keep the iPhone unlocked; confirm built-in speaker/microphone route.
-- Confirm microphone permission state and whether this take is denial/recovery.
-- Confirm the optional planner is either deliberately enabled or deliberately
-  left unused; the hero must still finish locally.
-- Start screen recording only after private notifications are hidden.
-- Do not capture `docs/poc/private-evidence`, Keychain output, Worker secrets,
-  raw authorization headers, or a standard OpenAI key.
+- Confirm `scripts/scan-secrets.sh` passes and the exact commit is recorded.
+- Keep the iPhone unlocked; confirm built-in speaker/microphone and network.
+- Reset the scene and choose the intended English or Spanish interface.
+- Confirm the model plays audibly on the first tap.
+- Confirm recording starts only after the explicit record tap.
+- Hide private notifications before screen recording.
+- Do not capture Keychain output, authorization headers, raw private evidence,
+  diagnostic payloads, or any standard provider credential.
 
 ## Take acceptance
 
-- Under 3:00, audible narration and tutor audio, readable English subtitles.
-- One uninterrupted selected PARTIAL path; no live Realtime or overlap claim.
-- Pause occurs only while bundled tutor audio is active.
-- Controlled segment is labeled as not exact.
-- Same obligation resumes and a fresh second attempt reaches proof.
-- Optional external planning is visibly opt-in.
-- No notification, token, raw private evidence, or debug diagnostics appears.
+- Under 3:00 with audible model/waiter audio and readable English subtitles.
+- English-default UI is understandable to an American judge; the Spanish
+  switch is visible without interrupting the phase.
+- Model playback works on the first tap and never auto-starts recording.
+- Both learner turns receive visible qualitative review before progression.
+- The waiter’s meaning and response task are visible before Japanese plays.
+- Approximate transcript, no-score, and non-overlap boundaries are clear.
+- Optional planning is visibly separate and opt-in.
+- No notification, token, raw private evidence, or debug UI appears.
 
-Record each take in [rehearsal-matrix.md](rehearsal-matrix.md). A public upload
-and final URL require Ignacio's approval.
+Record every take in [rehearsal-matrix.md](rehearsal-matrix.md). Public upload
+and the final URL require Ignacio's approval.

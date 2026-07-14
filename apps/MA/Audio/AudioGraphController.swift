@@ -6,7 +6,13 @@ import UIKit
 /// The submission app's sole AVAudioSession/AVAudioEngine owner. Playback and
 /// learner capture are intentionally mutually exclusive in the PARTIAL branch.
 @MainActor
-final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlayerDelegate {
+final class AudioGraphController: NSObject, ProductAudioControlling,
+    GuidedLessonAudioControlling, AVAudioPlayerDelegate {
+    private enum PlaybackKind: Equatable {
+        case bundled(BundledPrompt)
+        case realtime
+    }
+
     private let session: AVAudioSession
     private let center: NotificationCenter
     private let permission: any RecordPermissionProviding
@@ -18,13 +24,14 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
 
     private var engine: AVAudioEngine?
     private var playbackPlayer: AVAudioPlayer?
-    private var playbackPrompt: BundledPrompt?
+    private var playbackKind: PlaybackKind?
     private var notificationTokens: [NSObjectProtocol] = []
     private var playbackGeneration: UInt64 = 0
     private var playbackContinuation: CheckedContinuation<Void, Error>?
     private var playbackTimeoutTask: Task<Void, Never>?
     private var captureGeneration: UInt64 = 0
     private var captureWorker: LearnerCaptureWorker?
+    private var realtimeCaptureWorker: RealtimeCaptureWorker?
     private var captureRequest: CaptureRequest?
     private var captureStartedAt: Date?
     private var captureTimeoutTask: Task<Void, Never>?
@@ -64,7 +71,7 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
         if case .requestingPermission = state {
             throw ProductAudioFailure.captureInProgress
         }
-        if case .playing = state {
+        if isPlaybackActive {
             await stop(.replacement)
         }
 
@@ -83,6 +90,8 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
             throw ProductAudioFailure.invalidAudioFormat
         }
 
+        playbackGeneration &+= 1
+        let generation = playbackGeneration
         do {
             try configurePlaybackSession()
             player.delegate = self
@@ -92,10 +101,8 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
                 throw ProductAudioFailure.hardwareUnavailable
             }
 
-            playbackGeneration &+= 1
-            let generation = playbackGeneration
             playbackPlayer = player
-            playbackPrompt = prompt
+            playbackKind = .bundled(prompt)
             setState(.playing(prompt))
             logger.notice("Starting bundled prompt \(prompt.rawValue, privacy: .public)")
 
@@ -104,7 +111,7 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
                 guard player.play() else {
                     playbackContinuation = nil
                     playbackPlayer = nil
-                    playbackPrompt = nil
+                    playbackKind = nil
                     setState(.failed(.hardwareUnavailable))
                     try? session.setActive(false, options: [.notifyOthersOnDeactivation])
                     continuation.resume(throwing: ProductAudioFailure.hardwareUnavailable)
@@ -113,32 +120,107 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
                 schedulePlaybackTimeout(duration: player.duration, generation: generation)
             }
         } catch let error as ProductAudioFailure {
-            playbackPlayer?.delegate = nil
-            playbackPlayer = nil
-            playbackPrompt = nil
-            try? session.setActive(false, options: [.notifyOthersOnDeactivation])
-            if error != .interrupted {
-                setState(.failed(error))
-            }
+            cleanupPlaybackAttempt(player: player, generation: generation, error: error)
             throw error
         } catch {
-            playbackPlayer?.delegate = nil
-            playbackPlayer = nil
-            playbackPrompt = nil
-            try? session.setActive(false, options: [.notifyOthersOnDeactivation])
-            setState(.failed(.hardwareUnavailable))
+            cleanupPlaybackAttempt(
+                player: player,
+                generation: generation,
+                error: .hardwareUnavailable
+            )
             throw ProductAudioFailure.hardwareUnavailable
         }
     }
 
-    func startCapture(_ request: CaptureRequest) async throws {
+    func playRealtimePCM16(_ data: Data) async throws {
         if case .capturing = state {
             throw ProductAudioFailure.captureInProgress
         }
         if case .requestingPermission = state {
             throw ProductAudioFailure.captureInProgress
         }
-        if case .playing = state {
+        if isPlaybackActive {
+            await stop(.replacement)
+        }
+        guard !data.isEmpty,
+              data.count <= 1_200_000,
+              data.count.isMultiple(of: MemoryLayout<Int16>.size) else {
+            throw ProductAudioFailure.invalidProviderAudio
+        }
+
+        let player: AVAudioPlayer
+        do {
+            player = try AVAudioPlayer(data: Self.waveData(fromPCM16: data))
+        } catch {
+            setState(.failed(.invalidProviderAudio))
+            throw ProductAudioFailure.invalidProviderAudio
+        }
+        guard player.duration > 0 else {
+            setState(.failed(.invalidProviderAudio))
+            throw ProductAudioFailure.invalidProviderAudio
+        }
+
+        playbackGeneration &+= 1
+        let generation = playbackGeneration
+        do {
+            try configurePlaybackSession()
+            player.delegate = self
+            player.numberOfLoops = 0
+            player.volume = 1
+            guard player.prepareToPlay() else {
+                throw ProductAudioFailure.hardwareUnavailable
+            }
+
+            playbackPlayer = player
+            playbackKind = .realtime
+            setState(.playingRealtime)
+            logger.notice("Starting bounded Realtime tutor response")
+
+            try await withCheckedThrowingContinuation { continuation in
+                playbackContinuation = continuation
+                guard player.play() else {
+                    playbackContinuation = nil
+                    playbackPlayer = nil
+                    playbackKind = nil
+                    setState(.failed(.hardwareUnavailable))
+                    try? session.setActive(false, options: [.notifyOthersOnDeactivation])
+                    continuation.resume(throwing: ProductAudioFailure.hardwareUnavailable)
+                    return
+                }
+                schedulePlaybackTimeout(duration: player.duration, generation: generation)
+            }
+        } catch let error as ProductAudioFailure {
+            cleanupPlaybackAttempt(player: player, generation: generation, error: error)
+            throw error
+        } catch {
+            cleanupPlaybackAttempt(
+                player: player,
+                generation: generation,
+                error: .hardwareUnavailable
+            )
+            throw ProductAudioFailure.hardwareUnavailable
+        }
+    }
+
+    func startCapture(_ request: CaptureRequest) async throws {
+        try await beginCapture(request, retainingRealtimePCM: false)
+    }
+
+    func startRealtimeCapture(_ request: CaptureRequest) async throws {
+        try await beginCapture(request, retainingRealtimePCM: true)
+    }
+
+    private func beginCapture(
+        _ request: CaptureRequest,
+        retainingRealtimePCM: Bool
+    ) async throws {
+        if case .capturing = state {
+            throw ProductAudioFailure.captureInProgress
+        }
+        if case .requestingPermission = state {
+            throw ProductAudioFailure.captureInProgress
+        }
+        if isPlaybackActive {
             await stop(.replacement)
         }
 
@@ -158,7 +240,7 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
 
         do {
             try configureCaptureSession()
-            let engine = ensureCaptureGraph()
+            let engine = try ensureCaptureGraph()
             let input = engine.inputNode
             let inputFormat = input.outputFormat(forBus: 0)
             guard inputFormat.sampleRate > 0, inputFormat.channelCount > 0 else {
@@ -169,16 +251,28 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
                 input.removeTap(onBus: 0)
                 inputTapInstalled = false
             }
-            let worker = LearnerCaptureWorker()
-            let captureTap = Self.makeCaptureTap(worker: worker)
-            input.installTap(
-                onBus: 0,
-                bufferSize: 2_048,
-                format: inputFormat,
-                block: captureTap
-            )
+            if retainingRealtimePCM {
+                let worker = RealtimeCaptureWorker()
+                input.installTap(
+                    onBus: 0,
+                    bufferSize: 2_048,
+                    format: inputFormat,
+                    block: Self.makeRealtimeCaptureTap(worker: worker)
+                )
+                realtimeCaptureWorker = worker
+                captureWorker = nil
+            } else {
+                let worker = LearnerCaptureWorker()
+                input.installTap(
+                    onBus: 0,
+                    bufferSize: 2_048,
+                    format: inputFormat,
+                    block: Self.makeCaptureTap(worker: worker)
+                )
+                captureWorker = worker
+                realtimeCaptureWorker = nil
+            }
             inputTapInstalled = true
-            captureWorker = worker
             captureRequest = request
             captureStartedAt = Date()
 
@@ -187,10 +281,13 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
                 try engine.start()
             }
             setState(.capturing(request))
-            scheduleCaptureTimeout(for: request)
+            if !retainingRealtimePCM {
+                scheduleCaptureTimeout(for: request)
+            }
         } catch let error as ProductAudioFailure {
             removeInputTap()
             captureWorker = nil
+            realtimeCaptureWorker = nil
             captureRequest = nil
             captureStartedAt = nil
             deactivateGraphWhenIdle()
@@ -199,6 +296,7 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
         } catch {
             removeInputTap()
             captureWorker = nil
+            realtimeCaptureWorker = nil
             captureRequest = nil
             captureStartedAt = nil
             deactivateGraphWhenIdle()
@@ -244,6 +342,51 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
         return receipt
     }
 
+    func finishRealtimeCapture(
+        _ disposition: CaptureDisposition
+    ) async throws -> RealtimeCapturePayload? {
+        guard let request = captureRequest,
+              let startedAt = captureStartedAt,
+              let worker = realtimeCaptureWorker else {
+            return nil
+        }
+
+        captureTimeoutTask?.cancel()
+        captureTimeoutTask = nil
+        removeInputTap()
+        let snapshot = worker.finishSnapshot()
+        realtimeCaptureWorker = nil
+        captureWorker = nil
+        captureRequest = nil
+        captureStartedAt = nil
+        deactivateGraphWhenIdle()
+
+        guard !snapshot.overflowed else {
+            setState(.failed(.invalidAudioFormat))
+            throw ProductAudioFailure.invalidAudioFormat
+        }
+        let receipt = CaptureReceipt(
+            id: request.id,
+            request: request,
+            startedAt: startedAt,
+            endedAt: Date(),
+            capturedDuration: snapshot.duration,
+            estimatedVoiceOnset: snapshot.speechPresence
+                ? snapshot.estimatedVoiceOnset
+                : nil,
+            speechPresenceDetected: snapshot.speechPresence,
+            sampleRate: snapshot.sourceSampleRate,
+            disposition: disposition,
+            rawAudioRetained: false
+        )
+        setState(.idle)
+        eventContinuation.yield(.captureFinished(receipt))
+        return RealtimeCapturePayload(
+            receipt: receipt,
+            pcm16Data: snapshot.pcm16Data
+        )
+    }
+
     func stop(_ reason: AudioStopReason) async {
         playbackGeneration &+= 1
         captureGeneration &+= 1
@@ -252,14 +395,20 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
         playbackPlayer?.stop()
         playbackPlayer?.delegate = nil
         playbackPlayer = nil
-        playbackPrompt = nil
+        playbackKind = nil
         if let continuation = playbackContinuation {
             playbackContinuation = nil
             continuation.resume(throwing: ProductAudioFailure.interrupted)
         }
-        if captureRequest != nil {
-            _ = try? await finishCapture(reason == .lifecycle ? .lifecycle : .cancelled)
-        } else if case .playing = state {
+        if realtimeCaptureWorker != nil {
+            _ = try? await finishRealtimeCapture(
+                reason == .lifecycle ? .lifecycle : .cancelled
+            )
+        } else if captureRequest != nil {
+            _ = try? await finishCapture(
+                reason == .lifecycle ? .lifecycle : .cancelled
+            )
+        } else if isPlaybackActive {
             setState(.idle)
         } else if case .requestingPermission = state {
             setState(.idle)
@@ -279,6 +428,26 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
         eventContinuation.yield(.stateChanged(newState))
     }
 
+    private var isPlaybackActive: Bool {
+        switch state {
+        case .playing, .playingRealtime:
+            true
+        default:
+            false
+        }
+    }
+
+    private func playbackStateMatches(_ kind: PlaybackKind) -> Bool {
+        switch (kind, state) {
+        case (.bundled(let prompt), .playing(let activePrompt)):
+            prompt == activePrompt
+        case (.realtime, .playingRealtime):
+            true
+        default:
+            false
+        }
+    }
+
     private func configurePlaybackSession() throws {
         do {
             try session.setCategory(.playback, mode: .spokenAudio)
@@ -292,7 +461,7 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
         do {
             try session.setCategory(
                 .playAndRecord,
-                mode: .default,
+                mode: .voiceChat,
                 options: [.defaultToSpeaker, .allowBluetoothHFP]
             )
             try session.setPreferredSampleRate(48_000)
@@ -303,40 +472,66 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
         }
     }
 
-    private func ensureCaptureGraph() -> AVAudioEngine {
+    private func ensureCaptureGraph() throws -> AVAudioEngine {
         if let engine { return engine }
         let engine = AVAudioEngine()
-        _ = engine.inputNode
+        let input = engine.inputNode
+        _ = engine.outputNode
+        do {
+            try input.setVoiceProcessingEnabled(true)
+        } catch {
+            throw ProductAudioFailure.hardwareUnavailable
+        }
+        guard input.isVoiceProcessingEnabled,
+              !input.isVoiceProcessingBypassed,
+              !input.isVoiceProcessingInputMuted else {
+            throw ProductAudioFailure.hardwareUnavailable
+        }
         self.engine = engine
         return engine
     }
 
-    private func sessionCaptureFormat() -> AVAudioFormat {
-        AVAudioFormat(
-            commonFormat: .pcmFormatFloat32,
-            sampleRate: max(1, session.sampleRate),
-            channels: AVAudioChannelCount(max(1, session.inputNumberOfChannels)),
-            interleaved: false
-        ) ?? AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 1)!
+    private func cleanupPlaybackAttempt(
+        player: AVAudioPlayer,
+        generation: UInt64,
+        error: ProductAudioFailure
+    ) {
+        guard generation == playbackGeneration else { return }
+        if let current = playbackPlayer, current !== player { return }
+        playbackTimeoutTask?.cancel()
+        playbackTimeoutTask = nil
+        if playbackPlayer === player {
+            playbackPlayer?.delegate = nil
+            playbackPlayer = nil
+        }
+        playbackKind = nil
+        try? session.setActive(false, options: [.notifyOthersOnDeactivation])
+        if error != .interrupted {
+            setState(.failed(error))
+        }
     }
 
-    private func completePlayback(successfully: Bool) {
-        guard let prompt = playbackPrompt,
-              case .playing(prompt) = state,
+    private func completePlayback(playerID: ObjectIdentifier, successfully: Bool) {
+        guard Self.playbackCallbackMatches(
+                  activePlayer: playbackPlayer,
+                  callbackPlayerID: playerID
+              ),
+              let kind = playbackKind,
+              playbackStateMatches(kind),
               let continuation = playbackContinuation else { return }
         playbackTimeoutTask?.cancel()
         playbackTimeoutTask = nil
         playbackContinuation = nil
         playbackPlayer?.delegate = nil
         playbackPlayer = nil
-        playbackPrompt = nil
+        playbackKind = nil
         try? session.setActive(false, options: [.notifyOthersOnDeactivation])
-        logger.notice(
-            "Bundled prompt \(prompt.rawValue, privacy: .public) finished, success=\(successfully)"
-        )
+        logger.notice("Audio playback finished, success=\(successfully)")
         if successfully {
             setState(.idle)
-            eventContinuation.yield(.playbackFinished(prompt))
+            if case .bundled(let prompt) = kind {
+                eventContinuation.yield(.playbackFinished(prompt))
+            }
             continuation.resume()
         } else {
             setState(.failed(.hardwareUnavailable))
@@ -354,10 +549,12 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
             guard !Task.isCancelled,
                   let self,
                   generation == playbackGeneration,
-                  playbackContinuation != nil else { return }
-            logger.error("Bundled prompt completion timed out")
-            playbackPlayer?.stop()
-            completePlayback(successfully: false)
+                  playbackContinuation != nil,
+                  let player = playbackPlayer else { return }
+            logger.error("Audio playback completion timed out")
+            let playerID = ObjectIdentifier(player)
+            player.stop()
+            completePlayback(playerID: playerID, successfully: false)
         }
     }
 
@@ -374,7 +571,11 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
             guard !Task.isCancelled,
                   let self,
                   self.captureRequest?.id == request.id else { return }
-            _ = try? await self.finishCapture(.timeLimit)
+            if self.realtimeCaptureWorker != nil {
+                _ = try? await self.finishRealtimeCapture(.timeLimit)
+            } else {
+                _ = try? await self.finishCapture(.timeLimit)
+            }
         }
     }
 
@@ -393,8 +594,9 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
         _ player: AVAudioPlayer,
         successfully flag: Bool
     ) {
+        let playerID = ObjectIdentifier(player)
         Task { @MainActor [weak self] in
-            self?.completePlayback(successfully: flag)
+            self?.completePlayback(playerID: playerID, successfully: flag)
         }
     }
 
@@ -402,10 +604,24 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
         _ player: AVAudioPlayer,
         error: (any Error)?
     ) {
+        let playerID = ObjectIdentifier(player)
         Task { @MainActor [weak self] in
-            self?.playbackPlayer?.stop()
-            self?.completePlayback(successfully: false)
+            guard let self,
+                  Self.playbackCallbackMatches(
+                      activePlayer: self.playbackPlayer,
+                      callbackPlayerID: playerID
+                  ) else { return }
+            self.playbackPlayer?.stop()
+            self.completePlayback(playerID: playerID, successfully: false)
         }
+    }
+
+    nonisolated static func playbackCallbackMatches(
+        activePlayer: AVAudioPlayer?,
+        callbackPlayerID: ObjectIdentifier
+    ) -> Bool {
+        guard let activePlayer else { return false }
+        return ObjectIdentifier(activePlayer) == callbackPlayerID
     }
 
     nonisolated static func shouldTearDownForRouteChange(
@@ -449,6 +665,60 @@ final class AudioGraphController: NSObject, ProductAudioControlling, AVAudioPlay
                 }
             }
             worker.enqueue(samples: mono, sampleRate: buffer.format.sampleRate)
+        }
+    }
+
+    nonisolated static func makeRealtimeCaptureTap(
+        worker: RealtimeCaptureWorker
+    ) -> @Sendable (AVAudioPCMBuffer, AVAudioTime) -> Void {
+        { @Sendable buffer, _ in
+            let frameCount = min(Int(buffer.frameLength), 8_192)
+            guard frameCount > 0, let channels = buffer.floatChannelData else { return }
+            let channelCount = max(1, Int(buffer.format.channelCount))
+            var mono = [Float](repeating: 0, count: frameCount)
+            if channelCount == 1 {
+                mono.withUnsafeMutableBufferPointer { destination in
+                    destination.baseAddress?.update(from: channels[0], count: frameCount)
+                }
+            } else {
+                for frame in 0..<frameCount {
+                    var sum: Float = 0
+                    for channel in 0..<channelCount {
+                        sum += channels[channel][frame]
+                    }
+                    mono[frame] = sum / Float(channelCount)
+                }
+            }
+            worker.enqueue(samples: mono, sampleRate: buffer.format.sampleRate)
+        }
+    }
+
+    nonisolated static func waveData(fromPCM16 pcm16: Data) -> Data {
+        var data = Data()
+        data.reserveCapacity(44 + pcm16.count)
+        data.append(contentsOf: Data("RIFF".utf8))
+        appendLittleEndian(UInt32(36 + pcm16.count), to: &data)
+        data.append(contentsOf: Data("WAVEfmt ".utf8))
+        appendLittleEndian(UInt32(16), to: &data)
+        appendLittleEndian(UInt16(1), to: &data)
+        appendLittleEndian(UInt16(1), to: &data)
+        appendLittleEndian(UInt32(24_000), to: &data)
+        appendLittleEndian(UInt32(48_000), to: &data)
+        appendLittleEndian(UInt16(2), to: &data)
+        appendLittleEndian(UInt16(16), to: &data)
+        data.append(contentsOf: Data("data".utf8))
+        appendLittleEndian(UInt32(pcm16.count), to: &data)
+        data.append(pcm16)
+        return data
+    }
+
+    nonisolated private static func appendLittleEndian<T: FixedWidthInteger>(
+        _ value: T,
+        to data: inout Data
+    ) {
+        var littleEndian = value.littleEndian
+        withUnsafeBytes(of: &littleEndian) { bytes in
+            data.append(contentsOf: bytes)
         }
     }
 

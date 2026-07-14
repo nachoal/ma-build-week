@@ -7,35 +7,62 @@ struct ProfileSheet: View {
     let onResetChoices: () -> Void
     let onDeleteAllData: () -> Void
     @State private var confirmingDelete = false
+    @Environment(\.maInterfaceLanguage) private var language
 
     private var chosenInterests: String {
         let titles = SceneCatalog.upcomingScenes(orderedBy: profile.interests)
             .filter { profile.interests.contains($0.id) }
-            .map(\.title)
-        return titles.isEmpty ? "Sin marcar — orden estándar" : titles.joined(separator: " · ")
+            .map { $0.title(in: language) }
+        return titles.isEmpty
+            ? language.text(english: "None selected—standard order", spanish: "Sin marcar — orden estándar")
+            : titles.joined(separator: " · ")
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Tu perfil de práctica")
+                Text(language.text(
+                    english: "Your practice profile",
+                    spanish: "Tu perfil de práctica"
+                ))
                     .font(MATheme.heading())
                     .tracking(MATheme.tightTracking(fontSize: 20))
                     .foregroundStyle(MATheme.sumi)
                     .padding(.top, 26)
 
                 VStack(alignment: .leading, spacing: 14) {
-                    summaryRow(label: "NIVEL", value: profile.level.spanishLabel)
-                    summaryRow(label: "META", value: profile.goal.spanishLabel)
-                    summaryRow(label: "PRIMERA ESCENA", value: SceneCatalog.hero.title)
-                    summaryRow(label: "INTERESES · ORDENAN LO PRÓXIMO", value: chosenInterests)
-                    summaryRow(label: "RITMO", value: profile.dailyMinutes.spanishLabel)
+                    summaryRow(
+                        label: language.text(english: "LEVEL", spanish: "NIVEL"),
+                        value: profile.level.label(in: language)
+                    )
+                    summaryRow(
+                        label: language.text(english: "GOAL", spanish: "META"),
+                        value: profile.goal.label(in: language)
+                    )
+                    summaryRow(
+                        label: language.text(english: "FIRST SCENE", spanish: "PRIMERA ESCENA"),
+                        value: SceneCatalog.hero.title(in: language)
+                    )
+                    summaryRow(
+                        label: language.text(
+                            english: "INTERESTS · ORDER WHAT COMES NEXT",
+                            spanish: "INTERESES · ORDENAN LO PRÓXIMO"
+                        ),
+                        value: chosenInterests
+                    )
+                    summaryRow(
+                        label: language.text(english: "PACE", spanish: "RITMO"),
+                        value: profile.dailyMinutes.label(in: language)
+                    )
                 }
                 .padding(.top, 20)
 
                 VStack(spacing: 10) {
                     Button(action: onReplayOnboarding) {
-                        Text("Repetir la introducción")
+                        Text(language.text(
+                            english: "Replay the introduction",
+                            spanish: "Repetir la introducción"
+                        ))
                             .font(MATheme.body(16, weight: .semibold))
                             .foregroundStyle(MATheme.ai)
                             .frame(maxWidth: .infinity)
@@ -47,7 +74,10 @@ struct ProfileSheet: View {
                     .accessibilityIdentifier("perfil.repetir")
 
                     Button(action: onResetChoices) {
-                        Text("Restablecer mis elecciones")
+                        Text(language.text(
+                            english: "Reset my choices",
+                            spanish: "Restablecer mis elecciones"
+                        ))
                             .font(MATheme.body(16, weight: .medium))
                             .foregroundStyle(MATheme.sumi)
                             .frame(maxWidth: .infinity)
@@ -61,7 +91,10 @@ struct ProfileSheet: View {
                     Button(role: .destructive) {
                         confirmingDelete = true
                     } label: {
-                        Text("Borrar todos mis datos")
+                        Text(language.text(
+                            english: "Delete all my data",
+                            spanish: "Borrar todos mis datos"
+                        ))
                             .font(MATheme.body(16, weight: .semibold))
                             .foregroundStyle(.red)
                             .frame(maxWidth: .infinity)
@@ -73,7 +106,10 @@ struct ProfileSheet: View {
                 }
                 .padding(.top, 28)
 
-                Text("Sin cuenta ni rastreo. Tus elecciones quedan en este iPhone. Cada intento descarta el audio crudo. Solo si tú pides el plan opcional se envían hechos agregados de la práctica; nunca audio ni transcripción.")
+                Text(language.text(
+                    english: "No account or tracking. Your choices stay on this iPhone. When you record, that short turn goes directly to OpenAI for transcription and review; MA does not create a local recording. The optional plan uses only aggregate results, without audio or transcripts.",
+                    spanish: "Sin cuenta ni rastreo. Tus elecciones quedan en este iPhone. Cuando grabas, ese turno breve va directo a OpenAI para transcripción y revisión; MA no crea un archivo local. El plan opcional usa solo hechos agregados, sin audio ni transcripción."
+                ))
                     .font(MATheme.caption())
                     .foregroundStyle(MATheme.stone)
                     .padding(.top, 18)
@@ -84,16 +120,25 @@ struct ProfileSheet: View {
         }
         .background(MATheme.paper)
         .confirmationDialog(
-            "¿Borrar elecciones y credencial local?",
+            language.text(
+                english: "Delete choices and local credential?",
+                spanish: "¿Borrar elecciones y credencial local?"
+            ),
             isPresented: $confirmingDelete,
             titleVisibility: .visible
         ) {
-            Button("Borrar todos mis datos", role: .destructive) {
+            Button(language.text(
+                english: "Delete all my data",
+                spanish: "Borrar todos mis datos"
+            ), role: .destructive) {
                 onDeleteAllData()
             }
-            Button("Cancelar", role: .cancel) {}
+            Button(language.text(english: "Cancel", spanish: "Cancelar"), role: .cancel) {}
         } message: {
-            Text("MA borrará el perfil local, el avance de introducción y la credencial del plan opcional. No conserva grabaciones ni transcripciones.")
+            Text(language.text(
+                english: "MA will delete the local profile, introduction progress, and private credential. The app does not store recordings or transcripts on this iPhone.",
+                spanish: "MA borrará el perfil local, el avance de introducción y la credencial privada. La app no guarda grabaciones ni transcripciones en este iPhone."
+            ))
         }
     }
 

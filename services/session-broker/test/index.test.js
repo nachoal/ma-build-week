@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 
 import {
   didacticRealtimeSessionPolicy,
+  guidedLearningActionSchema,
   handleRequest,
   learnerAttemptFeedbackSchema,
   learningActionSchema,
@@ -68,6 +69,54 @@ function realtimeAuthorizedHeaders() {
 
 function validLearningReport() {
   return structuredClone(completedLearningReportFixture);
+}
+
+function validGuidedLearningReport(overrides = {}) {
+  return {
+    schema_version: 2,
+    report_id: "00000000-0000-4000-8000-000000000011",
+    scene_plan: {
+      scene_id: "restaurant",
+      obligation_id: "restaurant.party-size.one",
+      learner_level: "zero_beginner",
+      target_phrase_id: "restaurant.party-size.hitori-desu",
+    },
+    attempt_summary: {
+      taught_phrase: {
+        attempt_count: 1,
+        last_review: "close",
+        scaffold: "full",
+      },
+      restaurant_turn: {
+        attempt_count: 1,
+        last_review: "matched",
+        scaffold: "full",
+      },
+    },
+    lesson_finished: true,
+    raw_audio_included: false,
+    transcript_included: false,
+    self_assessment_included: false,
+    ...overrides,
+  };
+}
+
+function guidedLearningUpstreamResponse(recommendation = {}) {
+  return Response.json({
+    status: "completed",
+    output: [{
+      type: "message",
+      content: [{
+        type: "output_text",
+        text: JSON.stringify({
+          action: "reduce_scaffold",
+          reason: "matched_with_support",
+          obligation_id: "restaurant.party-size.one",
+          ...recommendation,
+        }),
+      }],
+    }],
+  });
 }
 
 function learningUpstreamResponse(recommendation = {}) {
@@ -300,6 +349,12 @@ describe("MA session broker", () => {
     assert.equal(upstreamBody.session.audio.input.transcription.language, "ja");
     assert.deepEqual(upstreamBody.session.tools, [reportAttemptTool]);
     assert.deepEqual(reportAttemptTool.parameters, learnerAttemptFeedbackSchema);
+    assert.deepEqual(Object.keys(learnerAttemptFeedbackSchema.properties).sort(), [
+      "assessment",
+      "evidence_code",
+      "retry_focus_code",
+      "target_phrase_id",
+    ]);
     assert.equal(upstreamBody.session.tool_choice, "none");
     assert.equal(upstreamBody.session.tracing, null);
     assert.notDeepEqual(didacticRealtimeSessionPolicy, realtimeSessionPolicy);
@@ -360,6 +415,194 @@ describe("MA session broker", () => {
 
     assert.equal(response.status, 429);
     assert.equal(response.headers.get("retry-after"), "60");
+  });
+
+  it("rejects at the limiter before touching an authenticated request body", async () => {
+    let bodyAccesses = 0;
+    const guardedRequest = {
+      url: "https://broker.test/product/realtime/client-secret",
+      method: "POST",
+      headers: new Headers(authorizedHeaders()),
+      get body() {
+        bodyAccesses += 1;
+        throw new Error("body must not be read while rate limited");
+      },
+    };
+    const response = await handleRequest(
+      guardedRequest,
+      environment({
+        RATE_LIMITER: {
+          async limit() {
+            return { success: false };
+          },
+        },
+      }),
+      async () => assert.fail("limited requests must not call upstream"),
+    );
+
+    assert.equal(response.status, 429);
+    assert.equal(bodyAccesses, 0);
+  });
+
+  it("charges quota before rejecting oversized or dishonest realtime bodies", async () => {
+    let limiterCalls = 0;
+    const env = environment({
+      RATE_LIMITER: {
+        async limit() {
+          limiterCalls += 1;
+          return { success: true };
+        },
+      },
+    });
+    const bodies = [
+      { body: "x".repeat(2_000_001), contentLength: null },
+      { body: "{}", contentLength: "-1" },
+      { body: "{}", contentLength: "not-a-number" },
+      { body: "x".repeat(300), contentLength: "1" },
+    ];
+
+    for (const sample of bodies) {
+      const headers = authorizedHeaders();
+      if (sample.contentLength !== null) {
+        headers["content-length"] = sample.contentLength;
+      }
+      const response = await handleRequest(
+        request("/product/realtime/client-secret", {
+          method: "POST",
+          headers,
+          body: sample.body,
+        }),
+        env,
+        async () => assert.fail("invalid body must not call upstream"),
+      );
+      assert.equal(response.status, 400);
+    }
+    assert.equal(limiterCalls, bodies.length);
+  });
+
+  it("charges malformed requests to four isolated endpoint buckets", async () => {
+    const keys = [];
+    const env = environment({
+      RATE_LIMITER: {
+        async limit({ key }) {
+          keys.push(key);
+          return { success: true };
+        },
+      },
+    });
+    const cases = [
+      ["/realtime/client-secret", realtimeAuthorizedHeaders(), "probe-realtime"],
+      ["/product/realtime/client-secret", authorizedHeaders(), "product-realtime"],
+      ["/learning/next", authorizedHeaders(), "learning"],
+      ["/learning/guided-next", authorizedHeaders(), "guided-learning"],
+    ];
+    for (const [path, headers, suffix] of cases) {
+      const response = await handleRequest(
+        request(path, { method: "POST", headers, body: "{" }),
+        env,
+        async () => assert.fail("malformed body must not call upstream"),
+      );
+      assert.equal(response.status, 400);
+      assert.equal(keys.at(-1).endsWith(`:${suffix}`), true, suffix);
+    }
+    assert.equal(new Set(keys).size, 4);
+  });
+
+  it("requires the exact JSON media type on every authenticated route", async () => {
+    const cases = [
+      {
+        path: "/realtime/client-secret",
+        headers: realtimeAuthorizedHeaders(),
+        body: "{}",
+        upstream: () => Response.json({
+          value: "ek_probe_ephemeral_only",
+          expires_at: 1234567890,
+        }),
+      },
+      {
+        path: "/product/realtime/client-secret",
+        headers: authorizedHeaders(),
+        body: "{}",
+        upstream: () => Response.json({
+          value: "ek_product_ephemeral_only",
+          expires_at: 1234567890,
+        }),
+      },
+      {
+        path: "/learning/next",
+        headers: authorizedHeaders(),
+        body: JSON.stringify(validLearningReport()),
+        upstream: learningUpstreamResponse,
+      },
+      {
+        path: "/learning/guided-next",
+        headers: authorizedHeaders(),
+        body: JSON.stringify(validGuidedLearningReport()),
+        upstream: guidedLearningUpstreamResponse,
+      },
+    ];
+
+    for (const testCase of cases) {
+      let limiterCalls = 0;
+      let upstreamCalls = 0;
+      const env = environment({
+        RATE_LIMITER: {
+          async limit() {
+            limiterCalls += 1;
+            return { success: true };
+          },
+        },
+      });
+      const invalidMediaTypes = [null, "text/plain", "application/jsonp"];
+      for (const mediaType of invalidMediaTypes) {
+        const invalidHeaders = new Headers(testCase.headers);
+        if (mediaType === null) {
+          invalidHeaders.delete("content-type");
+        } else {
+          invalidHeaders.set("content-type", mediaType);
+        }
+        const rejected = await handleRequest(
+          request(testCase.path, {
+            method: "POST",
+            headers: invalidHeaders,
+            body: testCase.body,
+          }),
+          env,
+          async () => {
+            upstreamCalls += 1;
+            return testCase.upstream();
+          },
+        );
+        assert.equal(rejected.status, 400, `${testCase.path} ${mediaType}`);
+        assert.deepEqual(
+          await rejected.json(),
+          { error: "invalid_content_type" },
+          `${testCase.path} ${mediaType}`,
+        );
+        assert.equal(upstreamCalls, 0, testCase.path);
+      }
+      assert.equal(limiterCalls, invalidMediaTypes.length, testCase.path);
+
+      const acceptedHeaders = {
+        ...testCase.headers,
+        "content-type": "Application/JSON; charset=utf-8",
+      };
+      const accepted = await handleRequest(
+        request(testCase.path, {
+          method: "POST",
+          headers: acceptedHeaders,
+          body: testCase.body,
+        }),
+        env,
+        async () => {
+          upstreamCalls += 1;
+          return testCase.upstream();
+        },
+      );
+      assert.equal(accepted.status, 200, testCase.path);
+      assert.equal(limiterCalls, invalidMediaTypes.length + 1, testCase.path);
+      assert.equal(upstreamCalls, 1, testCase.path);
+    }
   });
 
   it("mints only the fixed Realtime policy and returns a bounded response", async () => {
@@ -721,6 +964,162 @@ describe("MA session broker", () => {
       assert.deepEqual(await response.json(), {
         error: "upstream_invalid_response",
       });
+    }
+  });
+
+  it("sends only aggregate guided reviews to fixed gpt-5.6-sol", async () => {
+    const report = validGuidedLearningReport();
+    let observedRequest;
+    const response = await handleRequest(
+      request("/learning/guided-next", {
+        method: "POST",
+        headers: authorizedHeaders(),
+        body: JSON.stringify(report),
+      }),
+      environment(),
+      async (url, options) => {
+        observedRequest = { url, options };
+        return guidedLearningUpstreamResponse();
+      },
+    );
+
+    assert.equal(response.status, 200);
+    const result = await response.json();
+    assert.deepEqual(result, {
+      schema_version: 2,
+      report_id: report.report_id,
+      model: "gpt-5.6-sol",
+      source: "model",
+      action: "reduce_scaffold",
+      reason: "matched_with_support",
+      explanation_en: "Try the same exchange again with less visible help.",
+      explanation_es: "Haz el mismo intercambio otra vez con menos ayuda visible.",
+      evidence_reason_en: "MA recognized the expected answer while it was visible.",
+      evidence_reason_es: "MA reconoció la respuesta esperada mientras estaba visible.",
+      obligation_id: "restaurant.party-size.one",
+    });
+    assert.equal(observedRequest.url, "https://api.openai.com/v1/responses");
+    const upstreamBody = JSON.parse(observedRequest.options.body);
+    assert.equal(upstreamBody.model, "gpt-5.6-sol");
+    assert.equal(upstreamBody.store, false);
+    assert.deepEqual(upstreamBody.text.format.schema, guidedLearningActionSchema);
+    const forwarded = JSON.parse(upstreamBody.input[0].content[0].text);
+    assert.deepEqual(forwarded, {
+      learning_report: {
+        schema_version: 2,
+        scene_plan: report.scene_plan,
+        attempt_summary: report.attempt_summary,
+        lesson_finished: true,
+      },
+    });
+    const serialized = JSON.stringify(forwarded);
+    for (const forbidden of [
+      "audio",
+      "transcript",
+      "heard_japanese",
+      "feedback",
+      "self_assessment",
+      "report_id",
+    ]) {
+      assert.equal(serialized.includes(forbidden), false, forbidden);
+    }
+  });
+
+  it("keeps legacy and guided learning schemas isolated", async () => {
+    const guidedOnLegacy = await handleRequest(
+      request("/learning/next", {
+        method: "POST",
+        headers: authorizedHeaders(),
+        body: JSON.stringify(validGuidedLearningReport()),
+      }),
+      environment(),
+      async () => assert.fail("guided v2 must not reach the legacy planner"),
+    );
+    assert.equal(guidedOnLegacy.status, 400);
+
+    const legacyOnGuided = await handleRequest(
+      request("/learning/guided-next", {
+        method: "POST",
+        headers: authorizedHeaders(),
+        body: JSON.stringify(validLearningReport()),
+      }),
+      environment(),
+      async () => assert.fail("legacy v1 must not reach the guided planner"),
+    );
+    assert.equal(legacyOnGuided.status, 400);
+  });
+
+  it("rejects privacy sentinels and out-of-range guided summaries", async () => {
+    const invalidReports = [
+      validGuidedLearningReport({ raw_audio_included: true }),
+      validGuidedLearningReport({ transcript_included: true }),
+      validGuidedLearningReport({ self_assessment_included: true }),
+      validGuidedLearningReport({
+        attempt_summary: {
+          ...validGuidedLearningReport().attempt_summary,
+          restaurant_turn: {
+            attempt_count: 9,
+            last_review: "matched",
+            scaffold: "full",
+          },
+        },
+      }),
+    ];
+    for (const report of invalidReports) {
+      const response = await handleRequest(
+        request("/learning/guided-next", {
+          method: "POST",
+          headers: authorizedHeaders(),
+          body: JSON.stringify(report),
+        }),
+        environment(),
+        async () => assert.fail("invalid guided report must not call upstream"),
+      );
+      assert.equal(response.status, 400);
+    }
+  });
+
+  it("prevents guided advance while the answer was visible", async () => {
+    const report = validGuidedLearningReport();
+    const response = await handleRequest(
+      request("/learning/guided-next", {
+        method: "POST",
+        headers: authorizedHeaders(),
+        body: JSON.stringify(report),
+      }),
+      environment(),
+      async () => guidedLearningUpstreamResponse({
+        action: "advance",
+        reason: "matched_without_support",
+      }),
+    );
+    assert.equal(response.status, 502);
+    assert.deepEqual(await response.json(), { error: "upstream_invalid_response" });
+  });
+
+  it("accepts every and only evidence-supported guided action pair", async () => {
+    const supported = [
+      ["unclear", "full", "repeat", "review_unclear"],
+      ["close", "full", "repeat", "target_close"],
+      ["different", "full", "repeat", "target_not_matched"],
+      ["matched", "full", "reduce_scaffold", "matched_with_support"],
+      ["matched", "none", "advance", "matched_without_support"],
+      ["matched", "full", "abstain", "insufficient_evidence"],
+    ];
+    for (const [review, scaffold, action, reason] of supported) {
+      const report = validGuidedLearningReport();
+      report.attempt_summary.restaurant_turn.last_review = review;
+      report.attempt_summary.restaurant_turn.scaffold = scaffold;
+      const response = await handleRequest(
+        request("/learning/guided-next", {
+          method: "POST",
+          headers: authorizedHeaders(),
+          body: JSON.stringify(report),
+        }),
+        environment(),
+        async () => guidedLearningUpstreamResponse({ action, reason }),
+      );
+      assert.equal(response.status, 200, `${action}:${reason}`);
     }
   });
 });

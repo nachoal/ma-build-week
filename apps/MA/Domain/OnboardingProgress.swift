@@ -8,13 +8,24 @@ struct OnboardingProgress: Equatable, Sendable {
         case goal
         case practice
 
-        var kicker: String {
+        func kicker(in language: MAInterfaceLanguage) -> String {
             switch self {
-            case .start: "PASO 1 · TU PUNTO DE PARTIDA"
-            case .goal: "PASO 2 · TU META"
-            case .practice: "PASO 3 · TU PRÁCTICA"
+            case .start:
+                language.text(
+                    english: "STEP 1 · YOUR STARTING POINT",
+                    spanish: "PASO 1 · TU PUNTO DE PARTIDA"
+                )
+            case .goal:
+                language.text(english: "STEP 2 · YOUR GOAL", spanish: "PASO 2 · TU META")
+            case .practice:
+                language.text(
+                    english: "STEP 3 · YOUR PRACTICE",
+                    spanish: "PASO 3 · TU PRÁCTICA"
+                )
             }
         }
+
+        var kicker: String { kicker(in: .spanish) }
     }
 
     var step: Step = .start
@@ -27,7 +38,14 @@ struct OnboardingProgress: Equatable, Sendable {
     /// every step.
     var canContinue: Bool { true }
 
-    var continueTitle: String { isLastStep ? "Ver mis escenas" : "Continuar" }
+    func continueTitle(in language: MAInterfaceLanguage) -> String {
+        if isLastStep {
+            return language.text(english: "See my scenes", spanish: "Ver mis escenas")
+        }
+        return language.text(english: "Continue", spanish: "Continuar")
+    }
+
+    var continueTitle: String { continueTitle(in: .spanish) }
 
     /// Advances one step. Returns true when onboarding just finished.
     mutating func advance() -> Bool {

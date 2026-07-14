@@ -15,6 +15,8 @@ struct SceneInfo: Equatable, Sendable, Identifiable {
     let index: Int
     let title: String
     let subtitle: String
+    let englishTitle: String
+    let englishSubtitle: String
     /// Small Japanese accent shown with the scene — always accompanied by the
     /// Spanish title, never Japanese alone.
     let japaneseAccent: String
@@ -24,6 +26,25 @@ struct SceneInfo: Equatable, Sendable, Identifiable {
 
     var statusLabel: String { available ? "DISPONIBLE" : "PRONTO" }
     var chipLabel: String { title }
+
+    func title(in language: MAInterfaceLanguage) -> String {
+        language == .english ? englishTitle : title
+    }
+
+    func subtitle(in language: MAInterfaceLanguage) -> String {
+        language == .english ? englishSubtitle : subtitle
+    }
+
+    func statusLabel(in language: MAInterfaceLanguage) -> String {
+        if available {
+            return language.text(english: "AVAILABLE", spanish: "DISPONIBLE")
+        }
+        return language.text(english: "COMING SOON", spanish: "PRONTO")
+    }
+
+    func chipLabel(in language: MAInterfaceLanguage) -> String {
+        title(in: language)
+    }
 }
 
 /// The intent-first menu. Only the restaurant slice exists; the rest are the
@@ -35,6 +56,8 @@ enum SceneCatalog {
             index: 1,
             title: "Llegar a un restaurante",
             subtitle: "Pedir mesa para uno",
+            englishTitle: "Arrive at a restaurant",
+            englishSubtitle: "Ask for a table for one",
             japaneseAccent: "一人です",
             available: true,
             minutes: 3
@@ -44,6 +67,8 @@ enum SceneCatalog {
             index: 2,
             title: "Pedir en una izakaya",
             subtitle: "Un plato y una pregunta de vuelta",
+            englishTitle: "Order at an izakaya",
+            englishSubtitle: "One dish and a follow-up question",
             japaneseAccent: "注文",
             available: false,
             minutes: nil
@@ -53,6 +78,8 @@ enum SceneCatalog {
             index: 3,
             title: "Pagar en el konbini",
             subtitle: "Bolsa, pago y recibo",
+            englishTitle: "Pay at a convenience store",
+            englishSubtitle: "Bag, payment, and receipt",
             japaneseAccent: "会計",
             available: false,
             minutes: nil
@@ -62,6 +89,8 @@ enum SceneCatalog {
             index: 4,
             title: "Tomar el tren",
             subtitle: "Encontrar tu andén",
+            englishTitle: "Take the train",
+            englishSubtitle: "Find your platform",
             japaneseAccent: "駅",
             available: false,
             minutes: nil
@@ -71,6 +100,8 @@ enum SceneCatalog {
             index: 5,
             title: "Llegar al hotel",
             subtitle: "Check-in y una aclaración",
+            englishTitle: "Arrive at a hotel",
+            englishSubtitle: "Check in and clarify one detail",
             japaneseAccent: "予約",
             available: false,
             minutes: nil

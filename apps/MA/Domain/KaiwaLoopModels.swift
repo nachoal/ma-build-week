@@ -122,7 +122,7 @@ struct KaiwaLoopState: Equatable, Sendable {
 
     var sourceBadge: String {
         if isLabeledReplay {
-            return "REPLAY · NO EN VIVO"
+            return "REPLAY · NOT LIVE / NO EN VIVO"
         }
         return switch phase {
         case .repair:

@@ -139,6 +139,69 @@ struct ProductAudioContractsTests {
         #expect(snapshot.estimatedVoiceOnset == 0)
     }
 
+    @Test("Realtime capture converts one explicit turn to bounded 24 kHz PCM16")
+    func realtimeCaptureConversionIsBounded() {
+        let worker = RealtimeCaptureWorker()
+        worker.enqueue(samples: [Float](repeating: 0, count: 480), sampleRate: 48_000)
+        worker.enqueue(samples: [Float](repeating: 0.1, count: 480), sampleRate: 48_000)
+        worker.enqueue(samples: [Float](repeating: 0.1, count: 480), sampleRate: 48_000)
+
+        let snapshot = worker.finishSnapshot()
+        #expect(abs(snapshot.duration - 0.03) < 0.0001)
+        #expect(snapshot.speechPresence)
+        #expect(snapshot.estimatedVoiceOnset == 0.01)
+        #expect(snapshot.sourceSampleRate == 48_000)
+        #expect(!snapshot.overflowed)
+        #expect(!snapshot.pcm16Data.isEmpty)
+        #expect(snapshot.pcm16Data.count.isMultiple(of: MemoryLayout<Int16>.size))
+        #expect(snapshot.pcm16Data.count <= 2_000)
+        #expect(worker.finishSnapshot().pcm16Data.isEmpty)
+    }
+
+    @Test("Realtime capture tap stays nonisolated and produces one in-memory payload")
+    func realtimeCaptureTapIsNonisolated() async {
+        let worker = RealtimeCaptureWorker()
+        let tap = AudioGraphController.makeRealtimeCaptureTap(worker: worker)
+
+        await withCheckedContinuation { continuation in
+            DispatchQueue(label: "com.ia.ma.tests.realtime-audio-tap").async {
+                let format = AVAudioFormat(
+                    commonFormat: .pcmFormatFloat32,
+                    sampleRate: 48_000,
+                    channels: 1,
+                    interleaved: false
+                )!
+                let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 960)!
+                buffer.frameLength = 960
+                buffer.floatChannelData?[0].update(
+                    repeating: 0.1,
+                    count: Int(buffer.frameLength)
+                )
+                tap(buffer, AVAudioTime(sampleTime: 0, atRate: 48_000))
+                tap(buffer, AVAudioTime(sampleTime: 960, atRate: 48_000))
+                continuation.resume()
+            }
+        }
+
+        let snapshot = worker.finishSnapshot()
+        #expect(snapshot.speechPresence)
+        #expect(abs(snapshot.duration - 0.04) < 0.0001)
+        #expect(!snapshot.pcm16Data.isEmpty)
+        #expect(!snapshot.overflowed)
+    }
+
+    @Test("Realtime PCM playback wrapper is an exact mono 24 kHz WAV")
+    func realtimeWaveHeader() throws {
+        let pcm = Data(repeating: 1, count: 4_800)
+        let wave = AudioGraphController.waveData(fromPCM16: pcm)
+
+        #expect(wave.count == pcm.count + 44)
+        #expect(String(data: wave[0..<4], encoding: .utf8) == "RIFF")
+        #expect(String(data: wave[8..<12], encoding: .utf8) == "WAVE")
+        #expect(String(data: wave[36..<40], encoding: .utf8) == "data")
+        #expect(wave.suffix(pcm.count) == pcm)
+    }
+
     @Test("Playback delegate callbacks are safe on AVFAudio's non-main queue")
     @MainActor
     func playbackDelegateIsNonisolated() async throws {
@@ -153,6 +216,27 @@ struct ProductAudioContractsTests {
                 continuation.resume()
             }
         }
+    }
+
+    @Test("A stale player callback cannot match a replacement player")
+    @MainActor
+    func stalePlaybackCallbackIsRejected() throws {
+        let audioData = try Data(contentsOf: AudioAssetCatalog.url(for: .hitoriDesu))
+        let replacedPlayer = try AVAudioPlayer(data: audioData)
+        let currentPlayer = try AVAudioPlayer(data: audioData)
+
+        #expect(AudioGraphController.playbackCallbackMatches(
+            activePlayer: currentPlayer,
+            callbackPlayerID: ObjectIdentifier(currentPlayer)
+        ))
+        #expect(!AudioGraphController.playbackCallbackMatches(
+            activePlayer: currentPlayer,
+            callbackPlayerID: ObjectIdentifier(replacedPlayer)
+        ))
+        #expect(!AudioGraphController.playbackCallbackMatches(
+            activePlayer: nil,
+            callbackPlayerID: ObjectIdentifier(replacedPlayer)
+        ))
     }
 
     @Test("Controller permission denial is recoverable before hardware starts")

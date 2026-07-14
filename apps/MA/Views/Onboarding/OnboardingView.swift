@@ -4,13 +4,18 @@ import SwiftUI
 /// valid so Ignacio can finish with one tap ("Usar lo típico") or three.
 struct OnboardingView: View {
     let onComplete: (LearnerProfile) -> Void
+    var onToggleLanguage: (() -> Void)? = nil
     @State private var progress = OnboardingProgress()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.maInterfaceLanguage) private var language
 
     var body: some View {
         AdaptiveScreen {
             VStack(alignment: .leading, spacing: 0) {
-                ChromeBar(badge: "PROTOTIPO")
+                ChromeBar(
+                    badge: language.text(english: "PROTOTYPE", spanish: "PROTOTIPO"),
+                    onToggleLanguage: onToggleLanguage
+                )
                 stepIndicator
                 stepContent
                     .padding(.top, 20)
@@ -36,11 +41,14 @@ struct OnboardingView: View {
                         .frame(width: 44, height: 44)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Volver al paso anterior")
+                .accessibilityLabel(language.text(
+                    english: "Back to the previous step",
+                    spanish: "Volver al paso anterior"
+                ))
                 .accessibilityIdentifier("onboarding.atras")
                 .padding(.leading, -14)
             }
-            MicroCapsLabel(text: progress.step.kicker, color: MATheme.ai)
+            MicroCapsLabel(text: progress.step.kicker(in: language), color: MATheme.ai)
             Spacer()
             HStack(spacing: 5) {
                 ForEach(OnboardingProgress.Step.allCases, id: \.rawValue) { step in
@@ -67,7 +75,10 @@ struct OnboardingView: View {
 
     private var bottomActions: some View {
         VStack(spacing: 12) {
-            PrimaryButton(title: progress.continueTitle, identifier: "onboarding.continuar") {
+            PrimaryButton(
+                title: progress.continueTitle(in: language),
+                identifier: "onboarding.continuar"
+            ) {
                 if progress.isLastStep {
                     onComplete(progress.profile)
                 } else {
@@ -81,7 +92,10 @@ struct OnboardingView: View {
                 Button {
                     onComplete(.standard)
                 } label: {
-                    Text("Usar lo típico y ver mis escenas")
+                    Text(language.text(
+                        english: "Use the typical setup and see my scenes",
+                        spanish: "Usar lo típico y ver mis escenas"
+                    ))
                         .font(MATheme.caption(.medium))
                         .foregroundStyle(MATheme.stone)
                         .frame(minHeight: 44)
@@ -108,17 +122,24 @@ struct OnboardingView: View {
 
 private struct StartStepView: View {
     @Binding var profile: LearnerProfile
+    @Environment(\.maInterfaceLanguage) private var language
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Empiezas desde cero. Perfecto.")
+                    Text(language.text(
+                        english: "Starting from zero? Perfect.",
+                        spanish: "Empiezas desde cero. Perfecto."
+                    ))
                         .font(MATheme.display())
                         .tracking(MATheme.tightTracking(fontSize: 34))
                         .foregroundStyle(MATheme.sumi)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("MA te guía en español y te presta el japonés justo cuando lo necesitas.")
+                    Text(language.text(
+                        english: "MA guides you in English and gives you Japanese only when you need it.",
+                        spanish: "MA te guía en español y te presta el japonés justo cuando lo necesitas."
+                    ))
                         .font(MATheme.body(16, weight: .regular))
                         .foregroundStyle(MATheme.stone)
                         .fixedSize(horizontal: false, vertical: true)
@@ -129,11 +150,14 @@ private struct StartStepView: View {
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                MicroCapsLabel(text: "TU JAPONÉS HOY")
+                MicroCapsLabel(text: language.text(
+                    english: "YOUR JAPANESE TODAY",
+                    spanish: "TU JAPONÉS HOY"
+                ))
                 FlowChips {
                     ForEach(JapaneseLevel.allCases, id: \.rawValue) { level in
                         ChoiceChip(
-                            title: level.spanishLabel,
+                            title: level.label(in: language),
                             selected: profile.level == level,
                             identifier: "chip.nivel.\(level.rawValue)"
                         ) {
@@ -146,7 +170,10 @@ private struct StartStepView: View {
 
             HStack(spacing: 8) {
                 Circle().fill(MATheme.ai).frame(width: 5, height: 5)
-                Text("Las explicaciones son siempre en español.")
+                Text(language.text(
+                    english: "Explanations stay in English.",
+                    spanish: "Las explicaciones son siempre en español."
+                ))
                     .font(MATheme.caption())
                     .foregroundStyle(MATheme.stone)
             }
@@ -158,16 +185,23 @@ private struct StartStepView: View {
 
 private struct GoalStepView: View {
     @Binding var profile: LearnerProfile
+    @Environment(\.maInterfaceLanguage) private var language
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("¿Para qué es tu japonés?")
+                Text(language.text(
+                    english: "What do you need Japanese for?",
+                    spanish: "¿Para qué es tu japonés?"
+                ))
                     .font(MATheme.display())
                     .tracking(MATheme.tightTracking(fontSize: 34))
                     .foregroundStyle(MATheme.sumi)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("MA enseña la conversación que vas a necesitar de verdad, una escena a la vez.")
+                Text(language.text(
+                    english: "MA teaches the conversations you will actually need, one scene at a time.",
+                    spanish: "MA enseña la conversación que vas a necesitar de verdad, una escena a la vez."
+                ))
                     .font(MATheme.body(16, weight: .regular))
                     .foregroundStyle(MATheme.stone)
                     .fixedSize(horizontal: false, vertical: true)
@@ -176,7 +210,7 @@ private struct GoalStepView: View {
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(TripGoal.allCases, id: \.rawValue) { goal in
                     ChoiceChip(
-                        title: goal.spanishLabel,
+                        title: goal.label(in: language),
                         selected: profile.goal == goal,
                         identifier: "chip.meta.\(goal.rawValue)"
                     ) {
@@ -192,27 +226,37 @@ private struct GoalStepView: View {
 
 private struct PracticeStepView: View {
     @Binding var profile: LearnerProfile
+    @Environment(\.maInterfaceLanguage) private var language
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Tus primeras conversaciones.")
+                Text(language.text(
+                    english: "Your first conversations.",
+                    spanish: "Tus primeras conversaciones."
+                ))
                     .font(MATheme.display())
                     .tracking(MATheme.tightTracking(fontSize: 34))
                     .foregroundStyle(MATheme.sumi)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Empiezas por el restaurante — es la única escena lista. Lo demás son intereses que ordenan lo que llega después.")
+                Text(language.text(
+                    english: "You start at the restaurant—the only scene ready now. Your other interests set what comes next.",
+                    spanish: "Empiezas por el restaurante — es la única escena lista. Lo demás son intereses que ordenan lo que llega después."
+                ))
                     .font(MATheme.body(16, weight: .regular))
                     .foregroundStyle(MATheme.stone)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                MicroCapsLabel(text: "TU PRIMERA ESCENA · INCLUIDA")
+                MicroCapsLabel(text: language.text(
+                    english: "YOUR FIRST SCENE · INCLUDED",
+                    spanish: "TU PRIMERA ESCENA · INCLUIDA"
+                ))
                 HStack(spacing: 7) {
                     Image(systemName: "checkmark")
                         .font(.system(size: 11, weight: .bold))
-                    Text(SceneCatalog.hero.title)
+                    Text(SceneCatalog.hero.title(in: language))
                         .font(MATheme.body(15, weight: .medium))
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -223,17 +267,23 @@ private struct PracticeStepView: View {
                 .background(MATheme.mist, in: Capsule())
                 .overlay(Capsule().stroke(MATheme.ai, lineWidth: 1.5))
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(SceneCatalog.hero.title): tu primera escena, siempre incluida.")
+                .accessibilityLabel(language.text(
+                    english: "\(SceneCatalog.hero.title(in: language)): your first scene, always included.",
+                    spanish: "\(SceneCatalog.hero.title(in: language)): tu primera escena, siempre incluida."
+                ))
                 .accessibilityIdentifier("onboarding.escena.incluida")
             }
             .padding(.top, 26)
 
             VStack(alignment: .leading, spacing: 10) {
-                MicroCapsLabel(text: "INTERESES PARA DESPUÉS · PRONTO")
+                MicroCapsLabel(text: language.text(
+                    english: "INTERESTS FOR LATER · COMING SOON",
+                    spanish: "INTERESES PARA DESPUÉS · PRONTO"
+                ))
                 FlowChips {
                     ForEach(SceneCatalog.upcomingScenes(orderedBy: [])) { scene in
                         ChoiceChip(
-                            title: scene.chipLabel,
+                            title: scene.chipLabel(in: language),
                             selected: profile.situations.contains(scene.id),
                             identifier: "chip.escena.\(scene.id.rawValue)"
                         ) {
@@ -241,7 +291,10 @@ private struct PracticeStepView: View {
                         }
                     }
                 }
-                Text("Estas escenas aún no están disponibles; tus intereses solo ordenan la lista.")
+                Text(language.text(
+                    english: "These scenes are not available yet; your interests only reorder the list.",
+                    spanish: "Estas escenas aún no están disponibles; tus intereses solo ordenan la lista."
+                ))
                     .font(MATheme.caption())
                     .foregroundStyle(MATheme.stone)
                     .fixedSize(horizontal: false, vertical: true)
@@ -249,11 +302,14 @@ private struct PracticeStepView: View {
             .padding(.top, 22)
 
             VStack(alignment: .leading, spacing: 10) {
-                MicroCapsLabel(text: "TU RITMO")
+                MicroCapsLabel(text: language.text(
+                    english: "YOUR PACE",
+                    spanish: "TU RITMO"
+                ))
                 FlowChips {
                     ForEach(DailyPractice.allCases, id: \.rawValue) { pace in
                         ChoiceChip(
-                            title: pace.spanishLabel,
+                            title: pace.label(in: language),
                             selected: profile.dailyMinutes == pace,
                             identifier: "chip.ritmo.\(pace.rawValue)"
                         ) {
@@ -264,7 +320,10 @@ private struct PracticeStepView: View {
             }
             .padding(.top, 22)
 
-            Text("Puedes cambiar todo esto cuando quieras.")
+            Text(language.text(
+                english: "You can change all of this anytime.",
+                spanish: "Puedes cambiar todo esto cuando quieras."
+            ))
                 .font(MATheme.caption())
                 .foregroundStyle(MATheme.stone)
                 .padding(.top, 18)

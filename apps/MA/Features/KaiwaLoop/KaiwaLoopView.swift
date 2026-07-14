@@ -4,12 +4,21 @@ import UIKit
 struct KaiwaLoopView: View {
     let feature: KaiwaLoopFeature
     var onExit: (() -> Void)?
+    var onToggleLanguage: (() -> Void)?
+    @Environment(\.maInterfaceLanguage) private var language
 
     var body: some View {
         VStack(spacing: 0) {
-            ChromeBar(badge: feature.state.sourceBadge, onExit: onExit)
+            ChromeBar(
+                badge: feature.state.sourceBadge,
+                onExit: onExit,
+                onToggleLanguage: onToggleLanguage
+            )
             if feature.state.presentationSource == .labeledReplay {
-                Text("Replay visual controlado · sin micrófono, red ni audio en vivo")
+                Text(language.text(
+                    english: "Controlled visual replay · no microphone, network, or live audio.",
+                    spanish: "Replay visual controlado · sin micrófono, red ni audio en vivo."
+                ))
                     .font(MATheme.micro())
                     .foregroundStyle(MATheme.stone)
                     .frame(maxWidth: .infinity)
@@ -78,6 +87,7 @@ private struct KaiwaReplayContent: View {
 
 private struct KaiwaReplayStageScreen: View {
     let state: KaiwaLoopState
+    @Environment(\.maInterfaceLanguage) private var language
 
     var body: some View {
         AdaptiveScreen {
@@ -103,8 +113,8 @@ private struct KaiwaReplayStageScreen: View {
                     Text(cardRomaji)
                         .font(MATheme.caption())
                         .foregroundStyle(MATheme.stone)
-                    if !cardSpanish.isEmpty {
-                        Text(cardSpanish)
+                    if !cardMeaning.isEmpty {
+                        Text(cardMeaning)
                             .font(MATheme.body(16, weight: .regular))
                             .foregroundStyle(MATheme.sumi)
                     }
@@ -117,7 +127,10 @@ private struct KaiwaReplayStageScreen: View {
                 .accessibilityElement(children: .combine)
 
                 Spacer(minLength: 20)
-                Label("El replay avanza con eventos fijos de muestra.", systemImage: "play.rectangle")
+                Label(language.text(
+                    english: "The replay advances through fixed sample events.",
+                    spanish: "El replay avanza con eventos fijos de muestra."
+                ), systemImage: "play.rectangle")
                     .font(MATheme.caption())
                     .foregroundStyle(MATheme.stone)
                     .frame(maxWidth: .infinity)
@@ -131,60 +144,84 @@ private struct KaiwaReplayStageScreen: View {
 
     private var stageLabel: String {
         switch state.phase {
-        case .setup: "REPLAY VISUAL · INICIO"
-        case .coached: "REPLAY VISUAL · RESPUESTA DE MUESTRA"
-        case .firstSuccess: "REPLAY VISUAL · ANDAMIO COMPLETO"
-        case .controls: "REPLAY VISUAL · REGLA DE PAUSA"
-        case .natural: "REPLAY VISUAL · PUNTO DE PAUSA"
-        case .repair: "REPLAY VISUAL · SEGMENTO CONTROLADO"
-        case .resuming: "REPLAY VISUAL · MISMA OBLIGACIÓN"
-        case .retry: "REPLAY VISUAL · SEGUNDA MUESTRA"
-        case .proof: "REPLAY VISUAL · RESULTADO"
+        case .setup: language.text(english: "VISUAL REPLAY · START", spanish: "REPLAY VISUAL · INICIO")
+        case .coached: language.text(english: "VISUAL REPLAY · SAMPLE ANSWER", spanish: "REPLAY VISUAL · RESPUESTA DE MUESTRA")
+        case .firstSuccess: language.text(english: "VISUAL REPLAY · FULL SUPPORT", spanish: "REPLAY VISUAL · ANDAMIO COMPLETO")
+        case .controls: language.text(english: "VISUAL REPLAY · PAUSE RULE", spanish: "REPLAY VISUAL · REGLA DE PAUSA")
+        case .natural: language.text(english: "VISUAL REPLAY · PAUSE POINT", spanish: "REPLAY VISUAL · PUNTO DE PAUSA")
+        case .repair: language.text(english: "VISUAL REPLAY · CONTROLLED SEGMENT", spanish: "REPLAY VISUAL · SEGMENTO CONTROLADO")
+        case .resuming: language.text(english: "VISUAL REPLAY · SAME TASK", spanish: "REPLAY VISUAL · MISMA OBLIGACIÓN")
+        case .retry: language.text(english: "VISUAL REPLAY · SECOND SAMPLE", spanish: "REPLAY VISUAL · SEGUNDA MUESTRA")
+        case .proof: language.text(english: "VISUAL REPLAY · RESULT", spanish: "REPLAY VISUAL · RESULTADO")
         }
     }
 
     private var stageTitle: String {
         switch state.phase {
-        case .setup: "Una muestra presenta la frase."
-        case .coached: "La ayuda se reduce en tres pasos."
-        case .firstSuccess: "El replay completó el andamio."
-        case .controls: "La muestra presenta pausa y ayuda."
-        case .natural: "La muestra llega al punto de pausa."
-        case .repair: "La muestra aísla un segmento preparado."
-        case .resuming: "La muestra vuelve a la misma situación."
-        case .retry: "Una segunda muestra intenta lo mismo."
-        case .proof: "El replay terminó."
+        case .setup: language.text(english: "A sample introduces the phrase.", spanish: "Una muestra presenta la frase.")
+        case .coached: language.text(english: "The sample reduces visible help in three steps.", spanish: "La ayuda se reduce en tres pasos.")
+        case .firstSuccess: language.text(english: "The replay completed the support ladder.", spanish: "El replay completó el andamio.")
+        case .controls: language.text(english: "The sample introduces pause and help.", spanish: "La muestra presenta pausa y ayuda.")
+        case .natural: language.text(english: "The sample reaches the pause point.", spanish: "La muestra llega al punto de pausa.")
+        case .repair: language.text(english: "The sample isolates a prepared segment.", spanish: "La muestra aísla un segmento preparado.")
+        case .resuming: language.text(english: "The sample returns to the same situation.", spanish: "La muestra vuelve a la misma situación.")
+        case .retry: language.text(english: "A second sample tries the same task.", spanish: "Una segunda muestra intenta lo mismo.")
+        case .proof: language.text(english: "The replay finished.", spanish: "El replay terminó.")
         }
     }
 
     private var stageDetail: String {
         switch state.phase {
         case .setup:
-            "Esta vista usa texto y tiempos fijos; no solicita permisos ni reproduce sonido."
+            language.text(
+                english: "This screen uses fixed text and timing; it requests no permission and plays no sound.",
+                spanish: "Esta vista usa texto y tiempos fijos; no solicita permisos ni reproduce sonido."
+            )
         case .coached:
-            "Los intentos son datos de demostración. No hay voz, captura ni autoevaluación del aprendiz."
+            language.text(
+                english: "The attempts are demonstration data. There is no learner voice, capture, or self-assessment.",
+                spanish: "Los intentos son datos de demostración. No hay voz, captura ni autoevaluación del aprendiz."
+            )
         case .firstSuccess:
-            "Tres resultados fijos muestran cómo termina la práctica guiada; no son logros del espectador."
+            language.text(
+                english: "Three fixed results show the historical guided flow; they are not viewer achievements.",
+                spanish: "Tres resultados fijos muestran cómo termina la práctica guiada; no son logros del espectador."
+            )
         case .controls:
-            "El replay muestra la regla del producto sin activar playout, micrófono ni red."
+            language.text(
+                english: "The replay shows the historical rule without activating playout, microphone, or network.",
+                spanish: "El replay muestra la regla del producto sin activar playout, micrófono ni red."
+            )
         case .natural:
-            "La línea de tiempo fija demuestra dónde se pediría ayuda; no representa sonido reproducido."
+            language.text(
+                english: "The fixed timeline shows where help would be requested; it does not represent played audio.",
+                spanish: "La línea de tiempo fija demuestra dónde se pediría ayuda; no representa sonido reproducido."
+            )
         case .repair:
-            "Este segmento etiquetado no es una ventana exacta de algo oído y no se reproduce aquí."
+            language.text(
+                english: "This labeled segment is not an exact window of heard audio and does not play here.",
+                spanish: "Este segmento etiquetado no es una ventana exacta de algo oído y no se reproduce aquí."
+            )
         case .resuming:
-            "El evento conserva la obligación de pedir mesa para una persona; no activa sonido."
+            language.text(
+                english: "The event keeps the fixed task of asking for a table for one; it activates no sound.",
+                spanish: "El evento conserva la obligación de pedir mesa para una persona; no activa sonido."
+            )
         case .retry:
-            "Los valores de la segunda muestra son fijos y no pertenecen al espectador."
+            language.text(
+                english: "The second sample’s values are fixed and do not belong to the viewer.",
+                spanish: "Los valores de la segunda muestra son fijos y no pertenecen al espectador."
+            )
         case .proof:
-            "Datos fijos de demostración."
+            language.text(english: "Fixed demonstration data.", spanish: "Datos fijos de demostración.")
         }
     }
 
     private var cardLabel: String {
         switch state.phase {
-        case .repair: "TEXTO DEL SEGMENTO DE MUESTRA"
-        case .resuming, .natural: "TEXTO DE LA MUESTRA"
-        default: "FRASE DE MUESTRA"
+        case .repair: language.text(english: "SAMPLE SEGMENT TEXT", spanish: "TEXTO DEL SEGMENTO DE MUESTRA")
+        case .resuming, .natural: language.text(english: "SAMPLE TEXT", spanish: "TEXTO DE LA MUESTRA")
+        default: language.text(english: "SAMPLE PHRASE", spanish: "FRASE DE MUESTRA")
         }
     }
 
@@ -201,16 +238,26 @@ private struct KaiwaReplayStageScreen: View {
         case .repair, .resuming: state.repairSegment.romaji
         case .natural: RestaurantForOneFixture.continuationLine.romaji
         case .coached where state.scaffold == .rhythmOnly: "hi · to · ri · de · su"
-        case .coached where state.scaffold == .none: "sin texto en el producto"
+        case .coached where state.scaffold == .none:
+            language.text(english: "no text in the historical product", spanish: "sin texto en el producto")
         default: RestaurantForOneFixture.phraseRomaji
         }
     }
 
-    private var cardSpanish: String {
+    private var cardMeaning: String {
         switch state.phase {
-        case .repair, .resuming: state.repairSegment.spanish
-        case .natural: RestaurantForOneFixture.continuationLine.spanish
-        default: RestaurantForOneFixture.phraseSpanish
+        case .repair, .resuming:
+            language.text(english: "“This way, please.”", spanish: state.repairSegment.spanish)
+        case .natural:
+            language.text(
+                english: "One person, correct? I’ll show you the way.",
+                spanish: RestaurantForOneFixture.continuationLine.spanish
+            )
+        default:
+            language.text(
+                english: "One person · I’m dining alone.",
+                spanish: RestaurantForOneFixture.phraseSpanish
+            )
         }
     }
 }
@@ -218,16 +265,26 @@ private struct KaiwaReplayStageScreen: View {
 private struct KaiwaReplayProofScreen: View {
     let state: KaiwaLoopState
     let send: (KaiwaLoopIntent) -> Void
+    @Environment(\.maInterfaceLanguage) private var language
 
     var body: some View {
         AdaptiveScreen {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 12) {
-                    MicroCapsLabel(text: "FIN DEL REPLAY · DOS INTENTOS DE MUESTRA", color: MATheme.ai)
-                    Text("La muestra reparó y regresó.")
+                    MicroCapsLabel(text: language.text(
+                        english: "REPLAY COMPLETE · TWO SAMPLE ATTEMPTS",
+                        spanish: "FIN DEL REPLAY · DOS INTENTOS DE MUESTRA"
+                    ), color: MATheme.ai)
+                    Text(language.text(
+                        english: "The sample repaired and returned.",
+                        spanish: "La muestra reparó y regresó."
+                    ))
                         .font(MATheme.display())
                         .accessibilityIdentifier("kaiwa.replay.proof.title")
-                    Text("Son datos fijos de demostración: no hubo aprendiz, captura, sonido ni evaluación.")
+                    Text(language.text(
+                        english: "This is fixed demonstration data: there was no learner, capture, sound, or assessment.",
+                        spanish: "Son datos fijos de demostración: no hubo aprendiz, captura, sonido ni evaluación."
+                    ))
                         .font(MATheme.body(16, weight: .regular))
                         .foregroundStyle(MATheme.stone)
                 }
@@ -235,19 +292,34 @@ private struct KaiwaReplayProofScreen: View {
                 .padding(.top, 28)
 
                 if let first = state.completedPreRepairAttempt {
-                    sampleCard("MUESTRA ANTES DE LA REPARACIÓN", attempt: first)
+                    sampleCard(language.text(
+                        english: "SAMPLE BEFORE REPAIR",
+                        spanish: "MUESTRA ANTES DE LA REPARACIÓN"
+                    ), attempt: first)
                         .padding(.top, 24)
                 }
                 if let second = state.completedPostRepairAttempt {
-                    sampleCard("MUESTRA DESPUÉS DE LA REPARACIÓN", attempt: second)
+                    sampleCard(language.text(
+                        english: "SAMPLE AFTER REPAIR",
+                        spanish: "MUESTRA DESPUÉS DE LA REPARACIÓN"
+                    ), attempt: second)
                         .padding(.top, 12)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    MicroCapsLabel(text: "CAMBIO EN LOS DATOS FIJOS")
-                    Text("La segunda muestra empieza antes y completa la misma obligación después de la reparación.")
+                    MicroCapsLabel(text: language.text(
+                        english: "CHANGE IN THE FIXED DATA",
+                        spanish: "CAMBIO EN LOS DATOS FIJOS"
+                    ))
+                    Text(language.text(
+                        english: "The second sample starts earlier and completes the same fixed task after repair.",
+                        spanish: "La segunda muestra empieza antes y completa la misma obligación después de la reparación."
+                    ))
                         .font(MATheme.heading())
-                    Text("Esta comparación describe el fixture; no describe a quien mira el replay.")
+                    Text(language.text(
+                        english: "This comparison describes the fixture, not the person watching the replay.",
+                        spanish: "Esta comparación describe el fixture; no describe a quien mira el replay."
+                    ))
                         .font(MATheme.caption())
                         .foregroundStyle(MATheme.stone)
                 }
@@ -256,10 +328,13 @@ private struct KaiwaReplayProofScreen: View {
 
                 if let action = state.nextLearningAction {
                     VStack(alignment: .leading, spacing: 8) {
-                        MicroCapsLabel(text: "PLAN · REPLAY CONTROLADO", color: MATheme.ai)
-                        Text(action.explanationES)
+                        MicroCapsLabel(text: language.text(
+                            english: "PLAN · CONTROLLED REPLAY",
+                            spanish: "PLAN · REPLAY CONTROLADO"
+                        ), color: MATheme.ai)
+                        Text(planExplanation(for: action))
                             .font(MATheme.heading())
-                        Text(action.evidenceReasonES)
+                        Text(planEvidence(for: action))
                             .font(MATheme.caption())
                             .foregroundStyle(MATheme.stone)
                     }
@@ -271,7 +346,10 @@ private struct KaiwaReplayProofScreen: View {
                 }
 
                 Spacer(minLength: 16)
-                PrimaryButton(title: "Reiniciar replay", identifier: "kaiwa.cta.restart") {
+                PrimaryButton(title: language.text(
+                    english: "Restart replay",
+                    spanish: "Reiniciar replay"
+                ), identifier: "kaiwa.cta.restart") {
                     send(.restart)
                 } icon: {
                     Image(systemName: "arrow.counterclockwise")
@@ -288,17 +366,29 @@ private struct KaiwaReplayProofScreen: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             MicroCapsLabel(text: title, color: MATheme.ai)
-            Label("Resultado fijo de demostración", systemImage: "checkmark.circle.fill")
+            Label(language.text(
+                english: "Fixed demonstration result",
+                spanish: "Resultado fijo de demostración"
+            ), systemImage: "checkmark.circle.fill")
                 .font(MATheme.body(16, weight: .semibold))
-            Text("Duración de muestra: \(attempt.capturedDuration.formatted(.number.precision(.fractionLength(1)))) s")
+            Text(language.text(
+                english: "Sample duration: \(attempt.capturedDuration.formatted(.number.precision(.fractionLength(1)))) s",
+                spanish: "Duración de muestra: \(attempt.capturedDuration.formatted(.number.precision(.fractionLength(1)))) s"
+            ))
                 .font(MATheme.caption())
                 .foregroundStyle(MATheme.stone)
             if let onset = attempt.estimatedVoiceOnset {
-                Text("Inicio de muestra: \(onset.formatted(.number.precision(.fractionLength(1)))) s")
+                Text(language.text(
+                    english: "Sample onset: \(onset.formatted(.number.precision(.fractionLength(1)))) s",
+                    spanish: "Inicio de muestra: \(onset.formatted(.number.precision(.fractionLength(1)))) s"
+                ))
                     .font(MATheme.caption())
                     .foregroundStyle(MATheme.stone)
             }
-            Text("El replay no capturó ni descartó audio.")
+            Text(language.text(
+                english: "The replay did not capture or discard audio.",
+                spanish: "El replay no capturó ni descartó audio."
+            ))
                 .font(MATheme.micro())
                 .foregroundStyle(MATheme.stone)
         }
@@ -306,6 +396,29 @@ private struct KaiwaReplayProofScreen: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(MATheme.mist, in: RoundedRectangle(cornerRadius: 16))
         .padding(.horizontal, MATheme.sideMargin)
+    }
+
+    private func planExplanation(for action: NextLearningAction) -> String {
+        if language == .spanish { return action.explanationES }
+        return switch action.action {
+        case .repeatLesson: "Repeat the same answer before changing situations."
+        case .reduceScaffold: "Try again with less visible help."
+        case .isolateSegment: "Isolate one short part before returning to the situation."
+        case .advance: "The fixed data advances to the next practice objective."
+        case .abstain: "Keep the local plan because there are not enough facts."
+        }
+    }
+
+    private func planEvidence(for action: NextLearningAction) -> String {
+        if language == .spanish { return action.evidenceReasonES }
+        return switch action.reason {
+        case .completedAfterRepair: "The fixed sample completed the same task after repair."
+        case .incompleteSelfReport: "The latest fixed sample is marked incomplete."
+        case .speechPresenceMissing: "The fixture contains no local speech-presence signal."
+        case .scaffoldStillPresent: "The latest fixed sample still used visible help."
+        case .repairNeeded: "The fixed sample remained incomplete after requesting help."
+        case .insufficientEvidence: "The available fixture facts do not justify changing the objective."
+        }
     }
 }
 
@@ -1106,17 +1219,18 @@ private struct LocalCaptureDisclosure: View {
 private struct ProductAudioErrorBanner: View {
     let error: ProductAudioFailure
     @Environment(\.openURL) private var openURL
+    @Environment(\.maInterfaceLanguage) private var language
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
             Image(systemName: "exclamationmark.circle.fill")
                 .foregroundStyle(MATheme.ai)
-            Text(error.localizedDescription)
+            Text(error.message(in: language))
                 .font(MATheme.caption(.medium))
                 .foregroundStyle(MATheme.sumi)
             Spacer(minLength: 4)
             if error == .microphoneDenied {
-                Button("Ajustes") {
+                Button(language.text(english: "Settings", spanish: "Ajustes")) {
                     if let url = URL(string: UIApplication.openSettingsURLString) {
                         openURL(url)
                     }

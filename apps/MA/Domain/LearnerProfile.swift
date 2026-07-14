@@ -12,6 +12,15 @@ enum JapaneseLevel: String, CaseIterable, Sendable {
         case .fewWords: "Algunas palabras sueltas"
         }
     }
+
+    func label(in language: MAInterfaceLanguage) -> String {
+        switch self {
+        case .zero:
+            language.text(english: "No Japanese yet", spanish: spanishLabel)
+        case .fewWords:
+            language.text(english: "A few separate words", spanish: spanishLabel)
+        }
+    }
 }
 
 enum TripGoal: String, CaseIterable, Sendable {
@@ -26,6 +35,17 @@ enum TripGoal: String, CaseIterable, Sendable {
         case .practicalNoTrip: "Práctica útil, sin viaje todavía"
         }
     }
+
+    func label(in language: MAInterfaceLanguage) -> String {
+        switch self {
+        case .firstTrip:
+            language.text(english: "Prepare for my first trip to Japan", spanish: spanishLabel)
+        case .bookedTrip:
+            language.text(english: "I already booked my trip", spanish: spanishLabel)
+        case .practicalNoTrip:
+            language.text(english: "Practical Japanese, no trip yet", spanish: spanishLabel)
+        }
+    }
 }
 
 enum DailyPractice: Int, CaseIterable, Sendable {
@@ -34,6 +54,13 @@ enum DailyPractice: Int, CaseIterable, Sendable {
     case long = 15
 
     var spanishLabel: String { "\(rawValue) min al día" }
+
+    func label(in language: MAInterfaceLanguage) -> String {
+        language.text(
+            english: "\(rawValue) min a day",
+            spanish: spanishLabel
+        )
+    }
 }
 
 struct LearnerProfile: Equatable, Sendable {

@@ -122,8 +122,8 @@ struct PracticeState: Equatable, Sendable {
     /// to be live.
     var sourceBadge: String {
         switch phase {
-        case .setup, .coached, .firstSuccess, .controlsIntro, .proof: "PROTOTIPO"
-        case .tutorSpeaking, .floorYielded: "REPLAY · NO EN VIVO"
+        case .setup, .coached, .firstSuccess, .controlsIntro, .proof: "PROTOTYPE / PROTOTIPO"
+        case .tutorSpeaking, .floorYielded: "REPLAY · NOT LIVE / NO EN VIVO"
         }
     }
 

@@ -45,12 +45,45 @@ export const learningActionSchema = Object.freeze({
   required: ["action", "reason", "explanation_es", "obligation_id"],
 });
 
+export const guidedLearningActionSchema = Object.freeze({
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    action: {
+      type: "string",
+      enum: ["repeat", "reduce_scaffold", "advance", "abstain"],
+    },
+    reason: {
+      type: "string",
+      enum: [
+        "review_unclear",
+        "target_close",
+        "target_not_matched",
+        "matched_with_support",
+        "matched_without_support",
+        "insufficient_evidence",
+      ],
+    },
+    obligation_id: { type: "string" },
+  },
+  required: ["action", "reason", "obligation_id"],
+});
+
 const learningPlannerInstructions = [
   "You are MA's bounded post-lesson pedagogy planner for one zero-beginner Japanese restaurant obligation.",
   "Use only the supplied structured facts. Never infer a transcript, pronunciation quality, identity, or retained audio.",
   "Choose exactly one allowed action. Advance only when current_obligation_completed is true.",
   "If evidence is contradictory or insufficient, abstain.",
   "Write one plain-Spanish explanation of at most 140 characters and do not add facts beyond the selected reason code.",
+].join(" ");
+
+const guidedLearningPlannerInstructions = [
+  "You are MA's bounded post-lesson planner for one zero-beginner Japanese restaurant obligation.",
+  "Use only two aggregate qualitative Realtime review summaries and their visible-support level.",
+  "Never infer a transcript, pronunciation quality, identity, confidence, score, mastery, or retained audio.",
+  "Advance only when the restaurant turn matched with scaffold=none.",
+  "If the final review is unclear, close, or different, repeat. If it matched with visible support, reduce scaffold.",
+  "If evidence is contradictory or insufficient, abstain.",
 ].join(" ");
 
 const canonicalActionExplanations = Object.freeze({
@@ -68,6 +101,52 @@ const canonicalEvidenceReasons = Object.freeze({
   scaffold_still_present: "El intento más reciente todavía usó ayuda visible.",
   repair_needed: "El intento siguió incompleto después de pedir ayuda.",
   insufficient_evidence: "Los hechos disponibles no justifican cambiar de objetivo.",
+});
+
+const canonicalGuidedActionExplanations = Object.freeze({
+  repeat: {
+    en: "Repeat hitori desu with the model before another scene.",
+    es: "Repite hitori desu con el modelo antes de otra escena.",
+  },
+  reduce_scaffold: {
+    en: "Try the same exchange again with less visible help.",
+    es: "Haz el mismo intercambio otra vez con menos ayuda visible.",
+  },
+  advance: {
+    en: "Try a new beginner scene while keeping this phrase as support.",
+    es: "Prueba otra escena inicial conservando esta frase como apoyo.",
+  },
+  abstain: {
+    en: "Keep the local plan because the available facts are not enough.",
+    es: "Mantén el plan local porque los hechos disponibles no bastan.",
+  },
+});
+
+const canonicalGuidedEvidenceReasons = Object.freeze({
+  review_unclear: {
+    en: "The restaurant-turn review could not verify the words.",
+    es: "La revisión del turno no pudo verificar las palabras.",
+  },
+  target_close: {
+    en: "The restaurant answer was close to the expected phrase.",
+    es: "La respuesta del restaurante fue cercana a la frase esperada.",
+  },
+  target_not_matched: {
+    en: "The restaurant answer did not match the expected phrase.",
+    es: "La respuesta del restaurante no coincidió con la frase esperada.",
+  },
+  matched_with_support: {
+    en: "MA recognized the expected answer while it was visible.",
+    es: "MA reconoció la respuesta esperada mientras estaba visible.",
+  },
+  matched_without_support: {
+    en: "MA recognized the expected answer without visible help.",
+    es: "MA reconoció la respuesta esperada sin ayuda visible.",
+  },
+  insufficient_evidence: {
+    en: "The aggregate lesson facts do not justify a change.",
+    es: "Los hechos agregados de la lección no justifican un cambio.",
+  },
 });
 
 export const realtimeSessionPolicy = Object.freeze({
@@ -116,31 +195,30 @@ export const learnerAttemptFeedbackSchema = Object.freeze({
       type: "string",
       enum: ["matched", "close", "different", "unclear"],
     },
-    heard_japanese: {
-      type: ["string", "null"],
-      maxLength: 48,
-    },
-    positive_es: {
+    evidence_code: {
       type: "string",
-      minLength: 1,
-      maxLength: 120,
+      enum: [
+        "full_target_in_transcript",
+        "partial_target_in_transcript",
+        "speech_turn_completed",
+        "audio_unclear",
+      ],
     },
-    correction_es: {
-      type: ["string", "null"],
-      maxLength: 160,
-    },
-    retry_focus_es: {
-      type: ["string", "null"],
-      maxLength: 120,
+    retry_focus_code: {
+      type: "string",
+      enum: [
+        "use_with_waiter",
+        "complete_target",
+        "use_visible_phrase",
+        "move_closer",
+      ],
     },
   },
   required: [
     "target_phrase_id",
     "assessment",
-    "heard_japanese",
-    "positive_es",
-    "correction_es",
-    "retry_focus_es",
+    "evidence_code",
+    "retry_focus_code",
   ],
 });
 
@@ -149,8 +227,9 @@ export const reportAttemptTool = Object.freeze({
   name: "report_attempt",
   description: [
     "Return one conservative qualitative review of the just-committed learner attempt.",
+    "Use only the declared evidence and retry-focus enum codes; never author learner-facing prose.",
     "Never return a numeric pronunciation, fluency, confidence, or mastery score.",
-    "If the audio is ambiguous, use assessment=unclear and heard_japanese=null.",
+    "If the audio is ambiguous, use assessment=unclear, evidence_code=audio_unclear, and retry_focus_code=move_closer.",
   ].join(" "),
   parameters: learnerAttemptFeedbackSchema,
 });
@@ -161,12 +240,13 @@ export const didacticRealtimeSessionPolicy = Object.freeze({
   output_modalities: ["audio"],
   max_output_tokens: 512,
   instructions: [
-    "You are MA, a patient Spanish-speaking Japanese coach for a genuine zero-level learner.",
+    "You are MA, a patient English- or Spanish-speaking Japanese coach for a genuine zero-level learner.",
     "The fixed target is 一人です (hitori desu), meaning one person, in a restaurant.",
-    "Explain in plain Spanish. Use Japanese only for the visible target, a short model, or one brief waiter turn.",
+    "Use the interface language explicitly named in each response request; default to English. Use Japanese only for the visible target, a short model, or one brief waiter turn.",
     "Never produce an unexplained Japanese monologue.",
     "The app owns push-to-talk, turn order, retry, and progression.",
     "When explicitly asked to review the committed attempt, call report_attempt exactly once.",
+    "The tool response contains only assessment/evidence/focus codes; the app supplies canonical English and Spanish feedback.",
     "Be conservative: if you cannot verify what was said, report unclear rather than guessing.",
     "Never give numeric pronunciation, fluency, confidence, or mastery scores and never claim phoneme-level measurement.",
     "Give at most one concrete retry focus. Spoken feedback must be no more than two short sentences.",
@@ -229,7 +309,9 @@ export async function handleRequest(request, env, upstreamFetch) {
     request.method === "POST" && url.pathname === "/product/realtime/client-secret";
   const isLearning =
     request.method === "POST" && url.pathname === "/learning/next";
-  if (!isProbeRealtime && !isProductRealtime && !isLearning) {
+  const isGuidedLearning =
+    request.method === "POST" && url.pathname === "/learning/guided-next";
+  if (!isProbeRealtime && !isProductRealtime && !isLearning && !isGuidedLearning) {
     return jsonResponse(404, { error: "not_found" });
   }
 
@@ -249,13 +331,6 @@ export async function handleRequest(request, env, upstreamFetch) {
     return jsonResponse(401, { error: "unauthorized" });
   }
 
-  const bodyResult = isProbeRealtime || isProductRealtime
-    ? await parseEmptyObjectBody(request)
-    : await parseLearningReportBody(request);
-  if (!bodyResult.ok) {
-    return jsonResponse(400, { error: bodyResult.error });
-  }
-
   const safetyIdentifier = await makeSafetyIdentifier(
     env.MA_SAFETY_SALT,
     installToken,
@@ -263,7 +338,9 @@ export async function handleRequest(request, env, upstreamFetch) {
   let rateLimit;
   try {
     rateLimit = await env.RATE_LIMITER.limit({
-      key: `${safetyIdentifier}:${isLearning ? "learning" : `${role}-realtime`}`,
+      key: `${safetyIdentifier}:${isGuidedLearning
+        ? "guided-learning"
+        : isLearning ? "learning" : `${role}-realtime`}`,
     });
   } catch {
     return jsonResponse(503, { error: "service_unavailable" });
@@ -272,8 +349,31 @@ export async function handleRequest(request, env, upstreamFetch) {
     return jsonResponse(429, { error: "rate_limited" }, { "retry-after": "60" });
   }
 
+  // Consume the endpoint-specific authenticated quota before reading any
+  // caller body. A malformed or oversized request must not become a free body
+  // parsing path for a leaked private-demo credential.
+  let bodyResult;
+  if (isProbeRealtime || isProductRealtime) {
+    bodyResult = await parseEmptyObjectBody(request);
+  } else if (isGuidedLearning) {
+    bodyResult = await parseGuidedLearningReportBody(request);
+  } else {
+    bodyResult = await parseLearningReportBody(request);
+  }
+  if (!bodyResult.ok) {
+    return jsonResponse(400, { error: bodyResult.error });
+  }
+
   if (isLearning) {
     return handleLearningNext(
+      bodyResult.value,
+      env,
+      safetyIdentifier,
+      upstreamFetch,
+    );
+  }
+  if (isGuidedLearning) {
+    return handleGuidedLearningNext(
       bodyResult.value,
       env,
       safetyIdentifier,
@@ -445,6 +545,190 @@ async function handleLearningNext(
   });
 }
 
+async function handleGuidedLearningNext(
+  learningReport,
+  env,
+  safetyIdentifier,
+  upstreamFetch,
+) {
+  const upstreamBody = {
+    model: learningPlannerPolicy.model,
+    instructions: guidedLearningPlannerInstructions,
+    input: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text: JSON.stringify({
+              learning_report: modelSafeGuidedLearningReport(learningReport),
+            }),
+          },
+        ],
+      },
+    ],
+    text: {
+      format: {
+        type: "json_schema",
+        name: "ma_guided_next_learning_action",
+        strict: true,
+        schema: guidedLearningActionSchema,
+      },
+      verbosity: "low",
+    },
+    reasoning: { effort: learningPlannerPolicy.reasoningEffort },
+    max_output_tokens: learningPlannerPolicy.maxOutputTokens,
+    safety_identifier: safetyIdentifier,
+    store: false,
+  };
+
+  let upstreamResponse;
+  for (let attempt = 0; attempt < learningPlannerPolicy.maxAttempts; attempt += 1) {
+    try {
+      upstreamResponse = await upstreamFetch(OPENAI_RESPONSES_URL, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${env.OPENAI_API_KEY}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(upstreamBody),
+        signal: AbortSignal.timeout(learningPlannerPolicy.upstreamTimeoutMs),
+      });
+    } catch {
+      if (attempt + 1 < learningPlannerPolicy.maxAttempts) {
+        continue;
+      }
+      return jsonResponse(502, { error: "upstream_unavailable" });
+    }
+    if (upstreamResponse.ok) {
+      break;
+    }
+    if (
+      attempt + 1 < learningPlannerPolicy.maxAttempts &&
+      isRetryableUpstreamStatus(upstreamResponse.status)
+    ) {
+      continue;
+    }
+    return jsonResponse(502, { error: "upstream_rejected" });
+  }
+
+  if (!upstreamResponse?.ok) {
+    return jsonResponse(502, { error: "upstream_unavailable" });
+  }
+  let payload;
+  try {
+    payload = await upstreamResponse.json();
+  } catch {
+    return jsonResponse(502, { error: "upstream_invalid_response" });
+  }
+  const recommendationResult = parseGuidedLearningRecommendation(
+    payload,
+    learningReport,
+  );
+  if (!recommendationResult.ok) {
+    return jsonResponse(502, { error: "upstream_invalid_response" });
+  }
+  return jsonResponse(200, {
+    schema_version: 2,
+    report_id: learningReport.report_id,
+    model: learningPlannerPolicy.model,
+    source: "model",
+    ...recommendationResult.value,
+  });
+}
+
+function parseGuidedLearningRecommendation(payload, report) {
+  if (
+    payload?.status !== "completed" ||
+    payload.error != null ||
+    payload.incomplete_details != null ||
+    !Array.isArray(payload?.output)
+  ) {
+    return { ok: false };
+  }
+  const messages = [];
+  for (const item of payload.output) {
+    if (item?.type === "reasoning") {
+      continue;
+    }
+    if (item?.type !== "message" || !Array.isArray(item.content)) {
+      return { ok: false };
+    }
+    messages.push(item);
+  }
+  if (
+    messages.length !== 1 ||
+    messages[0].content.length !== 1 ||
+    messages[0].content[0]?.type !== "output_text" ||
+    typeof messages[0].content[0].text !== "string" ||
+    messages[0].content[0].text.length > 4_096
+  ) {
+    return { ok: false };
+  }
+  let value;
+  try {
+    value = JSON.parse(messages[0].content[0].text);
+  } catch {
+    return { ok: false };
+  }
+  return validateGuidedLearningRecommendation(value, report);
+}
+
+function validateGuidedLearningRecommendation(value, report) {
+  if (!isPlainObject(value) || !hasExactKeys(value, [
+    "action",
+    "reason",
+    "obligation_id",
+  ])) {
+    return { ok: false };
+  }
+  if (
+    !guidedLearningActionSchema.properties.action.enum.includes(value.action) ||
+    !guidedLearningActionSchema.properties.reason.enum.includes(value.reason) ||
+    value.obligation_id !== report.scene_plan.obligation_id ||
+    !isGuidedActionReasonSupported(value.action, value.reason, report)
+  ) {
+    return { ok: false };
+  }
+  const explanation = canonicalGuidedActionExplanations[value.action];
+  const evidence = canonicalGuidedEvidenceReasons[value.reason];
+  if (!explanation || !evidence) {
+    return { ok: false };
+  }
+  return {
+    ok: true,
+    value: {
+      action: value.action,
+      reason: value.reason,
+      explanation_en: explanation.en,
+      explanation_es: explanation.es,
+      evidence_reason_en: evidence.en,
+      evidence_reason_es: evidence.es,
+      obligation_id: value.obligation_id,
+    },
+  };
+}
+
+function isGuidedActionReasonSupported(action, reason, report) {
+  const restaurant = report.attempt_summary.restaurant_turn;
+  switch (`${action}:${reason}`) {
+    case "repeat:review_unclear":
+      return restaurant.last_review === "unclear";
+    case "repeat:target_close":
+      return restaurant.last_review === "close";
+    case "repeat:target_not_matched":
+      return restaurant.last_review === "different";
+    case "reduce_scaffold:matched_with_support":
+      return restaurant.last_review === "matched" && restaurant.scaffold === "full";
+    case "advance:matched_without_support":
+      return restaurant.last_review === "matched" && restaurant.scaffold === "none";
+    case "abstain:insufficient_evidence":
+      return true;
+    default:
+      return false;
+  }
+}
+
 function isRetryableUpstreamStatus(status) {
   return status === 408 || status === 409 || status === 429 || status >= 500;
 }
@@ -610,7 +894,14 @@ function isValidInstallToken(token) {
 }
 
 async function parseEmptyObjectBody(request) {
-  const text = await request.text();
+  if (!hasJSONContentType(request)) {
+    return { ok: false, error: "invalid_content_type" };
+  }
+  const body = await readBoundedBody(request, 256);
+  if (!body.ok) {
+    return { ok: false, error: "invalid_request" };
+  }
+  const text = body.text;
   if (text.trim().length === 0) {
     return { ok: true, value: {} };
   }
@@ -632,18 +923,14 @@ async function parseEmptyObjectBody(request) {
 }
 
 async function parseLearningReportBody(request) {
-  if (!(request.headers.get("content-type") ?? "").toLowerCase()
-    .startsWith("application/json")) {
+  if (!hasJSONContentType(request)) {
     return { ok: false, error: "invalid_content_type" };
   }
-  const declaredLength = Number(request.headers.get("content-length"));
-  if (Number.isFinite(declaredLength) && declaredLength > 16_384) {
+  const body = await readBoundedBody(request, 16_384);
+  if (!body.ok || body.text.length === 0) {
     return { ok: false, error: "invalid_learning_report" };
   }
-  const text = await request.text();
-  if (text.length === 0 || text.length > 16_384) {
-    return { ok: false, error: "invalid_learning_report" };
-  }
+  const text = body.text;
 
   let value;
   try {
@@ -656,6 +943,130 @@ async function parseLearningReportBody(request) {
     return { ok: false, error: "invalid_learning_report" };
   }
   return { ok: true, value };
+}
+
+async function parseGuidedLearningReportBody(request) {
+  if (!hasJSONContentType(request)) {
+    return { ok: false, error: "invalid_content_type" };
+  }
+  const body = await readBoundedBody(request, 16_384);
+  if (!body.ok || body.text.length === 0) {
+    return { ok: false, error: "invalid_guided_learning_report" };
+  }
+  const text = body.text;
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    return { ok: false, error: "invalid_json" };
+  }
+  if (!validateGuidedLearningReport(value)) {
+    return { ok: false, error: "invalid_guided_learning_report" };
+  }
+  return { ok: true, value };
+}
+
+function hasJSONContentType(request) {
+  const rawValue = request.headers.get("content-type") ?? "";
+  const mediaType = rawValue.split(";", 1)[0].trim().toLowerCase();
+  return mediaType === "application/json";
+}
+
+async function readBoundedBody(request, maximumBytes) {
+  const rawLength = request.headers.get("content-length");
+  if (rawLength !== null) {
+    if (!/^(0|[1-9][0-9]*)$/u.test(rawLength)) {
+      return { ok: false };
+    }
+    const declaredLength = Number(rawLength);
+    if (!Number.isSafeInteger(declaredLength) || declaredLength > maximumBytes) {
+      return { ok: false };
+    }
+  }
+
+  if (request.body === null) {
+    return { ok: true, text: "" };
+  }
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  let bytesRead = 0;
+  let text = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        text += decoder.decode();
+        return { ok: true, text };
+      }
+      bytesRead += value.byteLength;
+      if (bytesRead > maximumBytes) {
+        await reader.cancel();
+        return { ok: false };
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+  } catch {
+    try {
+      await reader.cancel();
+    } catch {
+      // The body already failed; cancellation is best-effort only.
+    }
+    return { ok: false };
+  }
+}
+
+function validateGuidedLearningReport(value) {
+  if (!isPlainObject(value) || !hasExactKeys(value, [
+    "schema_version",
+    "report_id",
+    "scene_plan",
+    "attempt_summary",
+    "lesson_finished",
+    "raw_audio_included",
+    "transcript_included",
+    "self_assessment_included",
+  ])) {
+    return false;
+  }
+  if (
+    value.schema_version !== 2 ||
+    !isUUIDString(value.report_id) ||
+    value.lesson_finished !== true ||
+    value.raw_audio_included !== false ||
+    value.transcript_included !== false ||
+    value.self_assessment_included !== false ||
+    !validateRestaurantScenePlan(value.scene_plan)
+  ) {
+    return false;
+  }
+  const summary = value.attempt_summary;
+  return isPlainObject(summary) && hasExactKeys(summary, [
+    "taught_phrase",
+    "restaurant_turn",
+  ]) && validateGuidedStageSummary(summary.taught_phrase)
+    && validateGuidedStageSummary(summary.restaurant_turn);
+}
+
+function validateRestaurantScenePlan(plan) {
+  return isPlainObject(plan) && hasExactKeys(plan, [
+    "scene_id",
+    "obligation_id",
+    "learner_level",
+    "target_phrase_id",
+  ]) && plan.scene_id === RESTAURANT_SCENE_ID
+    && plan.obligation_id === RESTAURANT_OBLIGATION_ID
+    && plan.learner_level === "zero_beginner"
+    && plan.target_phrase_id === "restaurant.party-size.hitori-desu";
+}
+
+function validateGuidedStageSummary(summary) {
+  return isPlainObject(summary) && hasExactKeys(summary, [
+    "attempt_count",
+    "last_review",
+    "scaffold",
+  ]) && isIntegerInRange(summary.attempt_count, 1, 8)
+    && ["matched", "close", "different", "unclear"].includes(summary.last_review)
+    && ["full", "none"].includes(summary.scaffold);
 }
 
 function validateLearningReport(value) {
@@ -774,6 +1185,15 @@ function modelSafeLearningReport(report) {
     })),
     current_obligation_completed: report.current_obligation_completed,
     repair_segment_id: report.repair_segment_id,
+  };
+}
+
+function modelSafeGuidedLearningReport(report) {
+  return {
+    schema_version: report.schema_version,
+    scene_plan: report.scene_plan,
+    attempt_summary: report.attempt_summary,
+    lesson_finished: report.lesson_finished,
   };
 }
 

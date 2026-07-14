@@ -88,6 +88,7 @@ struct AXOverflowTests {
     func homeNoOverflow() {
         let home = HomeView(
             profile: .standard,
+            onToggleLanguage: {},
             onStartScene: { _ in },
             onReplayOnboarding: {},
             onResetChoices: {},
@@ -139,6 +140,7 @@ struct AXOverflowTests {
         let home = render(
             HomeView(
                 profile: .standard,
+                onToggleLanguage: {},
                 onStartScene: { _ in },
                 onReplayOnboarding: {},
                 onResetChoices: {},

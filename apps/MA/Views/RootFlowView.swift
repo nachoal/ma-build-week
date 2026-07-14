@@ -1,18 +1,21 @@
 import SwiftUI
 
 /// App-level routing: onboarding until completed, then the intent-first home,
-/// with the local Kaiwa Loop pushed as a full-screen destination. Persistence
-/// is local AppStorage only; the bounded post-lesson planner is optional.
+/// with the guided Realtime lesson pushed as a full-screen destination.
+/// Persistence is local AppStorage only; the bounded post-lesson planner is
+/// optional.
 struct RootFlowView: View {
     @AppStorage("ma.onboarding.completed") private var onboardingCompleted = false
     @AppStorage("ma.profile.level") private var rawLevel = LearnerProfile.standard.rawLevel
     @AppStorage("ma.profile.goal") private var rawGoal = LearnerProfile.standard.rawGoal
     @AppStorage("ma.profile.situations") private var rawSituations = LearnerProfile.standard.rawSituations
     @AppStorage("ma.profile.dailyMinutes") private var rawDailyMinutes = LearnerProfile.standard.rawDailyMinutes
+    @AppStorage("ma.interface.language") private var rawInterfaceLanguage = MAInterfaceLanguage.defaultLanguage.rawValue
 
     @State private var path: [SceneID] = []
-    @State private var kaiwaFeature = KaiwaLoopFeature.production()
+    @State private var guidedFeature = GuidedLessonFeature.production()
     @State private var replayFeature = KaiwaLoopFeature.labeledReplay()
+    @State private var isOpeningScene = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var profile: LearnerProfile {
@@ -20,6 +23,10 @@ struct RootFlowView: View {
             level: rawLevel, goal: rawGoal,
             situations: rawSituations, dailyMinutes: rawDailyMinutes
         )
+    }
+
+    private var interfaceLanguage: MAInterfaceLanguage {
+        MAInterfaceLanguage(rawValue: rawInterfaceLanguage) ?? .defaultLanguage
     }
 
     /// UI tests choose a route without mutating the learner's persisted
@@ -43,24 +50,38 @@ struct RootFlowView: View {
     var body: some View {
         Group {
             if labeledReplayRequested {
-                KaiwaLoopView(feature: replayFeature, onExit: nil)
+                KaiwaLoopView(
+                    feature: replayFeature,
+                    onExit: nil,
+                    onToggleLanguage: toggleLanguage
+                )
                     .task { replayFeature.startLabeledReplay() }
             } else {
                 switch AppRoute.initial(hasCompletedOnboarding: effectiveOnboardingCompleted) {
                 case .onboarding:
-                    OnboardingView { completedProfile in
-                        save(completedProfile)
-                        withRouteAnimation { onboardingCompleted = true }
-                    }
+                    OnboardingView(
+                        onComplete: { completedProfile in
+                            save(completedProfile)
+                            withRouteAnimation { onboardingCompleted = true }
+                        },
+                        onToggleLanguage: toggleLanguage
+                    )
                     .transition(.opacity)
                 case .home:
                     NavigationStack(path: $path) {
                         HomeView(
                             profile: profile,
+                            onToggleLanguage: toggleLanguage,
                             onStartScene: { sceneID in
-                                guard SceneCatalog.info(for: sceneID)?.available == true else { return }
-                                kaiwaFeature.send(.restart)
-                                path.append(sceneID)
+                                guard SceneCatalog.info(for: sceneID)?.available == true,
+                                      !isOpeningScene else { return }
+                                isOpeningScene = true
+                                Task { @MainActor in
+                                    guidedFeature.setInterfaceLanguage(interfaceLanguage)
+                                    await guidedFeature.resetForNewLesson()
+                                    path.append(sceneID)
+                                    isOpeningScene = false
+                                }
                             },
                             onReplayOnboarding: {
                                 withRouteAnimation { onboardingCompleted = false }
@@ -73,10 +94,16 @@ struct RootFlowView: View {
                             }
                         )
                         .navigationDestination(for: SceneID.self) { _ in
-                            KaiwaLoopView(feature: kaiwaFeature) {
-                                kaiwaFeature.send(.restart)
-                                path.removeAll()
-                            }
+                            GuidedLessonView(
+                                feature: guidedFeature,
+                                onExit: {
+                                    Task {
+                                        await guidedFeature.stopForExit()
+                                        path.removeAll()
+                                    }
+                                },
+                                onToggleLanguage: toggleLanguage
+                            )
                             .toolbar(.hidden, for: .navigationBar)
                         }
                     }
@@ -84,6 +111,7 @@ struct RootFlowView: View {
                 }
             }
         }
+        .environment(\.maInterfaceLanguage, interfaceLanguage)
     }
 
     private func save(_ profile: LearnerProfile) {
@@ -95,10 +123,17 @@ struct RootFlowView: View {
 
     private func deleteAllData() {
         try? PlannerInstallCredentialStore().deleteToken()
-        kaiwaFeature.send(.restart)
+        guidedFeature.send(.restart)
         path.removeAll()
         save(.standard)
+        rawInterfaceLanguage = MAInterfaceLanguage.defaultLanguage.rawValue
         onboardingCompleted = false
+    }
+
+    private func toggleLanguage() {
+        let next = interfaceLanguage.toggled
+        rawInterfaceLanguage = next.rawValue
+        guidedFeature.setInterfaceLanguage(next)
     }
 
     private func withRouteAnimation(_ change: () -> Void) {

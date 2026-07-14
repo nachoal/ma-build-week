@@ -1,0 +1,1 @@
+"NSMicrophoneUsageDescription" = "MA usa el micrófono solo cuando tocas Grabar. Envía ese turno breve directamente a OpenAI para transcribirlo y darte retroalimentación; la app no guarda una grabación.";

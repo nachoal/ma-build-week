@@ -56,6 +56,9 @@ Append exact evidence after each milestone.
 | GPT-5.6 planner integration/guardrails | Root added versioned `ScenePlan`, `Attempt`, `LearningReport`, and `NextLearningAction` contracts; an immediate deterministic policy; a Keychain-backed broker client; report-generation cancellation; and double validation that binds every action/reason pair to the same observed obligation. The Worker fixes `gpt-5.6-sol`, strict structured output, `store: false`, bounded input/output/timeout/retry, canonical evidence copy, privacy-preserving safety ID, and endpoint-scoped product authentication | `64e8532` | Worker 18/18; complete strict MA scheme 104/104 test cases (106 parameterized executions); shared Swift/Worker fixtures; live private `gpt-5.6-sol` response validated; product token rejected by Realtime endpoint with 401 | code, broker, and live contract complete; physical product provisioning pending |
 | Physical-device validation and replay fallback | Root added a bounded normalized `ConversationProvider` contract, capability groups that cannot imply one another, a single-use `ReplayAdapter`, fixture-only provenance, a shared product/replay semantic reducer, stale-event and stale-capture rejection, and a permanently labeled replay UI with no microphone, audio, network, learner, or planner claim. One dynamic device script builds, signs, installs, and launches either product or replay without a checked-in device identifier or credential | `c344a67` | strict MA 113 Swift + 4 UI tests; independent replay re-audit PASS; exact-commit product and replay builds installed on the dynamically discovered iPhone 17 Pro, then both launches were lock-denied | fallback code, simulator, and signed install complete; unlocked physical runtime matrix pending |
 | Demo/submission evidence | Root added explicit planner opt-in, accurate deletion/privacy flows, captions, Reduce Motion and Dynamic Type hardening, a tested privacy manifest, claim matrix, Devpost draft, demo/testing/privacy runbooks, subtitles, rehearsal/cold-viewer protocols, fail-closed secret scanning, dynamic device automation, and canonical clean-tree archive automation | `c344a67`, `8c9effc` | MA 113 + 4, probe 47, Worker 18; `plutil`, script syntax, generated-project diff, current-tree/history/staged-input secret scans, negative release-tool tests, independent WP-6/7 audit PASS, signed Release archive, exact commit/environment files, and verified checksums | private submission packet/archive prepared; physical/human evidence, video, URLs, `/feedback`, and submission remain gated |
+| Guided bilingual Realtime product | After the learner rejected the fixture-first flow, root replaced the shipping route with an English-default/Spanish-switchable lesson: explained target, one-tap bundled model, explicit bounded capture, enum-only transcript-grounded Realtime review, canonical bilingual feedback, retry/continue, a briefed captioned waiter turn, second capture/review, and completion without scores or self-rating. One `AudioGraphController` owns every product audio operation | pending current commit | Frozen combined simulator result passed 175/175 test cases (167 Swift + 8 UI) at `.build/test-results/MA-complete-freeze-20260714.xcresult`; this includes the English Apple permission prompt and real AVAudio playback/capture/stop integration test | code, service, and simulator complete; physical live review pending |
+| Guided aggregate planner and hardened product broker | Root added separate v2 aggregate-only guided planning, explicit opt-in, deterministic local fallback, cancellation/generation fencing, a fixed `gpt-5.6-sol` Responses contract, and an independently re-audited product Realtime mint/review policy. Authenticated quota is consumed before bounded body parsing; exact JSON media types and enum-only review arguments fail closed | pending current commit | Worker 30/30; security re-audit DEPLOY; live version `e45a3b92-217b-4830-8841-a50a7465a6da` passed health, invalid-media 400, exact-key mint, local policy-hash match, and bilingual guided-plan validation | complete for authorized private single-device demo; not public/TestFlight auth |
+| Current guided device/submission evidence | Root generated, signed, and installed the guided build, rewrote the submission story around the actual bilingual two-review product, and made the operator-only replay's not-live badge bilingual | pending current commit | `.build/device-evidence/20260714T160140Z-product`: build/install succeeded; launch was denied because the iPhone re-locked. The frozen simulator evidence is `.build/test-results/MA-complete-freeze-20260714.xcresult` (175/175), `.build/test-results/MAAudioProbe-freeze-20260714.xcresult` (49/49), and `.build/evidence/MA-complete-freeze-attachments-20260714/` | simulator/service complete; unlocked physical runtime, human/Japanese review, video, archive refresh, `/feedback`, and submission remain gated |
 
 ## Delegated tasks and sessions
 
@@ -82,6 +85,13 @@ audited. Core implementation remains in the root task.
 | `019f610e-74d5-7701-8c67-d7c2f996a9ce` (`/root/realtime_ux_contract_audit`) | Read-only zero-beginner teaching-flow audit | No files; state machine, Spanish copy, recovery rules, claim guards, and acceptance matrix only | no |
 | `019f610e-919c-7a22-8954-beeac18090e5` (`/root/realtime_transport_map_audit`) | Read-only product Realtime integration audit | No files; product-local transport, one-owner audio, ordering hazards, and test map only | no |
 | `019f610e-a57f-7a02-a526-4f189387bf93` (`/root/realtime_broker_contract_audit`) | Read-only didactic broker/tool/privacy audit | No files; product-only endpoint, session policy, review schema, parser validation, and security tests only | no |
+| `019f6138-b6ae-70b2-931b-2ab170460c1f` (`/root/guided_planner_contract_audit`) | Read-only guided post-lesson planner audit | No files; separate v2 aggregate-review contract, privacy boundary, progression guards, and test matrix only | no |
+| `019f613d-6256-70b1-af26-b85d8b7ab5c1` (`/root/bilingual_surface_audit`) | Read-only English/Spanish shipping-surface audit | No files; launch, onboarding, home, guided lesson, profile, state-copy, permission-dialog, Realtime feedback, and UI-test inventory only | no |
+| `019f615a-7c19-74b2-b7de-ec96a9e8d19e` (`/root/broker_security_audit`) | Read-only post-deploy broker and Realtime review security audit | No files; request-bound/rate-limit ordering, structured review grounding, prompt-safety, token-budget, auth, and guided-planner contract only | no |
+| `019f616b-7336-79b2-b5b7-1e903dfe480d` (`/root/submission_claims_audit`) | Read-only guided-product submission consistency audit | No files; line-specific stale-flow, privacy, Realtime, bilingual, demo, subtitle, and public-claim inventory only | no |
+| `019f617d-f7d0-7602-876a-288ca6a1e785` (`/root/guided_runtime_race_audit`) | Read-only guided runtime race and turn-isolation audit | No files; found three lifecycle races, then re-audited root fixes and returned PASS | no |
+| `/root/final_static_hygiene_audit` (coordination API exposed no opaque ID) | Read-only final claims, evidence-path, secret, and working-tree hygiene audit | No files; reconciled 175/49/30 evidence paths, ignored artifacts, secrets, and claims; returned PASS | no |
+| `019f61a4-a9d0-7cc1-873b-28b8070cfb6b` (`/root/release_script_audit`) | Read-only archive and release-command audit | No files; clean-tree, signature, privacy-manifest, export-compliance, and checksum procedure only | no |
 
 ## Codex implementation journal
 
@@ -550,6 +560,98 @@ For each material decision, capture:
   ephemeral secret was printed or retained. This proves the server policy and
   transport handshake only—not device capture, review quality, or audible
   feedback.
+
+### 2026-07-14 — English-default guided product, broker hardening, and simulator closure
+
+- Learner evidence changed the product: after the repaired legacy controls ran,
+  Ignacio rejected the flow because it did not review his voice, jumped between
+  listening and recording, and played unexplained Japanese to a level-zero
+  learner. Root treated that as a failed product branch, not a cosmetic issue.
+- Root built the replacement guided state machine directly. Fresh installs use
+  English for American judges; an always-visible English/Spanish switch updates
+  onboarding, home, profile, OS permission copy, lesson instructions, Realtime
+  feedback, completion, and planner explanations without resetting the phase.
+- The new lesson explains `一人です`, romaji, meaning, and the response task;
+  requires one completed model playback before explicit recording; reviews the
+  first learner turn before retry/continue; briefs and captions one bounded
+  waiter turn; and reviews the second learner turn before completion. It has no
+  self-rating, numeric score, phoneme claim, auto-record, or unexplained
+  Japanese monologue.
+- Realtime review security was reduced to locally canonical teaching copy from
+  exact enum codes. The app independently grounds any positive result in the
+  approximate Japanese transcript and downgrades missing or inconsistent
+  evidence to unclear. Provider prose cannot enter later model instructions.
+- Independent audit `019f615a-7c19-74b2-b7de-ec96a9e8d19e` first returned NO
+  DEPLOY for unbounded/pre-rate-limit parsing, model prose, false-match, token
+  budget, and `application/jsonp` acceptance. Root fixed each item. The same
+  reviewer independently reran Worker 30/30 and returned DEPLOY for the private
+  single-device demo; the static product token remains unsuitable for public or
+  TestFlight distribution.
+- Root deployed fixed Worker version
+  `e45a3b92-217b-4830-8841-a50a7465a6da`. Live redacted checks passed health,
+  exact JSON rejection, short-lived product Realtime mint, exact local policy
+  hash, and an 11-key bilingual `gpt-5.6-sol` guided recommendation. No
+  standard key, install token, or ephemeral secret was printed or persisted.
+- The first combined simulator run passed all 158 Swift tests and the real
+  audio UI check but reported four UI signal-9 failures. Exported xcresult,
+  XCTest, host, and simulator logs proved a second concurrent `xcodebuild`
+  process was force-quitting this run's test runner on the same simulator;
+  `MA` remained healthy until cleanup. Root did not count the partial reruns.
+  With the simulator uncontended and microphone permission reset, all 7 UI
+  tests passed in 101.8 seconds, including the English Apple disclosure,
+  first-tap production playback, real capture/stop, both bilingual reviewed
+  turns, planner opt-in, accessibility, and isolated replay.
+- Independent audit `019f616b-7336-79b2-b5b7-1e903dfe480d` returned NO-SHIP on
+  the submission copy because it still described the retired Spanish-only
+  self-assessment/controlled-repair flow and falsely said audio never left the
+  phone. Root rewrote Devpost, reviewer instructions, demo, rehearsals, claims,
+  cold-viewer protocol, English subtitles, and release checklist around the
+  actual guided product and direct-to-OpenAI audio boundary. The historical
+  fallback now carries the bilingual permanent badge
+  `REPLAY · NOT LIVE / NO EN VIVO`.
+- The same read-only claims reviewer re-audited the rewritten packet and returned
+  SHIP for submission copy and claim framing. Root accepted its nonblocking
+  precision edits: public copy now says speaking-turn review, and subtitles
+  distinguish the provider's approximate transcript from MA's local validation
+  and canonical teaching adjustment.
+- The signed guided product build installed on the paired iPhone from
+  `.build/device-evidence/20260714T160140Z-product`, but the device had re-locked
+  before launch. This is install evidence only. English/Spanish live review,
+  route/interruption/network, Japanese quality, and learner claims remain open.
+- Root then froze an uncontended latest-source simulator result at
+  `.build/test-results/MA-complete-freeze-20260714.xcresult`: all 175 test cases
+  passed (167 Swift and 8 UI). The separate characterization suite passed 49
+  tests in 16 suites at
+  `.build/test-results/MAAudioProbe-freeze-20260714.xcresult`. The real-audio UI
+  test reset microphone permission, verified Apple's English purpose text,
+  tapped Allow, and completed first-tap playback plus capture/stop without
+  needing manual computer-use intervention. Visual inspection of the exported
+  English completion screen found no overlap or missing controls.
+- Independent runtime audit `019f617d-f7d0-7602-876a-288ca6a1e785` initially
+  found three release-blocking races: optional spoken feedback could delay the
+  visible review, canceled response audio could cross into the waiter turn, and
+  rapid Retry/Continue taps could start duplicate cleanup. Root moved optional
+  audio after the text review, generation-fenced the response mailbox and
+  connection invalidation, and synchronously claimed a disabled transition
+  state. Deterministic tests now inject late old audio after reconnect and a
+  suspended-stop double tap; the same auditor returned PASS.
+- Root added an explicit `ITSAppUsesNonExemptEncryption = NO` declaration to
+  both generated targets and a regression test alongside the existing privacy
+  manifest contract. `xcodegen generate` reproduced the exact project hash
+  `ca4bbdaae0157d3e8ebaf9274427b5727283dc6655abd6cd4aa8a96a1e8beba2`.
+- After the freeze, Worker 30/30, `git diff --check`, and the current-set plus
+  all-reachable-history secret scan passed. The final post-commit scan and
+  clean-tree archive remain separate release gates.
+- Read-only release audit `019f61a4-a9d0-7cc1-873b-28b8070cfb6b` found that the
+  prior ignored archive was stale and that the archive tool verified the
+  privacy manifest but not the embedded export-compliance declaration. Root
+  made the clean-tree tool fail unless the archived app contains
+  `ITSAppUsesNonExemptEncryption=false`; the old candidate will not be reused.
+- The final static hygiene reviewer returned PASS after the ledger update: the
+  175/175 MA, 49/49 probe, and 30/30 Worker references agree; all exact evidence
+  paths exist; generated/private artifacts remain ignored; current claims and
+  placeholders are honest; and every implementation/resource file remains
+  visible for the intended commit.
 
 ## Final feedback preparation
 

@@ -115,12 +115,12 @@ struct CoachedFlowTests {
         #expect(PracticeReducer.reduce(coached, .controlsIntroStarted) == coached)
     }
 
-    @Test("Coached phases stay labeled PROTOTIPO — never replay, never live")
+    @Test("Coached phases stay labeled bilingual prototype — never replay, never live")
     func coachedBadges() {
         var s = PracticeState()
         for event in RestaurantForOneFixture.coachedLadderEvents + [.controlsIntroStarted] {
             s = PracticeReducer.reduce(s, event)
-            #expect(s.sourceBadge == "PROTOTIPO")
+            #expect(s.sourceBadge == "PROTOTYPE / PROTOTIPO")
         }
     }
 
