@@ -226,3 +226,32 @@ cannot reopen the submission branch without a new written evidence gate.
 
 Approver: automatic WP-1 hour-3 rule; Ignacio review pending. Independent
 claim-scope reviewer: persistent `ma-adversary` session.
+
+## Post-verdict product-direction addendum — 2026-07-14
+
+This addendum preserves the Gate 0 PARTIAL result and every false physical
+criterion above. It does not retroactively prove Experiment 0, reopen overlap,
+or authorize AEC/no-echo, latency, exact rendered-window replay, physical-
+device, or learner-outcome claims.
+
+After the permitted offline Kaiwa Loop ran on the physical phone, Ignacio
+rejected that product branch because it did not review his recorded answer,
+jumped between listening and recording without feedback, and presented
+unexplained Japanese to a level-zero learner. He then explicitly directed MA to
+use GPT Live/Realtime teaching primitives and requested an English interface so
+American judges can understand it.
+
+That later user direction authorizes a separate shipping experiment: bounded,
+explicit, non-overlapping push-to-talk Realtime review of two learner turns,
+with the task and meaning explained before audio, a bundled one-tap model,
+canonical bilingual feedback, a captioned/briefed waiter turn, and no numeric
+score or self-rating. It is not the Gate 0 overlap topology and cannot be used as
+Gate 0 evidence. One `AudioGraphController` still owns product capture and
+playout; standard OpenAI credentials remain server-side.
+
+Claims and release permission for this guided branch are governed by
+`docs/submission/claim-evidence-matrix.md` and
+`docs/submission/release-checklist.md`. Simulator, service, signing, archive,
+and install evidence must remain labeled as such. Until an unlocked physical
+run is recorded, the branch may not claim live device validation, route or
+interruption correctness, Japanese teaching quality, or learner outcomes.

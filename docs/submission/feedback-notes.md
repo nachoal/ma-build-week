@@ -656,6 +656,28 @@ For each material decision, capture:
   contains the English-default bilingual product, Realtime and planner clients,
   broker hardening, deterministic race regressions, privacy/export declarations,
   release-tool enforcement, and reconciled submission copy. Nothing was pushed.
+- Clean candidate archive: exact commit
+  `60b1eabe1f69c5e535de0d7afb6beb3b580f4c7c` produced
+  `.build/submission/candidate-60b1eabe1f69c5e535de0d7afb6beb3b580f4c7c/`.
+  The archived privacy manifest linted, embedded
+  `ITSAppUsesNonExemptEncryption=false`, Apple Development signature verified,
+  all manifest entries rehashed successfully, and `MA.xcarchive.zip` SHA-256 is
+  `726c13b2fc4a873b5eb3e541c4bd380222b93e184a600f02c1be91663dd6cdff`.
+  This is a private local/device Build Week candidate, not an App Store or
+  TestFlight distribution package.
+- Final `ma-adversary` audit rejected the first candidate packet on three
+  evidence-document defects: the preserved PARTIAL verdict did not explain the
+  later user-directed guided Realtime branch, two backlog statements remained
+  Spanish-first, and Worker 30/30 had no saved log. Root preserved the original
+  verdict and added a dated non-overlap product-direction addendum, reconciled
+  the English-default requirements, and saved the exact passing TAP output at
+  `.build/test-results/MAWorker-freeze-20260714.tap` for re-audit.
+- The re-audit found one final stale day-zero statement that still made Spanish
+  the sole explanation language. Root reconciled it to English-default with a
+  persistent Spanish switch. The persistent `ma-adversary` then returned CLEAN
+  for the verdict addendum, AGENTS scope, backlog, Worker artifact, evidence
+  references, and current claim set; only the explicit physical/human/external
+  release gates remain open.
 
 ## Final feedback preparation
 

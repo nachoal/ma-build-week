@@ -141,7 +141,8 @@ I can do it again with less help.
 
 ### Day-zero constraints
 
-- Spanish is the explanation language.
+- Explanations are available in the learner's language; fresh installs default
+  to English with a persistent Spanish switch.
 - No Japanese literacy is assumed.
 - Romaji is temporary scaffolding, not the final skill.
 - The first choice is an intent, not a lesson category.
@@ -260,8 +261,9 @@ survive it at natural speed.
 - Replay mode is clearly labeled in developer controls and never presented to
   judges as live.
 - The demo uses a single hero screen and one reproducible launch path.
-- English subtitles can explain the Spanish UI to judges without changing the
-  learner experience.
+- The fresh-install UI is English for American judges; a persistent Spanish
+  switch preserves the same lesson phase and learner experience. English
+  subtitles match the English recording.
 
 ### Honest fallback demo
 
@@ -807,12 +809,20 @@ states, local interactions, animation, previews, and deterministic fixtures may
 be implemented now. Microphone capture, provider transport, and claims that a
 mocked state is live remain blocked by Gate 0.
 
+Post-verdict direction on 2026-07-14 supersedes the Spanish-first and
+self-assessment-first product copy below: after trying the offline branch,
+Ignacio required an English-default/Spanish-switchable guided Realtime lesson
+that reviews both speaking turns. This does not reopen overlap, exact replay,
+AEC, latency, device-validation, or learner-outcome claims; see the preserved
+Gate 0 verdict addendum and the submission claim matrix.
+
 ### Functional requirements
 
 FR-001 — Zero-beginner entry
 
 - User can select I know zero Japanese.
-- Interface and explanations default to Spanish.
+- Interface and explanations default to English, with a complete persistent
+  Spanish switch that does not reset lesson progress.
 - No text entry is required to start.
 
 FR-002 — Intent-first scene

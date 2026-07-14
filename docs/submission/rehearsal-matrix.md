@@ -15,6 +15,7 @@ product.
 | Real simulator audio | One model tap completes; English permission disclosure; AVAudio capture/stop exits cleanly | `MA-complete-freeze-20260714.xcresult`: all 8 UI tests, including the real-audio integration test | PASS (simulator only) |
 | Realtime review contract | Enum-only function, ASR grounding, canonical bilingual copy, no provider prose | Swift + Worker contract tests | PASS (code/service) |
 | Guided planner | Local result first; explicit aggregate-only GPT-5.6 request; stale/double-tap fenced | Swift + live Worker verification | PASS (code/service) |
+| Worker contract suite | Fixed Realtime/planner policies, bounded schemas, auth/rate limits, privacy guards | `.build/test-results/MAWorker-freeze-20260714.tap`: 30/30 | PASS (service) |
 | Labeled historical replay | No microphone, audio, network, learner, or planner side effect | Replay unit + UI test | PASS (simulator/code) |
 | Privacy manifest and export compliance | No tracking; declared Realtime audio/aggregate use; CA92.1; non-exempt encryption explicitly `NO` | `plutil`, unit tests, generated Info settings; archive recheck pending | PASS before final archive refresh |
 | Secret scan | Current set, staged inputs, and reachable history | `scripts/scan-secrets.sh` after the 175/175 freeze | PASS on current frozen tree; rerun after commit |

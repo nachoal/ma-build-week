@@ -20,7 +20,8 @@ Devpost submission. Those require Ignacio's explicit approval.
       one-tap model completion, capture, and stop
 - [x] Complete MAAudioProbe result bundle (49/49, characterization only) at
       `.build/test-results/MAAudioProbe-freeze-20260714.xcresult`
-- [x] Worker 30/30 contract output
+- [x] Worker 30/30 contract output at
+      `.build/test-results/MAWorker-freeze-20260714.tap`
 - [x] Live private health, malformed-media rejection, Realtime mint,
       exact policy-hash, and guided-planner verification
 - [x] Secret scan passes the current frozen tree, staged inputs, and reachable

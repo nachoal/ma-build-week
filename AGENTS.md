@@ -14,6 +14,15 @@
   is bundled and local. It may claim/replay a rendered window only to the extent
   Experiment D passed; otherwise it replays a controlled labeled segment and
   never calls that segment exact.
+- Post-verdict product-direction note: after trying the permitted offline branch,
+  Ignacio explicitly rejected it because it did not review his voice and then
+  directed MA to use GPT Realtime for an English-default, zero-beginner guided
+  lesson. The dated addendum in `docs/poc/verdict.md` authorizes that separate,
+  explicit push-to-talk product branch. It does not change Gate 0's PARTIAL
+  result or permit overlap, AEC/no-echo, latency, exact-replay, physical-device,
+  or learner-outcome claims. The guided branch is governed by
+  `docs/submission/claim-evidence-matrix.md` and
+  `docs/submission/release-checklist.md`.
 - Ignacio explicitly authorized a fixture-driven MA product UI before Gate 0.
   Before the written verdict, the MA target may contain visual design,
   deterministic preview fixtures, animation, navigation, and local interaction
