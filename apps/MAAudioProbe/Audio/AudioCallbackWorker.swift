@@ -105,7 +105,7 @@ final class AudioCallbackWorker: @unchecked Sendable {
     func enqueueInput(_ frame: CapturedFloatFrame) {
         queue.async { [self] in
             guard let data = convertToPCM16(frame), !data.isEmpty else { return }
-            inputContinuation.yield(
+            let result = inputContinuation.yield(
                 ConvertedInput(
                     data: data,
                     sourceRate: frame.sampleRate,
@@ -113,14 +113,25 @@ final class AudioCallbackWorker: @unchecked Sendable {
                     timing: frame.timing
                 )
             )
+            if case .dropped = result {
+                Task { [diagnostics] in
+                    await diagnostics.record(
+                        .error,
+                        details: ["stage": "input_stream", "category": "packet_dropped"]
+                    )
+                }
+            }
         }
     }
 
     func enqueueRendered(_ samples: [Float], timing: AudioTapTiming) {
-        queue.async { [renderedContinuation] in
-            renderedContinuation.yield(
+        queue.async { [evidenceStore, renderedContinuation] in
+            let result = renderedContinuation.yield(
                 RenderedPacket(samples: samples, timing: timing)
             )
+            if case .dropped = result {
+                Task { await evidenceStore.noteRenderedPacketDrop() }
+            }
         }
     }
 

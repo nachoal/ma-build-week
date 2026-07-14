@@ -261,6 +261,7 @@ final class AudioGraphController {
             details: [
                 "epoch": String(evidence.epoch),
                 "rendered_frame": String(evidence.playerRenderedFrame),
+                "render_packet_drops": String(evidence.renderedPacketDropCount),
                 "truncate_ms": evidence.truncationTarget.map {
                     String($0.audioEndMilliseconds)
                 } ?? "none",

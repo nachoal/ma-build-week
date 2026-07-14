@@ -11,6 +11,7 @@ struct AudioGraphStopEvidence: Sendable, Equatable {
     let playerRenderedFrame: Int64
     let truncationTarget: RenderedTruncationTarget?
     let renderedWindow: RenderedAudioWindow?
+    let renderedPacketDropCount: UInt64
 }
 
 actor AudioGraphEvidenceStore {
@@ -27,6 +28,7 @@ actor AudioGraphEvidenceStore {
     private var epoch: UInt64 = 0
     private(set) var mixerRenderedFrameCount: UInt64 = 0
     private(set) var lastMixerTiming: AudioTapTiming?
+    private(set) var renderedPacketDropCount: UInt64 = 0
 
     init(playbackSampleRate: Double = 24_000) {
         self.ledger = try! RenderedPlayoutLedger(sampleRate: playbackSampleRate)
@@ -41,6 +43,7 @@ actor AudioGraphEvidenceStore {
         )
         mixerRenderedFrameCount = 0
         lastMixerTiming = nil
+        renderedPacketDropCount = 0
     }
 
     func schedule(
@@ -80,13 +83,17 @@ actor AudioGraphEvidenceStore {
         lastMixerTiming = timing
     }
 
+    func noteRenderedPacketDrop() {
+        renderedPacketDropCount &+= 1
+    }
+
     func stop(playerRenderedFrame: Int64) throws -> AudioGraphStopEvidence {
         let boundedPlayerFrame = max(0, playerRenderedFrame)
         let contentRenderedFrame = contentFrame(for: boundedPlayerFrame)
         try ledger.markRendered(through: contentRenderedFrame)
         let truncationTarget = ledger.truncationTarget()
         let renderedWindow: RenderedAudioWindow?
-        if let ringBuffer {
+        if let ringBuffer, renderedPacketDropCount == 0 {
             renderedWindow = try? ringBuffer.window(
                 endingAt: ringBuffer.renderedFrameCount,
                 duration: 4
@@ -96,14 +103,17 @@ actor AudioGraphEvidenceStore {
         }
 
         let stoppedEpoch = epoch
+        let stoppedDropCount = renderedPacketDropCount
         epoch &+= 1
         ledger.reset()
         playerContentRanges.removeAll(keepingCapacity: true)
+        renderedPacketDropCount = 0
         return AudioGraphStopEvidence(
             epoch: stoppedEpoch,
             playerRenderedFrame: boundedPlayerFrame,
             truncationTarget: truncationTarget,
-            renderedWindow: renderedWindow
+            renderedWindow: renderedWindow,
+            renderedPacketDropCount: stoppedDropCount
         )
     }
 
@@ -114,6 +124,7 @@ actor AudioGraphEvidenceStore {
         ringBuffer = nil
         mixerRenderedFrameCount = 0
         lastMixerTiming = nil
+        renderedPacketDropCount = 0
     }
 
     private func contentFrame(for playerFrame: Int64) -> Int64 {
