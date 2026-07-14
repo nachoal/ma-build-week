@@ -8,7 +8,8 @@ EVIDENCE_ROOT="${MA_DEVICE_EVIDENCE_DIR:-$ROOT_DIR/.build/device-evidence}"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 RUN_DIR="$EVIDENCE_ROOT/$RUN_ID-$MODE"
 DEVICE_JSON="$(mktemp -t ma-devices.XXXXXX.json)"
-trap 'rm -f "$DEVICE_JSON"; unset DEVICECTL_CHILD_MA_INSTALL_TOKEN DEVICECTL_CHILD_MA_DEMO_MODE token' EXIT
+RAW_LAUNCH_JSON="$(mktemp -t ma-device-launch.XXXXXX.json)"
+trap 'rm -f "$DEVICE_JSON" "$RAW_LAUNCH_JSON"; unset DEVICECTL_CHILD_MA_INSTALL_TOKEN DEVICECTL_CHILD_MA_DEMO_MODE token' EXIT
 
 usage() {
   printf '%s\n' \
@@ -17,6 +18,15 @@ usage() {
     "  build-install  Generate, sign, build, and install MA." \
     "  product        Build/install, provision the private planner token, and launch." \
     "  replay         Build/install and launch the labeled no-live replay."
+}
+
+contains_private_value() {
+  local path="$1"
+  local line
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" == *"$token"* ]] && return 0
+  done <"$path"
+  return 1
 }
 
 case "$MODE" in
@@ -109,9 +119,32 @@ fi
 xcrun devicectl device process launch \
   --device "$DEVICE_ID" \
   --terminate-existing \
-  --json-output "$RUN_DIR/launch.json" \
+  --json-output "$RAW_LAUNCH_JSON" \
   --log-output "$RUN_DIR/launch.log" \
   com.ia.ma >/dev/null
 
+jq '
+  walk(
+    if type == "object" then
+      with_entries(
+        select(
+          (.key | test("token|secret|password|authorization|credential|private"; "i"))
+          | not
+        )
+      )
+    else
+      .
+    end
+  )
+' "$RAW_LAUNCH_JSON" >"$RUN_DIR/launch.json"
+if [[ "$MODE" == "product" ]] && {
+  contains_private_value "$RUN_DIR/launch.json" ||
+    contains_private_value "$RUN_DIR/launch.log"
+}; then
+  printf 'Private launch credential reached retained device evidence; refusing to keep the run.\n' >&2
+  rm -f "$RUN_DIR/launch.json" "$RUN_DIR/launch.log"
+  exit 78
+fi
 unset DEVICECTL_CHILD_MA_INSTALL_TOKEN DEVICECTL_CHILD_MA_DEMO_MODE token
+scripts/scan-secrets.sh "$RUN_DIR/launch.json" "$RUN_DIR/launch.log"
 printf 'Launched MA in %s mode. No credential value was logged.\n' "$MODE"

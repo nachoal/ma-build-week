@@ -50,7 +50,14 @@ enum GuidedRealtimeClientCommand {
                     "name": "report_attempt",
                 ],
                 "output_modalities": ["text"],
-                "max_output_tokens": 128,
+                // The constrained report_attempt payload can exceed 128
+                // Realtime tokens even though its JSON is small. At 128 the
+                // provider can emit function_call_arguments.done and still
+                // finish response.done as incomplete/max_output_tokens, which
+                // must fail closed. Keep this bounded but large enough for the
+                // complete four-field tool call observed against the live
+                // product session policy.
+                "max_output_tokens": 256,
                 "metadata": [
                     "purpose": "attempt_review",
                     "attempt_id": request.id.uuidString.lowercased(),

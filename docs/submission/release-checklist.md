@@ -14,8 +14,9 @@ Devpost submission. Those require Ignacio's explicit approval.
 
 ## Automated and service evidence
 
-- [x] Complete MA scheme result bundle: 167 unit + 8 UI tests at
-      `.build/test-results/MA-complete-freeze-20260714.xcresult`
+- [x] Complete MA scheme result bundle after the live review-cap correction:
+      167 unit + 8 UI tests at
+      `.build/test-results/MA-review-fix-full-20260714.xcresult`
 - [x] Real-audio simulator UI test includes English permission disclosure,
       one-tap model completion, capture, and stop
 - [x] Complete MAAudioProbe result bundle (49/49, characterization only) at

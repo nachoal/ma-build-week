@@ -92,6 +92,7 @@ audited. Core implementation remains in the root task.
 | `019f617d-f7d0-7602-876a-288ca6a1e785` (`/root/guided_runtime_race_audit`) | Read-only guided runtime race and turn-isolation audit | No files; found three lifecycle races, then re-audited root fixes and returned PASS | no |
 | `/root/final_static_hygiene_audit` (coordination API exposed no opaque ID) | Read-only final claims, evidence-path, secret, and working-tree hygiene audit | No files; reconciled 175/49/30 evidence paths, ignored artifacts, secrets, and claims; returned PASS | no |
 | `019f61a4-a9d0-7cc1-873b-28b8070cfb6b` (`/root/release_script_audit`) | Read-only archive and release-command audit | No files; clean-tree, signature, privacy-manifest, export-compliance, and checksum procedure only | no |
+| `019f61fa-3f45-7ce1-87d1-f3b0dae1de5e` (`/root/realtime_contract_audit`) | Read-only physical review-failure contract audit | No files; independently checked the live event sequence, audio-session/text-response validity, token accounting, minimal fix, and regression matrix | no |
 
 ## Codex implementation journal
 
@@ -678,6 +679,49 @@ For each material decision, capture:
   for the verdict addendum, AGENTS scope, backlog, Worker artifact, evidence
   references, and current claim set; only the explicit physical/human/external
   release gates remain open.
+
+### 2026-07-14 — First physical guided review failure and live correction
+
+- The unlocked signed build launched from
+  `.build/device-evidence/20260714T184649Z-product`. The learner completed a
+  real recording without the earlier capture crash, but the first Realtime
+  review ended on the recoverable message “I could not review this attempt.”
+  This is a failed physical rehearsal, not a successful live-review claim.
+- Root replayed the app's exact clear/append/commit/response transaction against
+  the deployed private `gpt-realtime-2.1` session using bundled Japanese model
+  audio and redacted protocol-only diagnostics. With the shipping 128-token
+  response bound, OpenAI emitted `response.function_call_arguments.done` and
+  then `response.done` with `status=incomplete` and
+  `reason=max_output_tokens`. The app correctly failed closed and discarded the
+  otherwise-finished tool arguments, which explains the learner-visible error.
+- The same live transaction with a bounded 256-token response completed with
+  one valid four-field `report_attempt` call, Japanese input transcription, and
+  `response.done status=completed`. The redacted success log is
+  `.build/test-results/MA-live-review-fix-20260714.log`; it contains event types
+  and Boolean contract results only, with no token, transcript, audio, or tool
+  arguments. No Worker policy change or deployment was required.
+- Root changed the client cap to 256 and pinned it in the wire-contract test,
+  while preserving the existing regression that rejects every non-completed
+  response. Focused Realtime suites passed 14/14 at
+  `.build/test-results/MA-realtime-review-fix-focused-20260714.xcresult`. The
+  complete uncontended iPhone 17 Pro simulator run then passed all 175 test
+  cases (167 Swift + 8 UI) at
+  `.build/test-results/MA-review-fix-full-20260714.xcresult`.
+- During evidence inspection, root discovered that `devicectl --json-output`
+  had serialized the product launch environment into an ignored private JSON
+  artifact. Root deleted that artifact, terminated the provisioned process,
+  rotated the product install token in both Cloudflare's encrypted secret store
+  and the local deployment Keychain, and verified the replacement through a
+  redacted authenticated mint. The device script now retains only recursively
+  key-sanitized launch JSON, compares retained evidence against the exact
+  in-memory product token without printing it, scans retained launch files, and
+  deletes the raw temporary JSON on every exit. No standard OpenAI key was
+  exposed. The prior candidate archive is stale and will be regenerated.
+- Independent read-only session
+  `019f61fa-3f45-7ce1-87d1-f3b0dae1de5e` confirmed that per-response text is
+  valid inside the audio session and that the live-observed token ceiling is the
+  failure cause. Root performed the protocol reproduction, code/test/script
+  changes, credential rotation, simulator runs, and device work.
 
 ## Final feedback preparation
 

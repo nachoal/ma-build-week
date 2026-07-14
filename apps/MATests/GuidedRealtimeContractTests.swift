@@ -191,7 +191,11 @@ struct GuidedRealtimeWireProtocolTests {
         #expect(toolChoice["type"] as? String == "function")
         #expect(toolChoice["name"] as? String == "report_attempt")
         #expect(response["output_modalities"] as? [String] == ["text"])
-        #expect(response["max_output_tokens"] as? Int == 128)
+        // Live gpt-realtime-2.1 evidence showed that 128 can complete the
+        // function arguments yet leave response.done incomplete. The client
+        // must preserve the verified 256-token bound so the validated review
+        // is accompanied by a completed response.
+        #expect(response["max_output_tokens"] as? Int == 256)
         #expect((response["instructions"] as? String)?.contains("score") == true)
     }
 

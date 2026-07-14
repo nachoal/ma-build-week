@@ -10,10 +10,10 @@ product.
 
 | Path | Expected result | Current evidence | Status |
 |---|---|---|---|
-| Guided state machine | Model gate → explicit attempt → review → briefed waiter → explicit attempt → review → completion | `.build/test-results/MA-complete-freeze-20260714.xcresult`: 175/175 test cases (167 Swift + 8 UI) | PASS (simulator/code) |
+| Guided state machine | Model gate → explicit attempt → review → briefed waiter → explicit attempt → review → completion | `.build/test-results/MA-review-fix-full-20260714.xcresult`: 175/175 test cases (167 Swift + 8 UI) after the live review-cap correction | PASS (simulator/code) |
 | English/Spanish switch | English fresh default; toggle preserves route, phase, transcript, and feedback semantics | Copy, state, and UI tests | PASS (simulator/code) |
-| Real simulator audio | One model tap completes; English permission disclosure; AVAudio capture/stop exits cleanly | `MA-complete-freeze-20260714.xcresult`: all 8 UI tests, including the real-audio integration test | PASS (simulator only) |
-| Realtime review contract | Enum-only function, ASR grounding, canonical bilingual copy, no provider prose | Swift + Worker contract tests | PASS (code/service) |
+| Real simulator audio | One model tap completes; English permission disclosure; AVAudio capture/stop exits cleanly | `MA-review-fix-full-20260714.xcresult`: all 8 UI tests, including the real-audio integration test | PASS (simulator only) |
+| Realtime review contract | Enum-only function, ASR grounding, canonical bilingual copy, no provider prose | Focused 14/14 simulator suites plus redacted live transaction `.build/test-results/MA-live-review-fix-20260714.log`; 128-token physical branch failed incomplete, 256 completed | PASS (code/service); corrected iPhone rerun pending |
 | Guided planner | Local result first; explicit aggregate-only GPT-5.6 request; stale/double-tap fenced | Swift + live Worker verification | PASS (code/service) |
 | Worker contract suite | Fixed Realtime/planner policies, bounded schemas, auth/rate limits, privacy guards | `.build/test-results/MAWorker-freeze-20260714.tap`: 30/30 | PASS (service) |
 | Labeled historical replay | No microphone, audio, network, learner, or planner side effect | Replay unit + UI test | PASS (simulator/code) |
@@ -31,8 +31,8 @@ iOS version, route, network, evidence path, and exact failure.
 | Spanish switch | Same lesson phase; all guided review/permission-facing copy coherent | PENDING | — |
 | First-tap bundled model | Audible once; completion unlocks record; no second tap | PENDING | — |
 | JIT microphone permission | Prompt appears only after record; denial/recovery accurate | PENDING | — |
-| First capture/stop | No crash, freeze, duplicate capture, or auto-progress | PENDING | — |
-| First live Realtime review (English) | Approximate transcript + grounded canonical feedback | PENDING | — |
+| First capture/stop | No crash, freeze, duplicate capture, or auto-progress | PASS for first corrected-control take; repeat on review-fix build | `.build/device-evidence/20260714T184649Z-product`: learner reached review error after real stop |
+| First live Realtime review (English) | Approximate transcript + grounded canonical feedback | FAIL on 128-token build; corrected rerun pending | `.build/device-evidence/20260714T184649Z-product`: visible “I could not review this attempt”; redacted live reproduction proved incomplete/max_output_tokens |
 | First live Realtime review (Spanish) | Same evidence; Spanish rendering/spoken feedback | PENDING | — |
 | Waiter briefing/playback | Meaning/task visible before one audible captioned turn | PENDING | — |
 | Second capture/review | Review completes before scene completion | PENDING | — |
@@ -53,7 +53,7 @@ the table.
 
 | Take | Commit/archive | Language/path | Duration | Pass/fail | Exact issue/evidence |
 |---:|---|---|---:|---|---|
-| 1 | — | guided Realtime | — | PENDING | — |
+| 1 | `42b3c57` | English guided Realtime, first review | — | FAIL | `.build/device-evidence/20260714T184649Z-product`: 128-token review ended incomplete/max_output_tokens and showed the recoverable review error |
 | 2 | — | guided Realtime | — | PENDING | — |
 | 3 | — | guided Realtime | — | PENDING | — |
 | 4 | — | guided Realtime | — | PENDING | — |
