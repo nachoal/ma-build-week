@@ -3,10 +3,13 @@ import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import {
+  didacticRealtimeSessionPolicy,
   handleRequest,
+  learnerAttemptFeedbackSchema,
   learningActionSchema,
   learningPlannerPolicy,
   realtimeSessionPolicy,
+  reportAttemptTool,
 } from "../src/index.js";
 
 const installToken = "t".repeat(48);
@@ -156,6 +159,21 @@ describe("MA session broker", () => {
     assert.deepEqual(await response.json(), { error: "service_unavailable" });
   });
 
+  it("fails closed when probe and product credentials are identical", async () => {
+    const response = await handleRequest(
+      request("/product/realtime/client-secret", {
+        method: "POST",
+        headers: realtimeAuthorizedHeaders(),
+        body: "{}",
+      }),
+      environment({ MA_PRODUCT_INSTALL_TOKEN: installToken }),
+      async () => assert.fail("ambiguous roles must not call upstream"),
+    );
+
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), { error: "service_unavailable" });
+  });
+
   it("rejects an invalid install token", async () => {
     const response = await handleRequest(
       request("/realtime/client-secret", {
@@ -212,6 +230,98 @@ describe("MA session broker", () => {
       async () => assert.fail("cross-role token must not call upstream"),
     );
     assert.equal(realtimeWithProductToken.status, 401);
+
+    const productRealtimeWithProbeToken = await handleRequest(
+      request("/product/realtime/client-secret", {
+        method: "POST",
+        headers: realtimeAuthorizedHeaders(),
+        body: "{}",
+      }),
+      environment(),
+      async () => assert.fail("cross-role token must not call upstream"),
+    );
+    assert.equal(productRealtimeWithProbeToken.status, 401);
+
+    const productRealtimeWithProductToken = await handleRequest(
+      request("/product/realtime/client-secret", {
+        method: "POST",
+        headers: authorizedHeaders(),
+        body: "{}",
+      }),
+      environment(),
+      async () => Response.json({
+        value: "ek_product_ephemeral_only",
+        expires_at: 1234567890,
+      }),
+    );
+    assert.equal(productRealtimeWithProductToken.status, 200);
+  });
+
+  it("mints a separate fixed push-to-talk teaching policy for the product", async () => {
+    let observedRequest;
+    const response = await handleRequest(
+      request("/product/realtime/client-secret", {
+        method: "POST",
+        headers: authorizedHeaders(),
+        body: "{}",
+      }),
+      environment(),
+      async (url, options) => {
+        observedRequest = { url, options };
+        return Response.json({
+          value: "ek_product_ephemeral_only",
+          expires_at: 1234567890,
+          session: { id: "must-not-be-forwarded" },
+        });
+      },
+    );
+
+    assert.equal(response.status, 200);
+    const result = await response.json();
+    assert.deepEqual(Object.keys(result).sort(), [
+      "expected_configuration_hash",
+      "expires_at",
+      "value",
+    ]);
+    assert.equal(result.expected_configuration_hash.length, 64);
+    assert.equal(observedRequest.url, "https://api.openai.com/v1/realtime/client_secrets");
+    assert.match(
+      observedRequest.options.headers["OpenAI-Safety-Identifier"],
+      /^ma_[a-f0-9]{48}$/,
+    );
+
+    const upstreamBody = JSON.parse(observedRequest.options.body);
+    assert.deepEqual(upstreamBody.session, didacticRealtimeSessionPolicy);
+    assert.equal(upstreamBody.session.audio.input.turn_detection, null);
+    assert.equal(
+      upstreamBody.session.audio.input.transcription.model,
+      "gpt-4o-mini-transcribe-2025-12-15",
+    );
+    assert.equal(upstreamBody.session.audio.input.transcription.language, "ja");
+    assert.deepEqual(upstreamBody.session.tools, [reportAttemptTool]);
+    assert.deepEqual(reportAttemptTool.parameters, learnerAttemptFeedbackSchema);
+    assert.equal(upstreamBody.session.tool_choice, "none");
+    assert.equal(upstreamBody.session.tracing, null);
+    assert.notDeepEqual(didacticRealtimeSessionPolicy, realtimeSessionPolicy);
+    assert.equal(JSON.stringify(result).includes("must-not-be-forwarded"), false);
+    assert.equal(JSON.stringify(result).includes(productInstallToken), false);
+  });
+
+  it("rejects caller-selected configuration on the product realtime route", async () => {
+    const response = await handleRequest(
+      request("/product/realtime/client-secret", {
+        method: "POST",
+        headers: authorizedHeaders(),
+        body: JSON.stringify({ tool_choice: "auto" }),
+      }),
+      environment(),
+      async () => assert.fail("caller configuration must not call upstream"),
+    );
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), {
+      error: "caller_configuration_forbidden",
+    });
   });
 
   it("rejects caller-selected session configuration", async () => {

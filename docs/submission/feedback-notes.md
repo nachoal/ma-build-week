@@ -79,6 +79,9 @@ audited. Core implementation remains in the root task.
 | `/root/replay_contract_audit` | Read-only normalized replay architecture and test audit | No files; smallest honest `ConversationProvider`/capabilities/`ReplayAdapter` contract review only | no |
 | `019f60ef-42d9-70d1-88de-e50c0e53f6dc` (`/root/physical_audio_defects_audit`) | Read-only physical crash and first-tap playback audit | No files; Swift 6 callback-isolation and playback lifecycle review only | no |
 | `019f60fd-740f-7d01-8fd7-05abda774128` (`/root/playback_stall_audit`) | Read-only physical playback-stall audit | No files; output-session, engine lifecycle, asset loudness, watchdog, and device-regression review only | no |
+| `019f610e-74d5-7701-8c67-d7c2f996a9ce` (`/root/realtime_ux_contract_audit`) | Read-only zero-beginner teaching-flow audit | No files; state machine, Spanish copy, recovery rules, claim guards, and acceptance matrix only | no |
+| `019f610e-919c-7a22-8954-beeac18090e5` (`/root/realtime_transport_map_audit`) | Read-only product Realtime integration audit | No files; product-local transport, one-owner audio, ordering hazards, and test map only | no |
+| `019f610e-a57f-7a02-a526-4f189387bf93` (`/root/realtime_broker_contract_audit`) | Read-only didactic broker/tool/privacy audit | No files; product-only endpoint, session policy, review schema, parser validation, and security tests only | no |
 
 ## Codex implementation journal
 
@@ -531,6 +534,22 @@ For each material decision, capture:
 - The new live path will be verified and claimed separately from Gate 0. Until
   the signed product completes the loop on the paired iPhone, this entry records
   direction and acceptance criteria—not completion.
+- Broker boundary: root kept the frozen probe-only `/realtime/client-secret`
+  contract unchanged and added product-only
+  `/product/realtime/client-secret`, authenticated by the separately revocable
+  product install token. The new fixed `gpt-realtime-2.1` session disables VAD,
+  enables Japanese transcription, exposes one bounded `report_attempt` tool,
+  disables tracing, and forbids numeric/phoneme-level grading. Caller-selected
+  configuration remains rejected.
+- Verification: Worker contract tests pass 21/21. Private deployment
+  `1010289e-16c3-4379-a09f-dc6209649887` minted a bounded product client secret;
+  that secret opened the GA WebSocket and returned `session.created` with model
+  `gpt-realtime-2.1`, null turn detection, Japanese
+  `gpt-4o-mini-transcribe-2025-12-15`, tool choice `none`, the sole
+  `report_attempt` tool, and voice `marin`. No standard key, install token, or
+  ephemeral secret was printed or retained. This proves the server policy and
+  transport handshake only—not device capture, review quality, or audible
+  feedback.
 
 ## Final feedback preparation
 

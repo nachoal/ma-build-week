@@ -104,6 +104,103 @@ export const realtimeSessionPolicy = Object.freeze({
   },
 });
 
+export const learnerAttemptFeedbackSchema = Object.freeze({
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    target_phrase_id: {
+      type: "string",
+      enum: ["restaurant.party-size.hitori-desu"],
+    },
+    assessment: {
+      type: "string",
+      enum: ["matched", "close", "different", "unclear"],
+    },
+    heard_japanese: {
+      type: ["string", "null"],
+      maxLength: 48,
+    },
+    positive_es: {
+      type: "string",
+      minLength: 1,
+      maxLength: 120,
+    },
+    correction_es: {
+      type: ["string", "null"],
+      maxLength: 160,
+    },
+    retry_focus_es: {
+      type: ["string", "null"],
+      maxLength: 120,
+    },
+  },
+  required: [
+    "target_phrase_id",
+    "assessment",
+    "heard_japanese",
+    "positive_es",
+    "correction_es",
+    "retry_focus_es",
+  ],
+});
+
+export const reportAttemptTool = Object.freeze({
+  type: "function",
+  name: "report_attempt",
+  description: [
+    "Return one conservative qualitative review of the just-committed learner attempt.",
+    "Never return a numeric pronunciation, fluency, confidence, or mastery score.",
+    "If the audio is ambiguous, use assessment=unclear and heard_japanese=null.",
+  ].join(" "),
+  parameters: learnerAttemptFeedbackSchema,
+});
+
+export const didacticRealtimeSessionPolicy = Object.freeze({
+  type: "realtime",
+  model: "gpt-realtime-2.1",
+  output_modalities: ["audio"],
+  max_output_tokens: 512,
+  instructions: [
+    "You are MA, a patient Spanish-speaking Japanese coach for a genuine zero-level learner.",
+    "The fixed target is 一人です (hitori desu), meaning one person, in a restaurant.",
+    "Explain in plain Spanish. Use Japanese only for the visible target, a short model, or one brief waiter turn.",
+    "Never produce an unexplained Japanese monologue.",
+    "The app owns push-to-talk, turn order, retry, and progression.",
+    "When explicitly asked to review the committed attempt, call report_attempt exactly once.",
+    "Be conservative: if you cannot verify what was said, report unclear rather than guessing.",
+    "Never give numeric pronunciation, fluency, confidence, or mastery scores and never claim phoneme-level measurement.",
+    "Give at most one concrete retry focus. Spoken feedback must be no more than two short sentences.",
+  ].join(" "),
+  tools: [reportAttemptTool],
+  tool_choice: "none",
+  tracing: null,
+  audio: {
+    input: {
+      format: {
+        type: "audio/pcm",
+        rate: 24_000,
+      },
+      noise_reduction: {
+        type: "near_field",
+      },
+      transcription: {
+        model: "gpt-4o-mini-transcribe-2025-12-15",
+        language: "ja",
+        prompt: "一人です。ひとりです。hitori desu。レストランで一名と答える短い練習。",
+      },
+      turn_detection: null,
+    },
+    output: {
+      format: {
+        type: "audio/pcm",
+        rate: 24_000,
+      },
+      voice: "marin",
+      speed: 0.92,
+    },
+  },
+});
+
 const responseHeaders = Object.freeze({
   "cache-control": "no-store",
   "content-type": "application/json; charset=utf-8",
@@ -126,22 +223,25 @@ export async function handleRequest(request, env, upstreamFetch) {
     });
   }
 
-  const isRealtime =
+  const isProbeRealtime =
     request.method === "POST" && url.pathname === "/realtime/client-secret";
+  const isProductRealtime =
+    request.method === "POST" && url.pathname === "/product/realtime/client-secret";
   const isLearning =
     request.method === "POST" && url.pathname === "/learning/next";
-  if (!isRealtime && !isLearning) {
+  if (!isProbeRealtime && !isProductRealtime && !isLearning) {
     return jsonResponse(404, { error: "not_found" });
   }
 
-  if (!hasRequiredBindings(env, isLearning)) {
+  const role = isProbeRealtime ? "probe" : "product";
+  if (!hasRequiredBindings(env, role)) {
     return jsonResponse(503, { error: "service_unavailable" });
   }
 
   const authorization = request.headers.get("authorization");
-  const installToken = isLearning
-    ? env.MA_PRODUCT_INSTALL_TOKEN
-    : env.MA_INSTALL_TOKEN;
+  const installToken = role === "probe"
+    ? env.MA_INSTALL_TOKEN
+    : env.MA_PRODUCT_INSTALL_TOKEN;
   if (!(await constantTimeEqual(
     authorization ?? "",
     `Bearer ${installToken}`,
@@ -149,7 +249,7 @@ export async function handleRequest(request, env, upstreamFetch) {
     return jsonResponse(401, { error: "unauthorized" });
   }
 
-  const bodyResult = isRealtime
+  const bodyResult = isProbeRealtime || isProductRealtime
     ? await parseEmptyObjectBody(request)
     : await parseLearningReportBody(request);
   if (!bodyResult.ok) {
@@ -163,7 +263,7 @@ export async function handleRequest(request, env, upstreamFetch) {
   let rateLimit;
   try {
     rateLimit = await env.RATE_LIMITER.limit({
-      key: `${safetyIdentifier}:${isLearning ? "learning" : "realtime"}`,
+      key: `${safetyIdentifier}:${isLearning ? "learning" : `${role}-realtime`}`,
     });
   } catch {
     return jsonResponse(503, { error: "service_unavailable" });
@@ -180,12 +280,25 @@ export async function handleRequest(request, env, upstreamFetch) {
       upstreamFetch,
     );
   }
-  return handleRealtimeClientSecret(env, safetyIdentifier, upstreamFetch);
+  const policy = isProductRealtime
+    ? didacticRealtimeSessionPolicy
+    : realtimeSessionPolicy;
+  return handleRealtimeClientSecret(
+    env,
+    safetyIdentifier,
+    policy,
+    upstreamFetch,
+  );
 }
 
-async function handleRealtimeClientSecret(env, safetyIdentifier, upstreamFetch) {
+async function handleRealtimeClientSecret(
+  env,
+  safetyIdentifier,
+  sessionPolicy,
+  upstreamFetch,
+) {
   const expectedConfigurationHash = await sha256Hex(
-    stableStringify(realtimeSessionPolicy),
+    stableStringify(sessionPolicy),
   );
 
   let upstreamResponse;
@@ -202,7 +315,7 @@ async function handleRealtimeClientSecret(env, safetyIdentifier, upstreamFetch) 
           anchor: "created_at",
           seconds: 120,
         },
-        session: realtimeSessionPolicy,
+        session: sessionPolicy,
       }),
       signal: AbortSignal.timeout(REALTIME_UPSTREAM_TIMEOUT_MS),
     });
@@ -472,13 +585,16 @@ function isReasonSupported(reason, report, lastAttempt) {
   }
 }
 
-function hasRequiredBindings(env, isLearning) {
+function hasRequiredBindings(env, role) {
+  const probeToken = env?.MA_INSTALL_TOKEN;
+  const productToken = env?.MA_PRODUCT_INSTALL_TOKEN;
   return (
     typeof env?.OPENAI_API_KEY === "string" &&
     env.OPENAI_API_KEY.length > 0 &&
-    isValidInstallToken(
-      isLearning ? env?.MA_PRODUCT_INSTALL_TOKEN : env?.MA_INSTALL_TOKEN
-    ) &&
+    isValidInstallToken(role === "probe" ? probeToken : productToken) &&
+    isValidInstallToken(probeToken) &&
+    isValidInstallToken(productToken) &&
+    probeToken !== productToken &&
     typeof env?.MA_SAFETY_SALT === "string" &&
     env.MA_SAFETY_SALT.length > 0 &&
     env?.RATE_LIMITER !== undefined &&
