@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// App-level routing: onboarding until completed, then the intent-first home,
-/// with the practice fixture pushed as a full-screen destination. Persistence
-/// is local AppStorage only — no account, no network.
+/// with the local Kaiwa Loop pushed as a full-screen destination. Persistence
+/// is local AppStorage only; the bounded post-lesson planner is optional.
 struct RootFlowView: View {
     @AppStorage("ma.onboarding.completed") private var onboardingCompleted = false
     @AppStorage("ma.profile.level") private var rawLevel = LearnerProfile.standard.rawLevel
@@ -11,7 +11,7 @@ struct RootFlowView: View {
     @AppStorage("ma.profile.dailyMinutes") private var rawDailyMinutes = LearnerProfile.standard.rawDailyMinutes
 
     @State private var path: [SceneID] = []
-    @State private var kaiwaFeature = KaiwaLoopFeature()
+    @State private var kaiwaFeature = KaiwaLoopFeature.production()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var profile: LearnerProfile {

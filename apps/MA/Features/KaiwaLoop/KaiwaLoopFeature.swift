@@ -7,11 +7,24 @@ final class KaiwaLoopFeature {
     private(set) var state = KaiwaLoopState()
 
     @ObservationIgnored private let audio: any ProductAudioControlling
+    @ObservationIgnored private let learningPlanner: any LearningPlanning
     @ObservationIgnored private var operationTask: Task<Void, Never>?
     @ObservationIgnored private var eventTask: Task<Void, Never>?
+    @ObservationIgnored private var plannerTask: Task<Void, Never>?
 
-    init(audio: (any ProductAudioControlling)? = nil) {
+    static func production() -> KaiwaLoopFeature {
+        KaiwaLoopFeature(
+            audio: AudioGraphController(),
+            learningPlanner: LearningPlanner.production()
+        )
+    }
+
+    init(
+        audio: (any ProductAudioControlling)? = nil,
+        learningPlanner: any LearningPlanning = LearningPlanner()
+    ) {
         self.audio = audio ?? AudioGraphController()
+        self.learningPlanner = learningPlanner
         let events = self.audio.events
         eventTask = Task { [weak self] in
             for await event in events {
@@ -24,6 +37,7 @@ final class KaiwaLoopFeature {
     deinit {
         operationTask?.cancel()
         eventTask?.cancel()
+        plannerTask?.cancel()
     }
 
     func send(_ intent: KaiwaLoopIntent) {
@@ -103,6 +117,7 @@ final class KaiwaLoopFeature {
 
         case .restart:
             operationTask?.cancel()
+            plannerTask?.cancel()
             state = KaiwaLoopState()
             operationTask = Task { [weak self] in
                 guard let self else { return }
@@ -113,6 +128,7 @@ final class KaiwaLoopFeature {
 
     func stopForExit() async {
         operationTask?.cancel()
+        plannerTask?.cancel()
         await audio.stop(.exit)
         state = KaiwaLoopState()
     }
@@ -197,6 +213,7 @@ final class KaiwaLoopFeature {
                   state.repairSegmentPlayed,
                   state.resumePlaybackCompleted else { return }
             state.phase = .proof
+            startPlanning()
             return
         }
         guard state.phase == .coached else { return }
@@ -233,5 +250,25 @@ final class KaiwaLoopFeature {
               !state.attempts.contains(where: { $0.id == receipt.id }) else { return }
         state.pendingReceipt = receipt
         state.awaitingSelfAssessment = true
+    }
+
+    private func startPlanning() {
+        guard let report = LearningReport.make(from: state) else { return }
+        let policy = DeterministicPedagogyPolicy()
+        state.learningReport = report
+        state.nextLearningAction = policy.fallback(for: report)
+        state.plannerIsRefreshing = true
+
+        plannerTask?.cancel()
+        plannerTask = Task { [weak self] in
+            guard let self else { return }
+            let action = await learningPlanner.nextAction(for: report)
+            guard !Task.isCancelled,
+                  state.phase == .proof,
+                  state.learningReport?.id == report.id,
+                  action.reportID == report.id else { return }
+            state.nextLearningAction = action
+            state.plannerIsRefreshing = false
+        }
     }
 }

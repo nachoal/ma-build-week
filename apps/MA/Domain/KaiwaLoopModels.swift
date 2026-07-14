@@ -85,7 +85,9 @@ struct KaiwaLoopState: Equatable, Sendable {
     var naturalStopRecorded = false
     var repairSegmentPlayed = false
     var resumePlaybackCompleted = false
-    var plannerStatusText: String?
+    var learningReport: LearningReport?
+    var nextLearningAction: NextLearningAction?
+    var plannerIsRefreshing = false
 
     let capabilities = PracticeCapabilities.gate0Partial
     let repairSegment = ControlledSegment.restaurantRepair

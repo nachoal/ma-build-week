@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "report_id": "00000000-0000-4000-8000-000000000001",
+  "scene_plan": {
+    "scene_id": "restaurant",
+    "obligation_id": "restaurant.party-size.one",
+    "learner_level": "zero_beginner",
+    "target_phrase_id": "restaurant.party-size.hitori-desu"
+  },
+  "attempts": [
+    {
+      "id": "00000000-0000-4000-8000-000000000003",
+      "obligation_id": "restaurant.party-size.one",
+      "scaffold": "none",
+      "attempt_number": 3,
+      "captured_duration_ms": 2000,
+      "estimated_voice_onset_ms": 800,
+      "speech_presence_detected": true,
+      "self_reported_completed": true,
+      "repair_count": 0,
+      "raw_audio_retained": false
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000004",
+      "obligation_id": "restaurant.party-size.one",
+      "scaffold": "none",
+      "attempt_number": 4,
+      "captured_duration_ms": 2000,
+      "estimated_voice_onset_ms": 500,
+      "speech_presence_detected": true,
+      "self_reported_completed": true,
+      "repair_count": 1,
+      "raw_audio_retained": false
+    }
+  ],
+  "current_obligation_completed": true,
+  "repair_segment_id": "restaurant.arrival.kochira-e-dozo",
+  "raw_audio_included": false
+}

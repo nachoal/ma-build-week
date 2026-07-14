@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "report_id": "00000000-0000-4000-8000-000000000001",
+  "model": "gpt-5.6-sol",
+  "source": "model",
+  "action": "advance",
+  "reason": "completed_after_repair",
+  "explanation_es": "Ya puedes pasar al siguiente objetivo práctico.",
+  "evidence_reason_es": "Confirmaste la misma obligación después de una reparación.",
+  "obligation_id": "restaurant.party-size.one"
+}

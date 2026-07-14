@@ -71,6 +71,9 @@ struct KaiwaLoopFeatureTests {
         #expect(second.repairCount == 1)
         #expect(!first.rawAudioRetained)
         #expect(!second.rawAudioRetained)
+        #expect(feature.state.learningReport?.isValidForPlannerTransport == true)
+        #expect(feature.state.nextLearningAction?.source == .deterministicPolicy)
+        #expect(feature.state.nextLearningAction?.action == .advance)
     }
 
     @Test("Microphone denial stays recoverable and cannot fabricate an attempt")
@@ -106,6 +109,72 @@ struct KaiwaLoopFeatureTests {
         #expect(feature.state.successfulScaffolds == [.full])
     }
 
+    @Test("A planner response arriving after restart cannot mutate the new scene")
+    func stalePlannerResponseIsIgnored() async throws {
+        let audio = FakeProductAudioController()
+        let planner = SuspendedLearningPlanner()
+        let feature = KaiwaLoopFeature(audio: audio, learningPlanner: planner)
+
+        await driveToProof(feature: feature, audio: audio)
+
+        #expect(feature.state.phase == .proof)
+        #expect(feature.state.nextLearningAction?.source == .deterministicPolicy)
+        #expect(feature.state.plannerIsRefreshing)
+
+        var requestedReport: LearningReport?
+        for _ in 0..<200 where requestedReport == nil {
+            requestedReport = await planner.currentReport()
+            await Task.yield()
+        }
+        let report = try #require(requestedReport)
+        let modelAction = DeterministicPedagogyPolicy().make(
+            report: report,
+            action: .advance,
+            reason: .completedAfterRepair,
+            source: .model,
+            model: "gpt-5.6-sol"
+        )
+
+        feature.send(.restart)
+        await planner.resolve(modelAction)
+        for _ in 0..<20 { await Task.yield() }
+
+        #expect(feature.state.phase == .setup)
+        #expect(feature.state.learningReport == nil)
+        #expect(feature.state.nextLearningAction == nil)
+        #expect(!feature.state.plannerIsRefreshing)
+    }
+
+    private func driveToProof(
+        feature: KaiwaLoopFeature,
+        audio: FakeProductAudioController
+    ) async {
+        feature.send(.beginCoachedPractice)
+        for _ in 0..<3 {
+            feature.send(.startAttempt)
+            #expect(await eventually { feature.state.isCapturing })
+            feature.send(.finishAttempt)
+            #expect(await eventually { feature.state.awaitingSelfAssessment })
+            feature.send(.assessSuccess)
+        }
+        feature.send(.acknowledgeFirstSuccess)
+        feature.send(.startNatural)
+        #expect(await eventually { feature.state.canPauseNaturalAudio })
+        feature.send(.pauseForRepair)
+        #expect(await eventually { feature.state.phase == .repair })
+        feature.send(.playRepairSegment)
+        #expect(await eventually { feature.state.repairSegmentPlayed })
+        feature.send(.resumeScene)
+        #expect(await eventually { feature.state.phase == .retry })
+        feature.send(.startAttempt)
+        #expect(await eventually { feature.state.isCapturing })
+        feature.send(.finishAttempt)
+        #expect(await eventually { feature.state.awaitingSelfAssessment })
+        feature.send(.assessSuccess)
+        #expect(feature.state.phase == .proof)
+        #expect(audio.playedPrompts.contains(.tutorResume))
+    }
+
     private func eventually(
         _ condition: @escaping @MainActor () -> Bool
     ) async -> Bool {
@@ -114,6 +183,26 @@ struct KaiwaLoopFeatureTests {
             await Task.yield()
         }
         return condition()
+    }
+}
+
+private actor SuspendedLearningPlanner: LearningPlanning {
+    private var report: LearningReport?
+    private var continuation: CheckedContinuation<NextLearningAction, Never>?
+
+    func nextAction(for report: LearningReport) async -> NextLearningAction {
+        self.report = report
+        return await withCheckedContinuation { continuation in
+            self.continuation = continuation
+        }
+    }
+
+    func currentReport() -> LearningReport? { report }
+
+    func resolve(_ action: NextLearningAction) {
+        let pending = continuation
+        continuation = nil
+        pending?.resume(returning: action)
     }
 }
 

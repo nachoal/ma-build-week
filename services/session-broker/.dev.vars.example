@@ -1,4 +1,5 @@
 # Copy to .dev.vars for local Worker development. Never commit real values.
 OPENAI_API_KEY=replace-with-server-side-openai-key
 MA_INSTALL_TOKEN=replace-with-revocable-private-install-token
+MA_PRODUCT_INSTALL_TOKEN=replace-with-separate-revocable-product-token
 MA_SAFETY_SALT=replace-with-random-private-salt

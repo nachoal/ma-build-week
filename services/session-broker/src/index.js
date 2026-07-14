@@ -1,5 +1,74 @@
 const OPENAI_CLIENT_SECRET_URL = "https://api.openai.com/v1/realtime/client_secrets";
-const UPSTREAM_TIMEOUT_MS = 10_000;
+const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
+const REALTIME_UPSTREAM_TIMEOUT_MS = 10_000;
+
+const RESTAURANT_SCENE_ID = "restaurant";
+const RESTAURANT_OBLIGATION_ID = "restaurant.party-size.one";
+const RESTAURANT_REPAIR_SEGMENT_ID = "restaurant.arrival.kochira-e-dozo";
+
+export const learningPlannerPolicy = Object.freeze({
+  model: "gpt-5.6-sol",
+  reasoningEffort: "low",
+  maxOutputTokens: 320,
+  upstreamTimeoutMs: 7_000,
+  maxAttempts: 2,
+});
+
+export const learningActionSchema = Object.freeze({
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    action: {
+      type: "string",
+      enum: [
+        "repeat",
+        "reduce_scaffold",
+        "isolate_segment",
+        "advance",
+        "abstain",
+      ],
+    },
+    reason: {
+      type: "string",
+      enum: [
+        "completed_after_repair",
+        "incomplete_self_report",
+        "speech_presence_missing",
+        "scaffold_still_present",
+        "repair_needed",
+        "insufficient_evidence",
+      ],
+    },
+    explanation_es: { type: "string" },
+    obligation_id: { type: "string" },
+  },
+  required: ["action", "reason", "explanation_es", "obligation_id"],
+});
+
+const learningPlannerInstructions = [
+  "You are MA's bounded post-lesson pedagogy planner for one zero-beginner Japanese restaurant obligation.",
+  "Use only the supplied structured facts. Never infer a transcript, pronunciation quality, identity, or retained audio.",
+  "Choose exactly one allowed action. Advance only when current_obligation_completed is true.",
+  "If evidence is contradictory or insufficient, abstain.",
+  "Write one plain-Spanish explanation of at most 140 characters and do not add facts beyond the selected reason code.",
+].join(" ");
+
+const canonicalActionExplanations = Object.freeze({
+  repeat: "Repite la misma respuesta antes de cambiar de situación.",
+  reduce_scaffold: "Haz otro intento con menos ayuda visible.",
+  isolate_segment: "Aísla una parte breve antes de volver a la situación.",
+  advance: "Ya puedes pasar al siguiente objetivo práctico.",
+  abstain: "Mantén el plan local porque faltan hechos suficientes.",
+});
+
+const canonicalEvidenceReasons = Object.freeze({
+  completed_after_repair: "Confirmaste la misma obligación después de una reparación.",
+  incomplete_self_report: "Marcaste el intento más reciente como incompleto.",
+  speech_presence_missing: "No hubo señal local suficiente de voz en el intento.",
+  scaffold_still_present: "El intento más reciente todavía usó ayuda visible.",
+  repair_needed: "El intento siguió incompleto después de pedir ayuda.",
+  insufficient_evidence: "Los hechos disponibles no justifican cambiar de objetivo.",
+});
 
 export const realtimeSessionPolicy = Object.freeze({
   type: "realtime",
@@ -57,32 +126,45 @@ export async function handleRequest(request, env, upstreamFetch) {
     });
   }
 
-  if (request.method !== "POST" || url.pathname !== "/realtime/client-secret") {
+  const isRealtime =
+    request.method === "POST" && url.pathname === "/realtime/client-secret";
+  const isLearning =
+    request.method === "POST" && url.pathname === "/learning/next";
+  if (!isRealtime && !isLearning) {
     return jsonResponse(404, { error: "not_found" });
   }
 
-  if (!hasRequiredBindings(env)) {
+  if (!hasRequiredBindings(env, isLearning)) {
     return jsonResponse(503, { error: "service_unavailable" });
   }
 
   const authorization = request.headers.get("authorization");
-  const expectedAuthorization = `Bearer ${env.MA_INSTALL_TOKEN}`;
-  if (!(await constantTimeEqual(authorization ?? "", expectedAuthorization))) {
+  const installToken = isLearning
+    ? env.MA_PRODUCT_INSTALL_TOKEN
+    : env.MA_INSTALL_TOKEN;
+  if (!(await constantTimeEqual(
+    authorization ?? "",
+    `Bearer ${installToken}`,
+  ))) {
     return jsonResponse(401, { error: "unauthorized" });
   }
 
-  const bodyResult = await parseEmptyObjectBody(request);
+  const bodyResult = isRealtime
+    ? await parseEmptyObjectBody(request)
+    : await parseLearningReportBody(request);
   if (!bodyResult.ok) {
     return jsonResponse(400, { error: bodyResult.error });
   }
 
   const safetyIdentifier = await makeSafetyIdentifier(
     env.MA_SAFETY_SALT,
-    env.MA_INSTALL_TOKEN,
+    installToken,
   );
   let rateLimit;
   try {
-    rateLimit = await env.RATE_LIMITER.limit({ key: safetyIdentifier });
+    rateLimit = await env.RATE_LIMITER.limit({
+      key: `${safetyIdentifier}:${isLearning ? "learning" : "realtime"}`,
+    });
   } catch {
     return jsonResponse(503, { error: "service_unavailable" });
   }
@@ -90,6 +172,18 @@ export async function handleRequest(request, env, upstreamFetch) {
     return jsonResponse(429, { error: "rate_limited" }, { "retry-after": "60" });
   }
 
+  if (isLearning) {
+    return handleLearningNext(
+      bodyResult.value,
+      env,
+      safetyIdentifier,
+      upstreamFetch,
+    );
+  }
+  return handleRealtimeClientSecret(env, safetyIdentifier, upstreamFetch);
+}
+
+async function handleRealtimeClientSecret(env, safetyIdentifier, upstreamFetch) {
   const expectedConfigurationHash = await sha256Hex(
     stableStringify(realtimeSessionPolicy),
   );
@@ -110,7 +204,7 @@ export async function handleRequest(request, env, upstreamFetch) {
         },
         session: realtimeSessionPolicy,
       }),
-      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      signal: AbortSignal.timeout(REALTIME_UPSTREAM_TIMEOUT_MS),
     });
   } catch {
     return jsonResponse(502, { error: "upstream_unavailable" });
@@ -142,12 +236,249 @@ export async function handleRequest(request, env, upstreamFetch) {
   });
 }
 
-function hasRequiredBindings(env) {
+async function handleLearningNext(
+  learningReport,
+  env,
+  safetyIdentifier,
+  upstreamFetch,
+) {
+  const upstreamBody = {
+    model: learningPlannerPolicy.model,
+    instructions: learningPlannerInstructions,
+    input: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text: JSON.stringify({
+              learning_report: modelSafeLearningReport(learningReport),
+            }),
+          },
+        ],
+      },
+    ],
+    text: {
+      format: {
+        type: "json_schema",
+        name: "ma_next_learning_action",
+        strict: true,
+        schema: learningActionSchema,
+      },
+      verbosity: "low",
+    },
+    reasoning: { effort: learningPlannerPolicy.reasoningEffort },
+    max_output_tokens: learningPlannerPolicy.maxOutputTokens,
+    safety_identifier: safetyIdentifier,
+    store: false,
+  };
+
+  let upstreamResponse;
+  for (let attempt = 0; attempt < learningPlannerPolicy.maxAttempts; attempt += 1) {
+    try {
+      upstreamResponse = await upstreamFetch(OPENAI_RESPONSES_URL, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${env.OPENAI_API_KEY}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(upstreamBody),
+        signal: AbortSignal.timeout(learningPlannerPolicy.upstreamTimeoutMs),
+      });
+    } catch {
+      if (attempt + 1 < learningPlannerPolicy.maxAttempts) {
+        continue;
+      }
+      return jsonResponse(502, { error: "upstream_unavailable" });
+    }
+
+    if (upstreamResponse.ok) {
+      break;
+    }
+    if (
+      attempt + 1 < learningPlannerPolicy.maxAttempts &&
+      isRetryableUpstreamStatus(upstreamResponse.status)
+    ) {
+      continue;
+    }
+    return jsonResponse(502, { error: "upstream_rejected" });
+  }
+
+  if (!upstreamResponse?.ok) {
+    return jsonResponse(502, { error: "upstream_unavailable" });
+  }
+
+  let payload;
+  try {
+    payload = await upstreamResponse.json();
+  } catch {
+    return jsonResponse(502, { error: "upstream_invalid_response" });
+  }
+
+  const recommendationResult = parseLearningRecommendation(
+    payload,
+    learningReport,
+  );
+  if (!recommendationResult.ok) {
+    return jsonResponse(502, { error: "upstream_invalid_response" });
+  }
+
+  return jsonResponse(200, {
+    schema_version: 1,
+    report_id: learningReport.report_id,
+    model: learningPlannerPolicy.model,
+    source: "model",
+    ...recommendationResult.value,
+  });
+}
+
+function isRetryableUpstreamStatus(status) {
+  return status === 408 || status === 409 || status === 429 || status >= 500;
+}
+
+function parseLearningRecommendation(payload, report) {
+  if (
+    payload?.status !== "completed" ||
+    payload.error != null ||
+    payload.incomplete_details != null
+  ) {
+    return { ok: false };
+  }
+  if (!Array.isArray(payload?.output)) {
+    return { ok: false };
+  }
+
+  const messages = [];
+  for (const item of payload.output) {
+    if (item?.type === "reasoning") {
+      continue;
+    }
+    if (item?.type !== "message" || !Array.isArray(item.content)) {
+      return { ok: false };
+    }
+    messages.push(item);
+  }
+  if (
+    messages.length !== 1 ||
+    messages[0].content.length !== 1 ||
+    messages[0].content[0]?.type !== "output_text" ||
+    typeof messages[0].content[0].text !== "string" ||
+    messages[0].content[0].text.length > 4_096
+  ) {
+    return { ok: false };
+  }
+
+  let value;
+  try {
+    value = JSON.parse(messages[0].content[0].text);
+  } catch {
+    return { ok: false };
+  }
+  return validateLearningRecommendation(value, report);
+}
+
+function validateLearningRecommendation(value, report) {
+  if (!isPlainObject(value)) {
+    return { ok: false };
+  }
+  if (!hasExactKeys(value, [
+    "action",
+    "reason",
+    "explanation_es",
+    "obligation_id",
+  ])) {
+    return { ok: false };
+  }
+
+  const allowedActions = new Set(learningActionSchema.properties.action.enum);
+  const allowedReasons = new Set(learningActionSchema.properties.reason.enum);
+  if (!allowedActions.has(value.action) || !allowedReasons.has(value.reason)) {
+    return { ok: false };
+  }
+  if (value.obligation_id !== report.scene_plan.obligation_id) {
+    return { ok: false };
+  }
+  const explanation = normalizedBoundedString(value.explanation_es, 1, 140);
+  if (explanation === null) {
+    return { ok: false };
+  }
+
+  const lastAttempt = report.attempts.at(-1);
+  if (!isActionSupported(value.action, report, lastAttempt)) {
+    return { ok: false };
+  }
+  if (!isReasonSupported(value.reason, report, lastAttempt)) {
+    return { ok: false };
+  }
+  if (!isActionReasonPairSupported(value.action, value.reason)) {
+    return { ok: false };
+  }
+
+  return {
+    ok: true,
+    value: {
+      action: value.action,
+      reason: value.reason,
+      explanation_es: canonicalActionExplanations[value.action],
+      evidence_reason_es: canonicalEvidenceReasons[value.reason],
+      obligation_id: value.obligation_id,
+    },
+  };
+}
+
+function isActionReasonPairSupported(action, reason) {
+  const allowedReasons = {
+    repeat: new Set(["incomplete_self_report", "speech_presence_missing"]),
+    reduce_scaffold: new Set(["scaffold_still_present"]),
+    isolate_segment: new Set(["repair_needed", "speech_presence_missing"]),
+    advance: new Set(["completed_after_repair"]),
+    abstain: new Set(["insufficient_evidence"]),
+  };
+  return allowedReasons[action]?.has(reason) === true;
+}
+
+function isActionSupported(action, report, lastAttempt) {
+  switch (action) {
+    case "advance":
+      return report.current_obligation_completed === true;
+    case "reduce_scaffold":
+      return lastAttempt.self_reported_completed && lastAttempt.scaffold !== "none";
+    case "isolate_segment":
+      return lastAttempt.repair_count > 0;
+    case "repeat":
+    case "abstain":
+      return true;
+    default:
+      return false;
+  }
+}
+
+function isReasonSupported(reason, report, lastAttempt) {
+  switch (reason) {
+    case "completed_after_repair":
+      return report.current_obligation_completed && lastAttempt.repair_count > 0;
+    case "incomplete_self_report":
+      return !lastAttempt.self_reported_completed;
+    case "speech_presence_missing":
+      return !lastAttempt.speech_presence_detected;
+    case "scaffold_still_present":
+      return lastAttempt.scaffold !== "none";
+    case "repair_needed":
+      return !lastAttempt.self_reported_completed && lastAttempt.repair_count > 0;
+    case "insufficient_evidence":
+      return true;
+    default:
+      return false;
+  }
+}
+
+function hasRequiredBindings(env, isLearning) {
   return (
     typeof env?.OPENAI_API_KEY === "string" &&
     env.OPENAI_API_KEY.length > 0 &&
-    typeof env?.MA_INSTALL_TOKEN === "string" &&
-    env.MA_INSTALL_TOKEN.length > 0 &&
+    isValidInstallToken(
+      isLearning ? env?.MA_PRODUCT_INSTALL_TOKEN : env?.MA_INSTALL_TOKEN
+    ) &&
     typeof env?.MA_SAFETY_SALT === "string" &&
     env.MA_SAFETY_SALT.length > 0 &&
     env?.RATE_LIMITER !== undefined &&
@@ -155,10 +486,17 @@ function hasRequiredBindings(env) {
   );
 }
 
+function isValidInstallToken(token) {
+  return typeof token === "string" &&
+    token.length >= 32 &&
+    token.length <= 512 &&
+    !/[\u0000-\u0020\u007f]/u.test(token);
+}
+
 async function parseEmptyObjectBody(request) {
   const text = await request.text();
   if (text.trim().length === 0) {
-    return { ok: true };
+    return { ok: true, value: {} };
   }
 
   let value;
@@ -168,13 +506,194 @@ async function parseEmptyObjectBody(request) {
     return { ok: false, error: "invalid_json" };
   }
 
-  if (value === null || Array.isArray(value) || typeof value !== "object") {
+  if (!isPlainObject(value)) {
     return { ok: false, error: "invalid_request" };
   }
   if (Object.keys(value).length > 0) {
     return { ok: false, error: "caller_configuration_forbidden" };
   }
-  return { ok: true };
+  return { ok: true, value };
+}
+
+async function parseLearningReportBody(request) {
+  if (!(request.headers.get("content-type") ?? "").toLowerCase()
+    .startsWith("application/json")) {
+    return { ok: false, error: "invalid_content_type" };
+  }
+  const declaredLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > 16_384) {
+    return { ok: false, error: "invalid_learning_report" };
+  }
+  const text = await request.text();
+  if (text.length === 0 || text.length > 16_384) {
+    return { ok: false, error: "invalid_learning_report" };
+  }
+
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    return { ok: false, error: "invalid_json" };
+  }
+
+  if (!validateLearningReport(value)) {
+    return { ok: false, error: "invalid_learning_report" };
+  }
+  return { ok: true, value };
+}
+
+function validateLearningReport(value) {
+  if (!isPlainObject(value) || !hasExactKeys(value, [
+    "schema_version",
+    "report_id",
+    "scene_plan",
+    "attempts",
+    "current_obligation_completed",
+    "repair_segment_id",
+    "raw_audio_included",
+  ])) {
+    return false;
+  }
+  if (
+    value.schema_version !== 1 ||
+    !isUUIDString(value.report_id) ||
+    value.raw_audio_included !== false
+  ) {
+    return false;
+  }
+
+  const plan = value.scene_plan;
+  if (!isPlainObject(plan) || !hasExactKeys(plan, [
+    "scene_id",
+    "obligation_id",
+    "learner_level",
+    "target_phrase_id",
+  ])) {
+    return false;
+  }
+  if (
+    plan.scene_id !== RESTAURANT_SCENE_ID ||
+    plan.obligation_id !== RESTAURANT_OBLIGATION_ID ||
+    plan.learner_level !== "zero_beginner" ||
+    plan.target_phrase_id !== "restaurant.party-size.hitori-desu" ||
+    value.repair_segment_id !== RESTAURANT_REPAIR_SEGMENT_ID
+  ) {
+    return false;
+  }
+  if (
+    typeof value.current_obligation_completed !== "boolean" ||
+    !Array.isArray(value.attempts) ||
+    value.attempts.length !== 2
+  ) {
+    return false;
+  }
+
+  const attempts = value.attempts;
+  if (!attempts.every((attempt) => validateLearningAttempt(attempt, plan))) {
+    return false;
+  }
+  if (
+    attempts[0].attempt_number >= attempts[1].attempt_number ||
+    attempts[0].repair_count !== 0 ||
+    attempts[1].repair_count < 1 ||
+    attempts[0].id === attempts[1].id ||
+    value.current_obligation_completed !== attempts[1].self_reported_completed
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function validateLearningAttempt(attempt, plan) {
+  if (!isPlainObject(attempt) || !hasExactKeys(attempt, [
+    "id",
+    "obligation_id",
+    "scaffold",
+    "attempt_number",
+    "captured_duration_ms",
+    "estimated_voice_onset_ms",
+    "speech_presence_detected",
+    "self_reported_completed",
+    "repair_count",
+    "raw_audio_retained",
+  ])) {
+    return false;
+  }
+  if (
+    !isUUIDString(attempt.id) ||
+    attempt.obligation_id !== plan.obligation_id ||
+    !["full", "rhythm_only", "none"].includes(attempt.scaffold) ||
+    !isIntegerInRange(attempt.attempt_number, 1, 20) ||
+    !isIntegerInRange(attempt.captured_duration_ms, 0, 8_000) ||
+    typeof attempt.speech_presence_detected !== "boolean" ||
+    typeof attempt.self_reported_completed !== "boolean" ||
+    !isIntegerInRange(attempt.repair_count, 0, 10) ||
+    attempt.raw_audio_retained !== false
+  ) {
+    return false;
+  }
+  if (!attempt.speech_presence_detected) {
+    return attempt.estimated_voice_onset_ms === null;
+  }
+  return (
+    attempt.captured_duration_ms > 0 &&
+    isIntegerInRange(attempt.estimated_voice_onset_ms, 0, 8_000) &&
+    attempt.estimated_voice_onset_ms <= attempt.captured_duration_ms
+  );
+}
+
+function modelSafeLearningReport(report) {
+  return {
+    schema_version: report.schema_version,
+    scene_plan: report.scene_plan,
+    attempts: report.attempts.map((attempt) => ({
+      obligation_id: attempt.obligation_id,
+      scaffold: attempt.scaffold,
+      attempt_number: attempt.attempt_number,
+      captured_duration_ms: attempt.captured_duration_ms,
+      estimated_voice_onset_ms: attempt.estimated_voice_onset_ms,
+      speech_presence_detected: attempt.speech_presence_detected,
+      self_reported_completed: attempt.self_reported_completed,
+      repair_count: attempt.repair_count,
+    })),
+    current_obligation_completed: report.current_obligation_completed,
+    repair_segment_id: report.repair_segment_id,
+  };
+}
+
+function isPlainObject(value) {
+  return value !== null && !Array.isArray(value) && typeof value === "object";
+}
+
+function hasExactKeys(value, expectedKeys) {
+  const actual = Object.keys(value).sort();
+  const expected = [...expectedKeys].sort();
+  return actual.length === expected.length &&
+    actual.every((key, index) => key === expected[index]);
+}
+
+function isIntegerInRange(value, minimum, maximum) {
+  return Number.isInteger(value) && value >= minimum && value <= maximum;
+}
+
+function isBoundedString(value, minimum, maximum) {
+  return typeof value === "string" &&
+    value.length >= minimum &&
+    value.length <= maximum &&
+    !/[\u0000-\u001f\u007f]/u.test(value);
+}
+
+function isUUIDString(value) {
+  return typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(value);
+}
+
+function normalizedBoundedString(value, minimum, maximum) {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const normalized = value.trim();
+  return isBoundedString(normalized, minimum, maximum) ? normalized : null;
 }
 
 async function constantTimeEqual(left, right) {

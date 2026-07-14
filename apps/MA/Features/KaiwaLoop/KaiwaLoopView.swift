@@ -604,11 +604,15 @@ private struct KaiwaProofScreen: View {
                 }
                 comparison
                     .padding(.top, 20)
+                if let action = state.nextLearningAction {
+                    nextStepCard(action)
+                        .padding(.top, 16)
+                }
 
                 Spacer(minLength: 16)
                 VStack(spacing: 10) {
-                    if let plannerStatus = state.plannerStatusText {
-                        Text(plannerStatus)
+                    if state.plannerIsRefreshing {
+                        Text("Preparando el siguiente paso; el resultado local ya está listo…")
                             .font(MATheme.caption())
                             .foregroundStyle(MATheme.stone)
                     }
@@ -667,11 +671,58 @@ private struct KaiwaProofScreen: View {
                 Text("Completaste otra toma después de reparar el segmento.")
                     .font(MATheme.heading())
             }
-            Text("Siguiente objetivo provisional: repetir una vez más sin texto. El plan nunca puede inventar evidencia ni saltarse una obligación incompleta.")
+            Text("La obligación siguió siendo pedir mesa para una persona; el plan no puede cambiar estos hechos.")
                 .font(MATheme.caption())
                 .foregroundStyle(MATheme.stone)
         }
         .padding(.horizontal, MATheme.sideMargin)
+    }
+
+    private func nextStepCard(_ action: NextLearningAction) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            MicroCapsLabel(text: sourceLabel(action.source), color: MATheme.ai)
+            Text(actionTitle(action.action))
+                .font(MATheme.heading())
+                .foregroundStyle(MATheme.sumi)
+            Text(action.explanationES)
+                .font(MATheme.body(15, weight: .regular))
+                .foregroundStyle(MATheme.sumi)
+            Text(action.evidenceReasonES)
+                .font(MATheme.caption())
+                .foregroundStyle(MATheme.stone)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(MATheme.mist, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, MATheme.sideMargin)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("kaiwa.plan.next")
+    }
+
+    private func sourceLabel(_ source: LearningRecommendationSource) -> String {
+        switch source {
+        case .model:
+            "PLAN · GPT-5.6-SOL"
+        case .deterministicPolicy:
+            "PLAN · RESPALDO LOCAL"
+        case .cachedFixture:
+            "PLAN · REPLAY CONTROLADO"
+        }
+    }
+
+    private func actionTitle(_ action: LearningActionKind) -> String {
+        switch action {
+        case .repeatLesson:
+            "Repetir la misma respuesta"
+        case .reduceScaffold:
+            "Quitar un poco de ayuda"
+        case .isolateSegment:
+            "Aislar un segmento"
+        case .advance:
+            "Avanzar al siguiente objetivo"
+        case .abstain:
+            "Mantener el plan local"
+        }
     }
 }
 
