@@ -45,8 +45,8 @@ Append exact evidence after each milestone.
 
 | Component | Root-task evidence | Commit | Device/test evidence | Status |
 |---|---|---|---|---|
-| Gate 0 probe and written verdict | Clock started 2026-07-14 01:18:10 CST; hard stop 2026-07-15 01:18:10 CST | `0432b6f` | physical protocol pending | in progress |
-| Selected one-owner audio topology | pending | pending | pending | pending |
+| Gate 0 probe and written verdict | Clock started 2026-07-14 01:18:10 CST; hard stop 2026-07-15 01:18:10 CST; fixed native-WebRTC audit completed without rounding its 29m48s root capture | `0432b6f`, `ecddafc` | physical protocol pending | in progress |
+| Selected one-owner audio topology | Root rejected stock native WebRTC after its public/binary surface exposed none of the three required hooks together; froze direct GA WebSocket plus one app-owned AVAudioEngine/VoiceProcessingIO graph | `ecddafc` | Apple SDK contract checked; graph/device proof pending | in progress |
 | Realtime transport/event normalization | Root added bounded monotonic diagnostics, provider redaction, effective-policy verification, typed/deduplicated events, bounded commands, and a cancellation-safe URLSession WebSocket actor that exposes no event before `session.created` policy verification | `d2e85d3`, `4966eb0`, `38f4686`, `2c95b6f`, `8081de1`, `30cb963` | probe suite 32/32; live transport pending | in progress |
 | Local cue classifier/floor policy | pending | pending | pending | pending |
 | Render ledger/ring buffer/repair replay | Root implemented a bounded rendered-only ring plus a player-timeline ledger that rejects future/backward cursors and derives item-relative truncation milliseconds only from marked-rendered frames | `12f3e65`, `9ac69d3` | 8 ring/ledger tests; graph/physical evidence pending | in progress |
@@ -185,6 +185,28 @@ For each material decision, capture:
   WebSocket truncation position in item-relative milliseconds. Commit:
   `9ac69d3`. The complete probe suite reached 32/32 passing; these remain code
   results until the selected iPhone graph supplies the cursor.
+
+### 2026-07-14 — Gate 0 native-WebRTC audit and topology freeze
+
+- The root task kept the prescribed 02:18:10–02:48:10 audit window open to its
+  exact boundary. Root source capture began 12 seconds late and is recorded
+  honestly as 29 minutes 48 seconds, not rounded up.
+- The readily available deprecated GoogleWebRTC binary exposed no post-AEC PCM
+  callback, device-boundary output frames/render position, or immediate
+  playout-only stop. Modern upstream exposes PCM blocks only when the app
+  implements and owns a complete custom `RTCAudioDevice`, which the written
+  plan forbids.
+- Root also checked AEC dump, aggregate playout stats, track disable, the full
+  public header inventory, the framework build manifest, and AppRTCMobile's
+  default factory path. AEC dump is a file writer; stats are cumulative; track
+  disable asynchronously sets volume to zero; the sample uses the stock ADM.
+- Official WebRTC HEAD remained
+  `07e2e3bfa9f65d9ad0401dd372253807427b0069` through the boundary watch.
+- Commit `ecddafc` freezes direct GA Realtime WebSocket plus one root-owned
+  `AudioGraphController` using Apple AVFAudio/VoiceProcessingIO. All physical
+  route, negotiated-format, post-AEC, audible-render, local-stop, and runtime
+  configuration-hash evidence remains pending; no verdict checkbox was marked
+  from source inspection.
 
 ## Final feedback preparation
 
