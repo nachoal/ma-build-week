@@ -50,6 +50,12 @@ Confirm with evidence, not prose:
 - [ ] No separately passing transport and local-audio paths were combined.
 - [ ] Provider keys and client secrets are absent from logs and tracked files.
 
+Broker security note: the standard API key and all persistent secrets remained
+outside Git and printed output. One 120-second client-secret value was
+accidentally printed in private root-task tool output by a rate-limit diagnostic
+that expected 429 but received 200. It expired automatically and was not saved
+to a repository file. This leaves the log criterion false and disqualifies PASS.
+
 If any of the first four boxes is false, verdict is PARTIAL or FAIL.
 
 ## External acoustic evidence
@@ -163,7 +169,9 @@ Choose exactly one by hard_stop_at:
 - PARTIAL — immediately build Kaiwa Loop; overlap stays developer-only.
 - FAIL — stop the overlap claim and retain only independently proven mechanics.
 
-Selected verdict: PENDING until no later than 2026-07-15 01:18:10 CST (-0600)
+Selected verdict: PENDING until no later than 2026-07-15 01:18:10 CST (-0600);
+PASS is disqualified by the recorded ephemeral-secret logging incident, while
+Experiment 0 still determines PARTIAL transport eligibility.
 
 Rationale tied to failed/passed criteria:
 
@@ -176,4 +184,3 @@ Public wording permitted by this evidence:
 Remaining unknowns:
 
 Approver:
-

@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ma-session-broker",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-13",
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.01
+  },
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "41020714",
+      "simple": {
+        "limit": 12,
+        "period": 60
+      }
+    }
+  ]
+}
