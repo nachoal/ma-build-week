@@ -47,9 +47,9 @@ Append exact evidence after each milestone.
 |---|---|---|---|---|
 | Gate 0 probe and written verdict | Clock started 2026-07-14 01:18:10 CST; hard stop 2026-07-15 01:18:10 CST | `0432b6f` | physical protocol pending | in progress |
 | Selected one-owner audio topology | pending | pending | pending | pending |
-| Realtime transport/event normalization | Root added bounded monotonic diagnostics, generic provider redaction, effective-policy verification, typed server events, duplicate rejection, and bounded client commands | `d2e85d3`, `4966eb0`, `38f4686`, `2c95b6f` | probe suite 24/24; live transport pending | in progress |
+| Realtime transport/event normalization | Root added bounded monotonic diagnostics, provider redaction, effective-policy verification, typed/deduplicated events, bounded commands, and a cancellation-safe URLSession WebSocket actor that exposes no event before `session.created` policy verification | `d2e85d3`, `4966eb0`, `38f4686`, `2c95b6f`, `8081de1`, `30cb963` | probe suite 32/32; live transport pending | in progress |
 | Local cue classifier/floor policy | pending | pending | pending | pending |
-| Render ledger/ring buffer/repair replay | Root implemented a bounded rendered-only ring with wraparound and explicit future/overwritten-window rejection | `12f3e65` | 4 ring-buffer tests; graph/physical evidence pending | in progress |
+| Render ledger/ring buffer/repair replay | Root implemented a bounded rendered-only ring plus a player-timeline ledger that rejects future/backward cursors and derives item-relative truncation milliseconds only from marked-rendered frames | `12f3e65`, `9ac69d3` | 8 ring/ledger tests; graph/physical evidence pending | in progress |
 | Session broker and secret handling | Root implemented the fixed-policy Worker, private install-token boundary, stable safety identifier, rate-limit binding, bounded response, iOS broker client, and this-device-only Keychain provisioning | `9d5cb2e`, `b0d1977` | Worker 7/7; iOS probe 5/5; Wrangler dry run; live health 200, unauthorized 401, caller override 400, authorized mint 200 | complete with recorded Gate limitation |
 | Real offline first-minute playback/capture | pending | pending | pending | pending |
 | Repair/resume and next-attempt evidence | pending | pending | pending | pending |
@@ -175,6 +175,16 @@ For each material decision, capture:
   event IDs in a bounded window, and encodes explicit append/clear/commit,
   create/cancel, and render-derived truncate commands. Commits: `4966eb0`,
   `38f4686`, and `2c95b6f`. The complete probe suite reached 24/24 passing.
+- Root added the provisional direct-WebSocket transport behind an injected
+  socket boundary. It requires a policy-matching `session.created` before
+  exposing the connection, bounds every frame, logs only redacted event types,
+  fails closed on policy drift, and prevents a cancelled handshake from
+  resurrecting a stale actor generation. Commits: `8081de1` and `30cb963`.
+- Root added a player-timeline ledger that keeps decoded/scheduled ranges
+  separate from the monotonic rendered cursor and derives the one permitted
+  WebSocket truncation position in item-relative milliseconds. Commit:
+  `9ac69d3`. The complete probe suite reached 32/32 passing; these remain code
+  results until the selected iPhone graph supplies the cursor.
 
 ## Final feedback preparation
 
