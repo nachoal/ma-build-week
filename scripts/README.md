@@ -11,9 +11,11 @@ fixture replay. Scripts must discover devices dynamically.
 - `device-ma.sh status|build-install|product|replay` dynamically discovers the
   paired iPhone 17 Pro on iOS 27, builds/signs/installs MA, and optionally
   launches the local product or the unmistakably labeled no-live replay. The
-  product token is read from macOS Keychain and is never printed or persisted.
+  product token is read from macOS Keychain, never printed or written to a
+  file/log, and persists only in this-device-only iOS Keychain until deletion.
 - `scan-secrets.sh` scans the current tracked/untracked source set and every
   reachable Git commit, redacting any candidate value and failing closed.
-- `archive-submission.sh` refuses a dirty tracked tree, reruns the secret scan,
-  creates the signed Release archive, verifies its bundled privacy manifest,
-  copies only sanitized submission inputs, and writes `SHA256SUMS`.
+- `archive-submission.sh` refuses tracked or untracked drift, constrains output
+  and optional inputs to ignored repository-local roots, reruns the secret scan
+  after staging, creates and verifies the signed Release archive and privacy
+  manifest, and writes `SHA256SUMS`.

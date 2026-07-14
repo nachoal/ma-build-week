@@ -13,7 +13,9 @@ scripts/device-ma.sh product
 
 The command dynamically discovers the paired iPhone 17 Pro on iOS 27, signs,
 builds, installs, provisions the private product token from macOS Keychain, and
-launches MA. It does not print or persist the token. Keep the phone unlocked.
+launches MA. It never prints the token or writes it to files/logs; MA persists
+it only in this-device-only iOS Keychain until Delete all data. Keep the phone
+unlocked.
 
 Fallback, with no microphone/audio/network/planner side effects:
 

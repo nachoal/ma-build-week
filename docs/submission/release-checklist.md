@@ -40,6 +40,11 @@ subtitles, and submission text. Never include `docs/poc/private-evidence`, raw
 audio, `.dev.vars`, Keychain exports, authorization headers, DerivedData, or
 standard provider credentials.
 
+Stage any optional redacted log or final video under ignored
+`.build/submission-inputs/`; the archive tool rejects inputs and output paths
+outside its canonical repository-local roots. It writes `BUILD_ENVIRONMENT`,
+the exact `GIT_COMMIT`, and a checksum manifest after rescanning staged copy.
+
 Create `SHA256SUMS` in the ignored release directory with:
 
 ```sh

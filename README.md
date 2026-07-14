@@ -7,7 +7,7 @@ obligation again with less hesitation.
 
 The binding Gate 0 verdict is **PARTIAL**. The submission product therefore
 uses bundled local tutor audio, bounded non-overlapping learner capture,
-explicit self-assessment, one immediate local pause, and a complete labeled
+explicit self-assessment, one explicit local pause, and a complete labeled
 controlled segment for repair. It does **not** claim live Realtime conversation,
 speech-over-playout classification, or exact replay of a rendered window.
 
@@ -18,7 +18,8 @@ are never sent or retained. The standard OpenAI key remains server-side.
 
 ## Run and verify
 
-Requirements: Xcode 17, XcodeGen 2.45+, and an iOS 18+ simulator.
+Validated with Xcode 26.6, Swift 6.3.3, the iPhoneOS 26.5 SDK, XcodeGen 2.45+,
+and an iOS 18+ deployment target.
 
 ```sh
 xcodegen generate

@@ -20,7 +20,7 @@ Now the bundled restaurant scene sounds natural—and quickly becomes noise.
 
 6
 00:00:58,000 --> 00:01:09,000
-I tap Pause and help. MA stops its local tutor audio immediately.
+I tap Pause and help. MA stops its local tutor audio on that explicit tap.
 
 7
 00:01:09,000 --> 00:01:24,000

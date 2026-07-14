@@ -294,7 +294,8 @@ timeline.
 
 - Absolute-beginner first minute rather than a blank conversation.
 - One intent, one phrase, one conversational obligation.
-- Disappearing scaffolding and a visible heard-beat timeline.
+- Disappearing scaffolding and an unmistakably labeled controlled repair
+  segment that resumes the same obligation.
 - Feedback appears at the breakdown moment, then gets out of the way.
 - Accessible type, captions, reduced motion, and non-color-only state.
 
@@ -828,17 +829,20 @@ FR-003 — Disappearing scaffold
 
 FR-004 — Speech attempt
 
-- App captures learner speech and associates it with the exact scene step.
-- App stores transcript or phonetic evidence, timing, and help level.
-- Uncertain recognition is represented as uncertain, never silently corrected.
+- The selected PARTIAL branch captures one bounded local attempt associated
+  with the exact scene obligation.
+- It stores only duration, approximate onset, aggregate speech presence, help
+  level, repair count, and the learner's explicit self-assessment.
+- It generates no transcript or phonetic evidence and retains no raw audio.
 
 FR-005 — Natural-speed scene
 
 - Tutor can run the learned exchange at coached and natural speeds.
 - Learner can see which conversational obligation is active without seeing the
   answer text.
-- The app teaches and rehearses はい and すみません before using them as hidden
-  controls in natural-speed mode.
+- The selected branch explains the conversational role of はい and すみません,
+  but uses one visible explicit repair control. Phrase-driven floor behavior is
+  PASS-only future scope.
 
 FR-006 — Floor control
 
@@ -851,17 +855,20 @@ FR-006 — Floor control
 
 FR-007 — Heard-beat repair
 
-- App can replay audio the learner actually heard, excluding unplayed buffers.
+- Exact actually-heard replay is available only after a future Experiment D
+  PASS; it is unavailable in the selected product.
+- The selected branch plays one complete controlled labeled segment and never
+  presents it as the exact last audio heard.
 - Repair card includes audio, Japanese, temporary romaji, Spanish meaning, and
   one pragmatic or rhythm cue.
-- Learner can replay slower and then resume in context.
+- Learner can replay the controlled segment and resume the same obligation.
 
 FR-008 — Attempt evidence
 
 - App compares first and next attempt on understandable dimensions:
   completion, latency to begin, amount of scaffolding, and repair count.
 - Raw model confidence is not exposed as a fake pronunciation percentage.
-- Learner can play both attempts when audio retention was explicitly enabled.
+- Attempt audio retention and playback are disabled in the selected branch.
 
 FR-009 — Adaptive next step
 
@@ -880,7 +887,8 @@ FR-011 — Live and replay modes
 
 - Provider events normalize into the same ConversationEvent stream.
 - A sanitized fixture can drive the complete hero UI deterministically.
-- Developer mode labels the source as live or replay.
+- The selected product labels bundled local behavior; developer replay remains
+  permanently labeled `REPLAY · NO EN VIVO`. No live adapter is permitted.
 
 FR-012 — Accessibility and recovery
 
@@ -896,19 +904,19 @@ Keep the hackathon build to one main navigation flow:
 
 1. Intent picker.
 2. Phrase setup.
-3. Live practice hero screen.
-4. Heard-beat repair card over the same screen.
+3. Local practice hero screen.
+4. Controlled-segment repair card over the same screen.
 5. Evidence summary.
 
 The hero screen contains:
 
 - conversational objective;
 - tutor and learner presence;
-- subtle live waveform or floor indicator;
+- explicit bundled-audio and local-capture state;
 - current scaffold;
-- heard-beat timeline;
+- controlled repair segment and same-obligation resume state;
 - one primary action;
-- explicit connection and capture state;
+- explicit capture state;
 - developer diagnostics hidden from the normal demo.
 
 ### Content model

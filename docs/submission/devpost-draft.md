@@ -32,10 +32,10 @@ natural speech stops sounding like language and starts sounding like noise.
 MA first teaches `一人です` with full text, rhythm-only support, and then no
 answer text. The learner records a short local attempt and self-assesses it; MA
 does not pretend to grade pronunciation. A bundled natural-speed restaurant
-turn follows. The learner can stop it immediately, study one complete labeled
-segment, return to the same conversational obligation, and try again. The proof
-screen compares bounded attempt facts such as duration, approximate onset,
-help used, and repair count.
+turn follows. The learner can stop it locally on an explicit tap, study one
+complete labeled segment, return to the same conversational obligation, and
+try again. The proof screen compares bounded attempt facts such as duration,
+approximate onset, help used, and repair count.
 
 The default next action is deterministic and local. If the learner explicitly
 chooses, MA sends only those structured facts—not audio or a transcript—to a

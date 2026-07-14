@@ -16,24 +16,70 @@ WORKING_RAW="$(mktemp -t ma-secret-working.XXXXXX)"
 WORKING_FINDINGS="$(mktemp -t ma-secret-working-findings.XXXXXX)"
 HISTORY_RAW="$(mktemp -t ma-secret-history.XXXXXX)"
 HISTORY_FINDINGS="$(mktemp -t ma-secret-history-findings.XXXXXX)"
+EXTRA_RAW="$(mktemp -t ma-secret-extra.XXXXXX)"
 FILE_LIST="$(mktemp -t ma-secret-files.XXXXXX)"
-trap 'rm -f "$WORKING_RAW" "$WORKING_FINDINGS" "$HISTORY_RAW" "$HISTORY_FINDINGS" "$FILE_LIST"' EXIT
+COMMIT_LIST="$(mktemp -t ma-secret-commits.XXXXXX)"
+ERROR_LOG="$(mktemp -t ma-secret-errors.XXXXXX)"
+trap 'rm -f "$WORKING_RAW" "$WORKING_FINDINGS" "$HISTORY_RAW" "$HISTORY_FINDINGS" "$EXTRA_RAW" "$FILE_LIST" "$COMMIT_LIST" "$ERROR_LOG"' EXIT
+
+fail_scan() {
+  printf 'Secret scan failed before completion (%s). No PASS recorded.\n' "$1" >&2
+  exit 2
+}
+
+scan_path() {
+  local path="$1"
+  local output="$2"
+  local status
+
+  if rg -nI --no-heading --with-filename -e "$PATTERN" -- "$path" \
+    >>"$output" 2>>"$ERROR_LOG"; then
+    return
+  else
+    status=$?
+  fi
+  [[ "$status" == "1" ]] || fail_scan "ripgrep error"
+}
+
+filter_allowlist() {
+  local raw="$1"
+  local allowlist="$2"
+  local output="$3"
+  local status
+
+  if grep -Ev "$allowlist" "$raw" >"$output" 2>>"$ERROR_LOG"; then
+    return
+  else
+    status=$?
+  fi
+  [[ "$status" == "1" ]] || fail_scan "allow-list filter error"
+}
 
 git ls-files --cached --others --exclude-standard -z >"$FILE_LIST"
-if [[ -s "$FILE_LIST" ]]; then
-  xargs -0 rg -nI --no-heading --with-filename -e "$PATTERN" \
-    --glob '!scripts/scan-secrets.sh' \
-    -- <"$FILE_LIST" >"$WORKING_RAW" || true
-fi
-grep -Ev "$WORKING_ALLOWLIST" "$WORKING_RAW" >"$WORKING_FINDINGS" || true
+while IFS= read -r -d '' path; do
+  [[ "$path" == "scripts/scan-secrets.sh" ]] && continue
+  scan_path "$path" "$WORKING_RAW"
+done <"$FILE_LIST"
+filter_allowlist "$WORKING_RAW" "$WORKING_ALLOWLIST" "$WORKING_FINDINGS"
 
+git rev-list --all >"$COMMIT_LIST"
 while IFS= read -r commit; do
-  git grep -nIE "$PATTERN" "$commit" -- . \
-    ':(exclude)scripts/scan-secrets.sh' >>"$HISTORY_RAW" 2>/dev/null || true
-done < <(git rev-list --all)
-grep -Ev "$HISTORY_ALLOWLIST" "$HISTORY_RAW" >"$HISTORY_FINDINGS" || true
+  if git grep -nIE "$PATTERN" "$commit" -- . \
+    ':(exclude)scripts/scan-secrets.sh' >>"$HISTORY_RAW" 2>>"$ERROR_LOG"; then
+    continue
+  else
+    status=$?
+  fi
+  [[ "$status" == "1" ]] || fail_scan "Git history scan error"
+done <"$COMMIT_LIST"
+filter_allowlist "$HISTORY_RAW" "$HISTORY_ALLOWLIST" "$HISTORY_FINDINGS"
 
-if [[ -s "$WORKING_FINDINGS" || -s "$HISTORY_FINDINGS" ]]; then
+for path in "$@"; do
+  [[ -e "$path" ]] || fail_scan "extra scan path missing"
+  scan_path "$path" "$EXTRA_RAW"
+done
+
+if [[ -s "$WORKING_FINDINGS" || -s "$HISTORY_FINDINGS" || -s "$EXTRA_RAW" ]]; then
   printf 'Potential secret material found. Values are intentionally redacted.\n' >&2
   if [[ -s "$WORKING_FINDINGS" ]]; then
     printf 'Current tracked/untracked paths:\n' >&2
@@ -43,7 +89,11 @@ if [[ -s "$WORKING_FINDINGS" || -s "$HISTORY_FINDINGS" ]]; then
     printf 'Git history locations:\n' >&2
     awk -F: '{print "  " $1 ":" $2 ":" $3}' "$HISTORY_FINDINGS" | sort -u >&2
   fi
+  if [[ -s "$EXTRA_RAW" ]]; then
+    printf 'Additional staged input locations:\n' >&2
+    awk -F: '{print "  " $1 ":" $2}' "$EXTRA_RAW" | sort -u >&2
+  fi
   exit 1
 fi
 
-printf 'Secret scan passed: current tracked/untracked set and all reachable Git history; only explicit fixture/placeholders allow-listed.\n'
+printf 'Secret scan passed: current tracked/untracked set, all reachable Git history, and %s additional staged input(s); only exact fixture placeholders allow-listed.\n' "$#"
