@@ -75,6 +75,28 @@ struct RealtimeWebSocketTransportTests {
         #expect(await socket.isClosed)
     }
 
+    @Test("Disconnect during handshake cannot resurrect a stale connection")
+    func disconnectDuringHandshake() async throws {
+        let socket = MockRealtimeSocket(inbound: [])
+        let transport = RealtimeWebSocketTransport(
+            socketFactory: MockRealtimeSocketFactory(socket: socket),
+            endpoint: URL(string: "wss://realtime.example.test/v1")!
+        )
+        let connectTask = Task {
+            try await transport.connect(clientSecret: clientSecret) { _ in }
+        }
+
+        await socket.waitUntilReceiveStarts()
+        await transport.disconnect()
+        await socket.enqueue(try sessionEvent())
+
+        await #expect(throws: RealtimeWebSocketTransportError.disconnected) {
+            try await connectTask.value
+        }
+        #expect(await transport.state == .idle)
+        #expect(await socket.isClosed)
+    }
+
     private var clientSecret: RealtimeClientSecret {
         RealtimeClientSecret(
             value: "ephemeral-test",
@@ -121,6 +143,8 @@ private actor MockRealtimeSocket: RealtimeSocket {
 
     private var inbound: [Data]
     private var waiters: [CheckedContinuation<Data, Error>] = []
+    private var receiveStartWaiters: [CheckedContinuation<Void, Never>] = []
+    private var receiveStarted = false
     private(set) var sent: [Data] = []
     private(set) var isClosed = false
 
@@ -137,11 +161,32 @@ private actor MockRealtimeSocket: RealtimeSocket {
 
     func receive() async throws -> Data {
         guard !isClosed else { throw MockError.closed }
+        receiveStarted = true
+        let startWaiters = receiveStartWaiters
+        receiveStartWaiters.removeAll()
+        for continuation in startWaiters {
+            continuation.resume()
+        }
         if !inbound.isEmpty {
             return inbound.removeFirst()
         }
         return try await withCheckedThrowingContinuation { continuation in
             waiters.append(continuation)
+        }
+    }
+
+    func waitUntilReceiveStarts() async {
+        guard !receiveStarted else { return }
+        await withCheckedContinuation { continuation in
+            receiveStartWaiters.append(continuation)
+        }
+    }
+
+    func enqueue(_ data: Data) {
+        if !waiters.isEmpty {
+            waiters.removeFirst().resume(returning: data)
+        } else {
+            inbound.append(data)
         }
     }
 
