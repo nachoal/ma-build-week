@@ -49,6 +49,7 @@ scripts/device-ma.sh status
 scripts/device-ma.sh build-install
 scripts/device-ma.sh product
 scripts/device-ma.sh replay
+scripts/test-live-guided-device.sh
 ```
 
 `product` reads the revocable private install token from the macOS Keychain and
@@ -56,6 +57,12 @@ provisions it into this-device-only iOS Keychain storage without printing it.
 `replay` launches a deterministic visual fallback permanently labeled
 `REPLAY · NOT LIVE / NO EN VIVO`; it invokes neither microphone, audio hardware, network,
 nor the planner.
+
+The live-device test helper refuses a locked phone, provisions the separately
+revocable credential without retaining it in tool output, runs the complete
+production-Realtime UI journey, and deletes the test credential on exit. A
+separate selector exercises the real microphone graph; see the reviewer testing
+instructions for the exact command and evidence boundary.
 
 Run the reproducible current-tree and Git-history secret check with:
 

@@ -46,6 +46,22 @@ scripts/device-ma.sh product
 
 Keep the iPhone unlocked and awake.
 
+The two automated physical checks use the same dynamic discovery and fail
+before building if the phone is locked:
+
+```sh
+scripts/test-live-guided-device.sh
+MA_LIVE_DEVICE_TEST=MAUITests/GuidedLiveAudioIntegrationUITests/testOneTapModelPlaybackAndRealCaptureStopStayResponsive \
+  scripts/test-live-guided-device.sh
+```
+
+The first retains the production broker/Realtime/planner path with repeatable
+bundled learner input. The second uses the actual microphone permission and
+capture graph and accepts an honest silence/recoverable-review result. Neither
+automated check can establish human audibility, Japanese teaching quality,
+route-change recovery, or learner outcome; record those observations
+separately.
+
 1. Confirm a fresh install starts in English. Toggle to Spanish and back; the
    current route and lesson phase must remain unchanged.
 2. Complete onboarding and open **Arriving at a restaurant**.

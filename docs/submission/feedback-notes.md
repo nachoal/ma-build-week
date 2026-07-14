@@ -834,6 +834,13 @@ For each material decision, capture:
   `.build/device-evidence/20260714T210505Z-product`. Launch was denied because
   the phone had re-locked, so this remains install evidence only; no microphone,
   review, route, or learner claim was closed.
+- Root added `scripts/test-live-guided-device.sh` so the next physical pass does
+  not use Ignacio as the automation driver. It dynamically discovers the
+  device, fails before build while locked, provisions through the value-free
+  DEBUG sentinel, retains no credential-bearing launch output, runs a selected
+  physical UI suite, scans its evidence, and deletes the test credential. Its
+  selector and locked-device negative gates pass; the complete positive run
+  remains pending an unlocked phone.
 - Clean commit `bebac3c47c4846cbc339ae130978f0384115bbef` produced
   `.build/submission/candidate-bebac3c47c4846cbc339ae130978f0384115bbef/`.
   The signed Release archive, embedded privacy manifest, and

@@ -13,6 +13,10 @@ fixture replay. Scripts must discover devices dynamically.
   launches the local product or the unmistakably labeled no-live replay. The
   product token is read from macOS Keychain, never printed or written to a
   file/log, and persists only in this-device-only iOS Keychain until deletion.
+- `test-live-guided-device.sh` refuses a locked paired device, provisions the
+  private test credential through a value-free app-container sentinel, and runs
+  either the complete production-Realtime UI journey or the real-microphone
+  integration test before deleting the test credential.
 - `scan-secrets.sh` scans the current tracked/untracked source set and every
   reachable Git commit, redacting any candidate value and failing closed. Its
   `--binary PATH` mode also scans printable strings in a compiled executable
