@@ -1,0 +1,178 @@
+# Gate 0 physical-iPhone verdict
+
+Copy this file to verdict.md before starting. Writing started_at starts the hard
+24-clock-hour timer. Missing evidence is a failed criterion, not an invitation
+to extend the timer.
+
+## Clock and build
+
+- started_at with timezone:
+- hard_stop_at with timezone:
+- Build Week submission deadline: 2026-07-21
+- verdict_written_at:
+- commit or dirty-tree snapshot hash:
+- app version:
+- tester:
+- independent evidence reviewer:
+
+## Frozen same-topology configuration
+
+- physical device and OS:
+- built-in input/output route:
+- transport:
+- media/audio library and exact version:
+- Realtime model:
+- transcription model/path:
+- VAD type and settings:
+- create_response:
+- interrupt_response:
+- input commit owner and policy:
+- transport-appropriate output flush policy:
+- audio-device owner:
+- AVAudioSession category/mode/options:
+- AEC or voice-processing path:
+- post-AEC mic tap:
+- playout/render-head tap:
+- sample rate/channels/I/O buffer:
+- measured input/output route latency:
+- classifier version and labels:
+- backchannel playback profile: no-duck / duck, attenuation in dB
+- configuration hash:
+- configuration_frozen_at:
+- randomized schedule seed:
+
+Confirm with evidence, not prose:
+
+- [ ] One audio-device owner and one AVAudioSession.
+- [ ] Post-AEC mic timing and actual render-head timing are both observable.
+- [ ] Capture, classification, local stop, provider control, and heard-beat
+      extraction use this exact topology.
+- [ ] No separately passing transport and local-audio paths were combined.
+- [ ] Provider keys and client secrets are absent from logs and tracked files.
+
+If any of the first four boxes is false, verdict is PARTIAL or FAIL.
+
+## External acoustic evidence
+
+- recorder/device:
+- learner-nearfield channel:
+- phone-speaker-nearfield channel:
+- sync chirp method and measured drift:
+- app-to-external clock mapping method:
+- maximum alignment residual, must be <= 20 ms:
+- raw local evidence path (under gitignored docs/poc/private-evidence):
+- redacted review artifact:
+- consent and deletion status:
+
+Every counted held-out, hero, and echo-control trial needs a synchronized
+external recording. Mark an ambiguous separation of learner and tutor audio as
+a failed trial.
+
+## Raw held-out trial table
+
+Add at least 40 first-attempt はい, 40 first-attempt すみません, and 40
+adversarial echo/noise controls across two fresh sessions after configuration
+freeze. Reruns remain in the log but never replace a first attempt.
+
+| Trial | Session | Cue | Expected | Captured | Onset->duck ms | Onset->decision ms | Decision->local action ms | Decision->cancel ms | Decision->flush/truncate ms | Decision->audible silence ms | Onset->silence ms | Output gap ms / duck dB | Transport controls correct | 4 s beat correct | External marker | First-attempt pass |
+|---:|---:|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|---|---|---|---|
+| 1 | 1 | はい | Backchannel |  |  |  |  | n/a | n/a | n/a | n/a |  |  | n/a |  |  |
+
+Raw structured log:
+
+If the full 40/40/40 sets were not completed before the hard stop:
+
+- reason the block stopped:
+- actual first-attempt n for はい / すみません / echo-noise:
+- characterization-only 10/10/20 tier met: yes / no
+- statistics reported without p95: count / median / maximum
+- automatic verdict impact: PARTIAL or FAIL
+
+Never replace, compress, or rush trials to manufacture the full n.
+
+## Integrated hero set
+
+Predeclare ten randomized live trials per human cue as subsets of the frozen
+held-out runs. These support the visible 9-of-10 claim; do not select them after
+seeing results and do not label a ten-trial statistic p95.
+
+| Cue | n | Correct | Median onset->decision | Max onset->decision | Median decision->silence | Max decision->silence | Continuity/stop passes | Beat passes |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| はい | 10 |  |  |  | n/a | n/a |  | n/a |
+| すみません | 10 |  |  |  |  |  |  |  |
+
+## Frozen held-out aggregate
+
+Use nearest-rank p95 only when n is at least 40. Include failures and first
+attempts. Report median, p95, and maximum so the tail is visible.
+
+- はい n / captured / continuity pass:
+- はい onset-to-decision median / p95 / max:
+- すみません n / correctly classified:
+- すみません onset-to-decision median / p95 / max:
+- すみません decision-to-audible-silence median / p95 / max:
+- すみません onset-to-audible-silence median / p95 / max:
+- すみません utterance-end-to-audible-silence median / p95 / max:
+- onset-to-duck max and failures above 150 ms, if enabled:
+- selected transport control-channel RTT median / p95 / max (WebRTC data
+  channel or WebSocket event channel):
+- adversarial echo/noise n / take-floor false positives:
+- four-second beat n / waveform-aligned passes:
+- transport-appropriate local/provider flush and truncation correctness:
+- crashes, stuck sessions, duplicates, buffer or route failures:
+
+## Informative carry-forward probes
+
+These do not rescue or block Gate 0, but must be recorded for Gate 1.
+
+- 一人です answer-turn overlap result:
+- resume-after-yield correct obligation, n / pass:
+- cleared audio replayed after resume, n / failures:
+- moderate-noise result:
+- route change/interruption/network recovery:
+- ten-minute memory and thermal result:
+
+## Criterion audit
+
+- [ ] Experiment 0 completed by hour 3 on one observable topology.
+- [ ] Integrated はい capture and continuity passed at least 9/10.
+- [ ] Held-out はい capture and continuity each passed at least 36/40 first
+      attempts.
+- [ ] Held-out はい onset-to-decision p95 <= 800 ms, n >= 40.
+- [ ] Integrated すみません recognition and local-first stop passed 9/10.
+- [ ] Held-out すみません recognition and correct floor action each passed at
+      least 36/40 first attempts.
+- [ ] Held-out take-floor onset-to-decision median <= 800 ms and p95 <=
+      1,000 ms, n >= 40.
+- [ ] Held-out decision-to-audible-silence p95 <= 250 ms, n >= 40.
+- [ ] Held-out onset-to-audible-silence median <= 1,050 ms and p95 <=
+      1,250 ms, n >= 40.
+- [ ] Zero backchannel or take-floor decisions in at least 40 adversarial echo
+      controls.
+- [ ] Exact externally aligned four-second beat passed at least 9/10.
+- [ ] Clock-alignment extraction passed synthetic drift tests and reported a
+      maximum residual <= 20 ms.
+- [ ] Required lifecycle controls had no fatal failure.
+- [ ] Adversarial reviewer audited the raw evidence and public claim.
+
+## Verdict
+
+Choose exactly one by hard_stop_at:
+
+- PASS — unlock the measured MA overlap interaction.
+- PARTIAL — immediately build Kaiwa Loop; overlap stays developer-only.
+- FAIL — stop the overlap claim and retain only independently proven mechanics.
+
+Selected verdict:
+
+Rationale tied to failed/passed criteria:
+
+What this proves:
+
+What this explicitly does not prove:
+
+Public wording permitted by this evidence:
+
+Remaining unknowns:
+
+Approver:

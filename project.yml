@@ -1,0 +1,108 @@
+name: MA
+
+options:
+  minimumXcodeGenVersion: 2.45.0
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: 38CFN3HCUJ
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: 6.0
+    IPHONEOS_DEPLOYMENT_TARGET: 18.0
+    TARGETED_DEVICE_FAMILY: 1
+
+targets:
+  MA:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: apps/MA
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ia.ma
+        PRODUCT_NAME: MA
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 0.0.1
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: MA
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+    scheme:
+      gatherCoverageData: false
+      testTargets:
+        - MATests
+        - MAUITests
+
+  MATests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: apps/MATests
+    dependencies:
+      - target: MA
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ia.ma.tests
+        PRODUCT_NAME: MATests
+        GENERATE_INFOPLIST_FILE: YES
+
+  MAUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: apps/MAUITests
+    dependencies:
+      - target: MA
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ia.ma.uitests
+        PRODUCT_NAME: MAUITests
+        GENERATE_INFOPLIST_FILE: YES
+
+  MAAudioProbe:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: apps/MAAudioProbe
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ia.ma.audio-probe
+        PRODUCT_NAME: MAAudioProbe
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 0.0.1
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: MA Audio Probe
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: MA uses the microphone to test whether a learner can speak while tutor audio is playing.
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    scheme:
+      gatherCoverageData: false
+      testTargets:
+        - MAAudioProbeTests
+
+  MAAudioProbeTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: apps/MAAudioProbeTests
+    dependencies:
+      - target: MAAudioProbe
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ia.ma.audio-probe.tests
+        PRODUCT_NAME: MAAudioProbeTests
+        GENERATE_INFOPLIST_FILE: YES

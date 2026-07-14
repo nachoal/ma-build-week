@@ -1,0 +1,28 @@
+.DS_Store
+
+# Xcode user and build state
+DerivedData/
+build/
+xcuserdata/
+*.xcuserstate
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Local secrets
+.env
+.env.*
+!.env.example
+Config/Secrets.xcconfig
+
+# Local captures and generated evidence
+tmp/
+*.log
+*.pid
+docs/poc/private-evidence/
+docs/poc/raw-logs/
+
+# Editor noise
+.idea/
+.vscode/
