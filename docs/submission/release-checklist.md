@@ -11,7 +11,9 @@ Devpost submission. Those require Ignacio's explicit approval.
 - [x] Xcode/Swift/iOS build versions recorded in the candidate packet
 - [ ] Release `.xcarchive` rebuilt from the new clean commit
 - [ ] `PrivacyInfo.xcprivacy` reverified inside the refreshed `MA.app`
-- [ ] Signed physical install/launch verified on the dynamically discovered device
+- [x] Signed physical install/launch verified on the dynamically discovered
+      iPhone 17 Pro running iOS 27.0 from exact commit
+      `bd668041d00d5ca7334a94da9e15ead409f5630c`
 - [ ] `scripts/scan-secrets.sh` rerun after the new frozen implementation
       commit, including the archived app and compiled executable
 
@@ -28,10 +30,11 @@ Devpost submission. Those require Ignacio's explicit approval.
       `.build/test-results/MA-live-low-reasoning-bilingual-stress5.xcresult`
 - [x] Separate real-audio simulator result includes English permission
       disclosure, one-tap model completion, real AVAudio capture, and stop; 1/1
-      at `.build/test-results/MA-live-audio-integration.xcresult`
+      with verified credential deletion at
+      `.build/test-results/MA-live-audio-cleanup-proof-simulator.xcresult`
 - [x] Complete MAAudioProbe result bundle (51/51 executions, 49 test
       definitions, characterization only) at
-      `.build/test-results/MAAudioProbe-current.xcresult`
+      `.build/test-results/MAAudioProbe-final-hardening.xcresult`
 - [x] Worker 35/35 low-reasoning and bounded-planner-retry contract output at
       `.build/test-results/MAWorker-final-retry-policy.tap`; private version
       `57d49379-af1f-4160-8e88-ec611ab9a1d7`
@@ -43,6 +46,11 @@ Devpost submission. Those require Ignacio's explicit approval.
       also passed
 
 ## Physical and human evidence
+
+- [x] Automated real-iPhone capture gate: one model tap, actual AVAudio capture,
+      explicit stop, recoverable terminal state, verified credential deletion,
+      and evidence scan; 1/1 at
+      `.build/test-results/MA-live-audio-cleanup-proof-device.xcresult`
 
 - [ ] Fresh-install English guided flow
 - [ ] Spanish switch preserves phase and produces coherent visible/spoken review

@@ -8,7 +8,7 @@ code inspection, service verification, or simulator output.
 | MA's guided product defaults to English and switches completely to Spanish without resetting lesson progress | Bilingual copy/state tests and guided UI automation | Allowed as implemented behavior |
 | MA explains the Japanese phrase, romaji, meaning, and task before audio | Guided state/UI tests | Allowed as implemented behavior |
 | One bundled model tap unlocks recording without auto-starting it | Shipping audio owner, real simulator audio integration, and one-tap physical completion transitions in English/Spanish | Allowed for the control transition; human physical audibility pending |
-| Learner turns are explicit and bounded; the app writes no recording file | Audio contracts, privacy manifest, capture tests | Allowed as implementation; physical microphone path pending |
+| Learner turns are explicit and bounded; the app writes no recording file | Audio contracts, privacy manifest, capture tests, and a physical real-capture start/stop pass | Allowed for the audited physical capture path; route breadth, human audibility, and semantic review remain pending |
 | Learner audio goes directly to OpenAI Realtime; the Worker receives no audio/transcript | Client/Worker architecture and exact request contracts | Allowed for the audited private build |
 | MA labels transcription approximate and provides qualitative feedback without a score | UI copy, enum review model, canonical feedback tests | Allowed as implemented behavior |
 | Realtime review uses a schema-guided, app-validated enum function call grounded by the approximate transcript | Worker policy, Swift exact validation, adversarial regressions, and physical English/Spanish provider paths with deterministic bundled learner input | Allowed with the deterministic-input qualification; real-microphone semantic review pending |
@@ -33,7 +33,7 @@ code inspection, service verification, or simulator output.
 
 | Area | Evidence to show | Remaining gate |
 |---|---|---|
-| Implementation | Guided state machine, one audio owner, private broker, enum review, bilingual UI, aggregate planner, tests | Real-microphone physical gate and refreshed final archive |
+| Implementation | Guided state machine, one audio owner, private broker, enum review, bilingual UI, aggregate planner, tests | Refreshed final archive; broader route/interruption/human evidence remains separate |
 | Design | Meaning before Japanese, explicit controls, visible support, actionable review, captions, no score | Physical accessibility sweep and cold-viewer comprehension |
 | Impact | Learner understands what MA heard and what to do next in one useful restaurant exchange | Real learner observation; no learning claim before it |
 | Idea/novelty | Realtime as a didactic loop—model, attempt, grounded feedback, retry, transfer—not an open chat | Cold-viewer comprehension and final demo |

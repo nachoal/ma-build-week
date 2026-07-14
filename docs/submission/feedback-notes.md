@@ -60,7 +60,7 @@ Append exact evidence after each milestone.
 | Guided aggregate planner and hardened product broker | Root added separate v2 aggregate-only guided planning, explicit opt-in, deterministic local fallback, cancellation/generation fencing, a fixed `gpt-5.6-sol` Responses contract, and an independently re-audited product Realtime mint/review policy. Authenticated quota is consumed before bounded body parsing; exact JSON media types and enum-only review arguments fail closed | `a9eb988` | Worker 30/30; security re-audit DEPLOY; live version `e45a3b92-217b-4830-8841-a50a7465a6da` passed health, invalid-media 400, exact-key mint, local policy-hash match, and bilingual guided-plan validation | complete for authorized private single-device demo; not public/TestFlight auth |
 | Current guided device/submission evidence | Root generated, signed, and installed the guided build, rewrote the submission story around the actual bilingual two-review product, and made the operator-only replay's not-live badge bilingual | `a9eb988` | `.build/device-evidence/20260714T160140Z-product`: build/install succeeded; launch was denied because the iPhone re-locked. The frozen simulator evidence is `.build/test-results/MA-complete-freeze-20260714.xcresult` (175/175), `.build/test-results/MAAudioProbe-freeze-20260714.xcresult` (49/49), and `.build/evidence/MA-complete-freeze-attachments-20260714/` | simulator/service complete; unlocked physical runtime, human/Japanese review, video, archive refresh, `/feedback`, and submission remain gated |
 | Production-realistic simulator and policy closure | Root added a DEBUG-only harness that substitutes only deterministic bundled microphone input while retaining the production broker, `gpt-realtime-2.1` WebSocket, effective-policy verifier, structured two-turn review, spoken feedback, waiter audio, shipping playout, and `gpt-5.6-sol` planner. Root fixed cross-runtime hash normalization, pinned `reasoning.effort=low` in the broker-owned policy, and rejects client attempts to weaken it | `bebac3c` | Live smoke 2/2; repeated bilingual journey 10/10 (five English, five Spanish) at `.build/test-results/MA-live-low-reasoning-bilingual-stress5.xcresult`; real simulator permission/capture 1/1; standard no-secret suite 206/206 executions; Worker 30/30 | simulator/code/service complete; physical microphone/route/human quality remain gated |
-| Physical live automation and final evidence hardening | Root ran the credentialed lesson on the paired iPhone, distinguished a SpringBoard interruption from app behavior, removed every second-tap recovery so one dispatched tap is the invariant, disabled privileged failure diagnostics, widened the existing two planner attempts from 7 to 10 seconds after a reproduced 14.183-second broker 502, narrowed retries to 408/409/500/502/503/504, and made both live runners fail unless the app verifies test-credential deletion | `80c6eee`, `cf96ce0` | Physical English passed in 47.506 seconds and Spanish passed in 53.729 seconds with deterministic bundled learner input. Hardened standard MA 206/206; simulator real-audio/cleanup 1/1; Worker 35/35; private Worker version `57d49379-af1f-4160-8e88-ec611ab9a1d7` | deterministic physical bilingual provider path complete; real microphone, route, human audibility/teaching, and broader device matrix remain gated |
+| Physical live automation and final evidence hardening | Root ran the credentialed lesson on the paired iPhone, distinguished a SpringBoard interruption from app behavior, removed every second-tap recovery so one dispatched tap is the invariant, disabled privileged failure diagnostics, widened the existing two planner attempts from 7 to 10 seconds after a reproduced 14.183-second broker 502, narrowed retries to 408/409/500/502/503/504, and made both live runners fail unless the app verifies test-credential deletion | `80c6eee`, `cf96ce0` | Physical English passed in 47.506 seconds and Spanish passed in 53.729 seconds with deterministic bundled learner input. Exact `bd66804` physical real-audio capture/stop passed 1/1 in 17.484 seconds with verified cleanup; standard MA 206/206; probe 51/51; Worker 35/35; private Worker version `57d49379-af1f-4160-8e88-ec611ab9a1d7` | deterministic physical bilingual provider path and physical capture/stop complete; JIT prompt, route breadth, human audibility/teaching, real-mic semantic review, and broader device matrix remain gated |
 
 ## Delegated tasks and sessions
 
@@ -956,6 +956,23 @@ For each material decision, capture:
   from that clean commit compiled, then stopped at the lock check before
   install, provisioning, or test because the phone had auto-locked. That is
   not counted as device evidence. Nothing was pushed.
+- After the phone was unlocked, root reran the bounded physical audio gate from
+  exact clean evidence commit `bd668041d00d5ca7334a94da9e15ead409f5630c`.
+  `GuidedLiveAudioIntegrationUITests` passed 1/1 in 17.484 seconds on the iPhone
+  17 Pro running iOS 27.0: one model tap unlocked recording, the real Apple
+  capture graph started only after the explicit record tap, explicit stop left
+  recording, and the short take resolved to the visible recoverable path rather
+  than fabricated feedback. Microphone permission was already authorized, so
+  this does not close the prompt/denial row. The runner then proved the Keychain
+  credential absent, scanned retained evidence, and exited 0. Evidence is
+  `.build/test-results/MA-live-audio-cleanup-proof-device.xcresult` and
+  `.build/device-evidence/20260714T222736Z-live-ui/`.
+- The final characterization rerun passed 51/51 executions (49 definitions) at
+  `.build/test-results/MAAudioProbe-final-hardening.xcresult`. A signed archive
+  preflight from `bd66804` also passed deep signing, privacy/export checks,
+  26-entry rehash, and compiled-binary secret scanning; it remains superseded
+  until this physical evidence is committed and the canonical archive is
+  regenerated.
 
 ## Final feedback preparation
 
