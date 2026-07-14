@@ -5,14 +5,18 @@ Devpost submission. Those require Ignacio's explicit approval.
 
 ## Freeze identity
 
-- [x] Frozen implementation/archive commit:
-      `f9f7a7f9fdd2ae649ac20bb18392ab14f2b6047c`
+- [x] Frozen submission/archive commit:
+      `e968354b04d5043d65db9c809d02f0ae209a60a1`; shipping app
+      implementation commit: `f9f7a7f9fdd2ae649ac20bb18392ab14f2b6047c`
 - [x] Xcode/Swift/iOS build versions recorded in the candidate packet
 - [x] Release `.xcarchive` rebuilt from the clean frozen commit
 - [x] `PrivacyInfo.xcprivacy` reverified inside the refreshed `MA.app`
 - [x] Signed physical install/launch verified on the dynamically discovered
-      iPhone 17 Pro running iOS 27.0 from exact commit
-      `bd668041d00d5ca7334a94da9e15ead409f5630c`
+      iPhone 17 Pro running iOS 27.0. The final Release app from the exact
+      `e968354b04d5043d65db9c809d02f0ae209a60a1` archive launched as PID 20185;
+      a follow-up process inventory still found that PID running from
+      `MA.app`. This is launch/stability evidence only and does not strengthen
+      any audio or learner claim
 - [x] `scripts/scan-secrets.sh` rerun after the new frozen implementation
       commit, including the archived app and compiled executable
 
@@ -97,9 +101,9 @@ the archive tool rejects paths outside its canonical roots, records the build
 environment and exact commit, and rescans staged copy.
 
 - [x] Refreshed archive checksum:
-      `91c251a7d51a58c8375c9ab8bf27d85bccc51a101f3158dd90a1fc07c64d96e9`
+      `29b0454396797d7483c6306731eae9c309fe8406d45227b61870845e81ba08db`
 - [x] Latest superseded archive checksum retained for audit only:
-      `a224cb1ac7fa329bd4da09c6b9ca2b2c64af95965fd798153eb34e8564c9a5db`
+      `91c251a7d51a58c8375c9ab8bf27d85bccc51a101f3158dd90a1fc07c64d96e9`
 - [ ] Video checksum: `________________`
 - [x] Subtitle checksum:
       `cde50e3d8f0219ba032a6d4ad55e77088dd277542ae42599c223e4a83cb97891`
