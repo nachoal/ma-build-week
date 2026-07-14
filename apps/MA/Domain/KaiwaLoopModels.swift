@@ -12,6 +12,11 @@ enum KaiwaLoopPhase: Equatable, Sendable {
     case proof
 }
 
+enum PracticeAttemptProvenance: Equatable, Sendable {
+    case localCaptureSelfAssessment
+    case replayFixture
+}
+
 struct PracticeAttemptEvidence: Equatable, Sendable, Identifiable {
     let id: UUID
     let obligationID: String
@@ -23,6 +28,7 @@ struct PracticeAttemptEvidence: Equatable, Sendable, Identifiable {
     let selfReportedCompleted: Bool
     let repairCount: Int
     let rawAudioRetained: Bool
+    let provenance: PracticeAttemptProvenance
 
     init(receipt: CaptureReceipt, selfReportedCompleted: Bool, repairCount: Int) {
         id = receipt.id
@@ -35,7 +41,27 @@ struct PracticeAttemptEvidence: Equatable, Sendable, Identifiable {
         self.selfReportedCompleted = selfReportedCompleted
         self.repairCount = repairCount
         rawAudioRetained = receipt.rawAudioRetained
+        provenance = .localCaptureSelfAssessment
     }
+
+    init(replay evidence: ConversationAttemptEvidence) {
+        id = evidence.id
+        obligationID = evidence.obligationID
+        scaffold = evidence.scaffold
+        attemptNumber = evidence.attemptNumber
+        capturedDuration = evidence.capturedDuration
+        estimatedVoiceOnset = evidence.estimatedVoiceOnset
+        speechPresenceDetected = evidence.speechPresenceDetected
+        selfReportedCompleted = evidence.selfReportedCompleted
+        repairCount = evidence.repairCount
+        rawAudioRetained = false
+        provenance = .replayFixture
+    }
+}
+
+enum KaiwaPresentationSource: Equatable, Sendable {
+    case localProduct
+    case labeledReplay
 }
 
 struct ControlledSegment: Codable, Equatable, Sendable, Identifiable {
@@ -88,17 +114,26 @@ struct KaiwaLoopState: Equatable, Sendable {
     var learningReport: LearningReport?
     var nextLearningAction: NextLearningAction?
     var plannerIsRefreshing = false
+    var remotePlannerRequestAttempted = false
+    var presentationSource: KaiwaPresentationSource = .localProduct
 
     let capabilities = PracticeCapabilities.gate0Partial
     let repairSegment = ControlledSegment.restaurantRepair
 
     var sourceBadge: String {
-        switch phase {
+        if isLabeledReplay {
+            return "REPLAY · NO EN VIVO"
+        }
+        return switch phase {
         case .repair:
             capabilities.repairBadge
         default:
             capabilities.tutorBadge
         }
+    }
+
+    var isLabeledReplay: Bool {
+        presentationSource == .labeledReplay
     }
 
     var isCapturing: Bool {
@@ -152,5 +187,6 @@ enum KaiwaLoopIntent: Equatable, Sendable {
     case pauseForRepair
     case playRepairSegment
     case resumeScene
+    case requestRemotePlan
     case restart
 }

@@ -1,85 +1,115 @@
 # MA
 
 MA is a voice-first iPhone tutor for a Spanish-speaking absolute beginner who
-needs to function in Japan. The working thesis is that learning should feel like
-entering a real conversation: acknowledge the speaker without stealing the
-floor, interrupt when genuinely lost, rewind the exact moment that broke
-comprehension, learn it, and resume.
+needs one useful Japanese conversation for a trip: ask for a restaurant table
+for one, recover when natural Japanese becomes noise, and try the same
+obligation again with less hesitation.
 
-The repository is deliberately at Gate 0 for live audio. It now also contains a
-fixture-driven `MA` product target so the learning flow, visual language, and
-demo interaction can be designed before the physical-iPhone feasibility verdict.
-Every fixture-backed state is labeled `PROTOTIPO` or `REPLAY · NO EN VIVO`; the
-current target has no microphone capture, provider transport, credentials, or
-simulated-live claims. After the written verdict, those labels may be removed
-only from states backed by the permitted real implementation and evidence.
+The binding Gate 0 verdict is **PARTIAL**. The submission product therefore
+uses bundled local tutor audio, bounded non-overlapping learner capture,
+explicit self-assessment, one immediate local pause, and a complete labeled
+controlled segment for repair. It does **not** claim live Realtime conversation,
+speech-over-playout classification, or exact replay of a rendered window.
 
-The OpenAI Build Week submission deadline is July 21, 2026. Once
-docs/poc/verdict.md receives its started_at timestamp, Gate 0 has exactly 24
-clock hours. PASS unlocks the measured overlap interaction; any missing
-criterion at the deadline records PARTIAL and immediately pivots to Kaiwa Loop.
-Start the clock no later than July 15; the probe's engineering counts inside the
-24 hours, while this scaffold and readiness work do not.
+After the lesson, MA prepares a deterministic local next step. The learner may
+explicitly opt in to send only structured attempt aggregates to the private
+broker for a bounded `gpt-5.6-sol` recommendation. Raw audio and transcripts
+are never sent or retained. The standard OpenAI key remains server-side.
 
-## First commands
+## Run and verify
 
-1. Generate the Xcode project with: `xcodegen generate`.
-2. Build and run the `MA` scheme to exercise the offline fixture UI.
-3. Run its tests with: `xcodebuild test -project MA.xcodeproj -scheme MA -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest'`.
-4. Build and test the `MAAudioProbe` scheme before touching device audio.
-5. When ready to start the uninterrupted spike, copy
-   docs/poc/verdict-template.md to docs/poc/verdict.md and timestamp it.
-6. Run MAAudioProbe on a paired physical iPhone and preserve both structured
-   logs and synchronized external acoustic evidence.
-7. Attach to the adversarial planning session with: `tmux attach -t ma-adversary`.
+Requirements: Xcode 17, XcodeGen 2.45+, and an iOS 18+ simulator.
 
-The original [Paper design](https://app.paper.design/file/01KXF2S5M0T6YNPBRS2S1A66Y3/1-0)
-is now a historical visual reference. SwiftUI is the interaction source of
-truth. Exact Paper tokens and the constraints carried forward from that pass are
-preserved in `docs/design/paper-ui-handoff.md`.
+```sh
+xcodegen generate
 
-## Fixture UI status
+xcodebuild test \
+  -project MA.xcodeproj \
+  -scheme MA \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest'
 
-The current code-first flow includes three short onboarding decisions, an
-intent-first home and compact profile menu, then a coached first minute before
-natural mode. The learner says one useful line with full support, rhythm-only
-support, and no answer text; sees explicit evidence of that first success;
-learns the conversation controls; and only then enters the deterministic
-natural-speed fixture. That fixture demonstrates a non-interrupting はい wake,
-すみません floor transfer, a provenance-tagged visual repair window, and the
-shape of future before/after proof without claiming that audio rendered.
+xcodebuild test \
+  -project MA.xcodeproj \
+  -scheme MAAudioProbe \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest'
+```
 
-Manual interaction, previews, unit tests, rendering tests, and UI tests all use
-the same canonical fixture stages. The current Simulator run passes 78 tests,
-including the full self-assessed coached progression, compact 368x800 rail
-geometry, every onboarding step at Accessibility Extra Large, and a running-app
-accessibility check that keeps the hero scene as one semantic button. The
-light-only prototype scrolls when content outgrows the reference viewport.
-Silent fixture actions are labeled as visual simulations and use no play/listen
-affordances; no live microphone, provider transport, or real audio playback is
-wired into this product target yet. Synthetic timing comparisons are presented
-only as sample data, never as personal learner evidence.
+The physical-device command discovers the paired iPhone 17 Pro on iOS 27 at
+runtime; no identifier is checked into the repository.
+
+```sh
+scripts/device-ma.sh status
+scripts/device-ma.sh build-install
+scripts/device-ma.sh product
+scripts/device-ma.sh replay
+```
+
+`product` reads the revocable private install token from the macOS Keychain and
+provisions it into this-device-only iOS Keychain storage without printing it.
+`replay` launches a deterministic visual fallback permanently labeled
+`REPLAY · NO EN VIVO`; it invokes neither microphone, audio hardware, network,
+nor the planner.
+
+Run the reproducible current-tree and Git-history secret check with:
+
+```sh
+scripts/scan-secrets.sh
+```
+
+Worker contract tests are independent of Xcode:
+
+```sh
+cd services/session-broker
+npm test
+```
+
+Private deployment configuration is intentionally absent. Copy
+`.dev.vars.example` only into ignored local configuration and use Wrangler's
+encrypted secret store for deployment values.
+
+## Hero path
+
+1. Learn `一人です` with full text, rhythm-only support, then no answer text.
+2. Record a bounded attempt and decide yourself whether you completed it.
+3. Hear the bundled natural scene and tap **Pausa y ayuda** while it plays.
+4. MA stops locally, teaches one complete controlled segment, and clearly says
+   it is not the exact last seconds heard.
+5. Resume the same restaurant obligation and make a new no-text attempt.
+6. Compare before/after aggregates and optionally request a server-validated
+   GPT-5.6 learning action.
+
+One `AudioGraphController` owns product capture and playout. Product and replay
+drive the same pure Kaiwa semantic reducer; the replay consumes bounded,
+monotonic, sanitized normalized events and cannot carry live or exact-heard
+capabilities.
+
+## Privacy and evidence boundaries
+
+- Local profile choices use app-owned `UserDefaults`; the privacy manifest
+  declares required-reason category `CA92.1`.
+- Raw PCM exists only in bounded in-memory processing and is discarded after
+  speech-presence/onset aggregates are produced.
+- External planning is a separate, explicit learner action. The broker uses
+  `store: false`, a strict schema, bounded input/output, and no transcript.
+- **Borrar todos mis datos** clears onboarding/profile state and the iOS
+  planner credential.
+- No tracking SDK, account, analytics warehouse, or raw private probe evidence
+  is included.
+- Simulator tests are necessary but do not satisfy physical audio, route,
+  interruption, microphone, learner-outcome, or thermal claims.
+
+See [privacy-disclosure.md](docs/submission/privacy-disclosure.md) and the
+binding [Gate 0 verdict](docs/poc/verdict.md) for the exact claim boundary.
 
 ## Repository map
 
-- apps/MA — fixture-driven product UI and deterministic voice-ink renderer
-- apps/MATests — reducer, replay, repair-window, proof, and geometry tests
-- apps/MAUITests — running-app navigation and accessibility assertions
-- apps/MAAudioProbe — isolated physical-device feasibility probe
-- apps/MAAudioProbeTests — structural and later deterministic probe tests
-- docs/design — historical Paper handoff and retained visual constraints
-- docs/research — evidence and product decisions from comparable learning apps
-- docs/poc — experiment protocol, evidence, and verdict
-- docs/decisions — architecture decision records after the gate
-- services/session-broker — server-only OpenAI credential broker
-- fixtures/realtime — sanitized event/audio replay fixtures
-- scripts — repeatable build, device, and evidence helpers
-- todo.md — PRD, gates, acceptance criteria, and execution order
+- `apps/MA` — shipping local Kaiwa Loop, normalized replay, privacy, and planner
+- `apps/MATests` / `apps/MAUITests` — unit, contract, rendering, and UI checks
+- `apps/MAAudioProbe` — isolated Gate 0 characterization code; not product live behavior
+- `services/session-broker` — private Cloudflare Worker for Realtime secrets and `/learning/next`
+- `docs/poc` — immutable protocol, private-evidence rules, and written verdict
+- `docs/submission` — Devpost draft, demo/rehearsal plans, claims, privacy, and session ledger
+- `scripts` — reproducible device, evidence, and secret-scan helpers
 
-## Reuse, not coupling
-
-The hardened audio/session mechanics in the sibling FitnessOS project are useful
-reference material, especially its AVAudioSession lifecycle, PCM conversion,
-route handling, teardown, event loop, and ephemeral-secret broker. Extract those
-mechanics; do not copy its workout domain, Supabase assumptions, old model slug,
-or WebSocket architecture into MA.
+The repository has no public remote. Do not push, publish the video, expose the
+Worker, or submit Devpost without Ignacio's explicit approval.

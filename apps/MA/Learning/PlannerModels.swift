@@ -48,7 +48,8 @@ struct Attempt: Codable, Equatable, Sendable, Identifiable {
     let rawAudioRetained: Bool
 
     init?(evidence: PracticeAttemptEvidence) {
-        guard evidence.attemptNumber > 0,
+        guard evidence.provenance == .localCaptureSelfAssessment,
+              evidence.attemptNumber > 0,
               evidence.attemptNumber <= 20,
               evidence.repairCount >= 0,
               evidence.repairCount <= 10,

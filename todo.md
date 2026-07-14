@@ -21,12 +21,14 @@ MA is not another chat screen with a voice model. It is a tutor for an absolute
 beginner entering a real Japanese conversation. The tutor should keep speaking
 through a low-stakes acknowledgement such as はい, yield promptly when the
 learner actually takes the floor with すみません, and let the learner replay the
-last heard beat that caused confusion.
+beat that caused confusion. Gate 0 did not permit that overlap behavior in the
+submission product.
 
 The app must still be useful if the current API cannot support that overlap. The
 honest fallback is Kaiwa Loop: listen without overlap, stop or tap when lost,
-rewind the exact last heard beat, learn it, and resume. The fallback remains a
-real learning product; it must never be presented as full duplex.
+study one complete controlled segment, and resume the same obligation. The
+fallback remains a real learning product; it must never be presented as exact
+heard-window replay or full duplex.
 
 ### Gate matrix
 
@@ -34,8 +36,8 @@ real learning product; it must never be presented as full duplex.
 |---|---|---|---|
 | 0 | Can the physical iPhone distinguish backchannel from floor-taking during tutor output? | Live overlap integration and public claim | docs/poc/verdict.md |
 | 1 | Can a zero-Japanese learner complete one useful exchange in 60 seconds? | Scene expansion | Recorded learner run plus state log |
-| 2 | Does exact-beat repair improve the next attempt? | Adaptive curriculum | Before/after attempt evidence |
-| 3 | Is the live path reliable enough for a three-minute demo? | Submission polish | Rehearsal matrix and replay fallback |
+| 2 | Does controlled-segment repair improve the next attempt? | Adaptive curriculum | Before/after attempt evidence |
+| 3 | Is the selected physical path reliable enough for a three-minute demo? | Submission polish | Rehearsal matrix and replay fallback |
 | 4 | Does a cold viewer understand the superpower in ten seconds? | Final submission | Five-person comprehension test |
 
 ## 1. Executive product brief
@@ -43,8 +45,8 @@ real learning product; it must never be presented as full duplex.
 ### One sentence
 
 MA teaches a zero-Japanese traveler one useful conversation at a time, then
-places them inside natural-speed speech where they can acknowledge, interrupt,
-rewind, learn, and resume without losing the social rhythm.
+places them inside natural-speed speech where they can pause, study one
+controlled segment, and resume without losing the social obligation.
 
 ### Personal origin
 
@@ -82,7 +84,7 @@ Within the first full session, the learner should:
 - understand the intent rather than every word;
 - answer one useful line;
 - experience one breakdown;
-- replay and learn the precise last heard beat;
+- study one complete controlled segment from the turn;
 - answer again with less help;
 - leave with audible proof of improvement.
 
@@ -94,8 +96,9 @@ tutor yields immediately. MA rewinds the four seconds he actually heard before
 the interruption, explains that beat in Spanish, and resumes from there.
 
 This is only the public claim if Gate 0 passes. Otherwise the aha becomes:
-Ignacio taps where natural Japanese became noise; MA rewinds the exact heard
-beat, turns it into a ten-second lesson, and puts him back into the same scene.
+Ignacio taps where natural Japanese became noise; MA plays one complete labeled
+segment, turns it into a ten-second lesson, and puts him back into the same
+scene obligation.
 
 ### Why this is education, not a voice wrapper
 
@@ -239,21 +242,21 @@ survive it at natural speed.
 2. Twenty seconds: learn 一人です with disappearing scaffolding.
 3. Twenty seconds: complete the exchange once.
 4. Twenty seconds: learn はい as keep going and すみません as pause, help.
-5. Twenty seconds: enter natural-speed mode.
-6. Ten seconds: say はい during tutor speech; show capture without a stop.
-7. Ten seconds: say すみません; tutor yields.
-8. Twenty seconds: replay the exact last heard beat and receive a compact Spanish
-   explanation.
-9. Twenty seconds: resume and complete the same exchange.
-10. Fifteen seconds: show attempt one versus attempt two evidence.
-11. Final line: I did not build a Japanese course. I built the teacher I needed
+5. Twenty seconds: play the bundled natural-speed scene.
+6. Ten seconds: tap Pausa y ayuda while the local tutor turn is active.
+7. Twenty seconds: hear one complete controlled segment, explicitly labeled as
+   not the exact last seconds heard, and receive a compact Spanish explanation.
+8. Twenty seconds: resume and complete the same exchange.
+9. Fifteen seconds: show attempt one versus attempt two evidence.
+10. Final line: I did not build a Japanese course. I built the teacher I needed
     for the moment real Japanese becomes noise.
 
 ### Demo integrity
 
-- The live physical-iPhone path is the hero.
-- A deterministic replay mode is available from the same normalized event
-  stream if venue networking fails.
+- The physical-iPhone selected PARTIAL path—bundled local tutor audio, explicit
+  stop, controlled segment, same-obligation resume—is the hero.
+- A deterministic visual replay mode drives the same semantic reducer from a
+  bounded sanitized normalized event stream if device conditions fail.
 - Replay mode is clearly labeled in developer controls and never presented to
   judges as live.
 - The demo uses a single hero screen and one reproducible launch path.
@@ -265,7 +268,7 @@ survive it at natural speed.
 If Gate 0 is partial or failed:
 
 1. Tutor speaks naturally.
-2. Ignacio taps or says the explicit repair phrase.
+2. Ignacio taps the explicit repair control.
 3. Audio stops.
 4. If Experiment D passed, MA plays the exact last four seconds actually
    rendered. Otherwise MA uses locally controlled, pre-segmented tutor audio and
@@ -280,12 +283,12 @@ timeline.
 
 ### Implementation, 25
 
-- Physical-iPhone audio and echo-cancellation evidence.
-- Realtime 2.1 transport behind an app-owned provider interface.
-- Timestamped rendered-audio ring buffer and deterministic replay.
+- One-owner physical-iPhone bundled playback and bounded learner capture.
+- Shared product/replay semantic reducer behind provider-neutral events.
+- Bounded sanitized deterministic replay with no hardware/network side effects.
 - Short-lived client-secret broker; no standard key in the app.
 - Structured event logs, fixtures, and testable state machine.
-- Capability path for GPT-Live without rebuilding the product.
+- Optional bounded `gpt-5.6-sol` post-lesson planning with local fallback.
 
 ### Design, 25
 
@@ -304,10 +307,10 @@ timeline.
 
 ### Quality and novelty, 25
 
-- The conversational-floor distinction is visible in seconds.
-- Exact heard-audio repair links the live moment to pedagogy.
-- The tutor adapts to what actually broke comprehension.
-- The project makes no false full-duplex claim and has a working fallback.
+- One visible control turns a real breakdown into a controlled micro-lesson.
+- The same conversational obligation is retried after repair.
+- The tutor adapts only from bounded evidence and explicit learner choice.
+- The project cuts unproved full-duplex/exact behavior and has an honest fallback.
 
 ## 6. Verified technical boundary on 2026-07-14
 
@@ -1158,8 +1161,8 @@ Private MVP default:
 
 - learner profile and progress stored locally;
 - no account required;
-- no raw audio retained after the rolling window;
-- transcript history retained only when the learner chooses;
+- no raw audio retained after bounded in-memory attempt processing;
+- no transcript generated or retained in the selected product path;
 - diagnostics disabled outside developer builds;
 - delete-session and delete-all-data actions;
 - PrivacyInfo.xcprivacy before distribution;
@@ -1274,8 +1277,8 @@ The app must not use its own model as the only judge of its teaching success.
 - [x] Build the canonical static restaurant-for-one fixture.
 - [x] Implement full, partial, and no-scaffold states.
 - [x] Prepare and bundle four deterministic tutor prompt assets.
-- [ ] Wire, validate, and expose real playback for every tutor prompt.
-- [ ] Complete the first 60-second learner flow offline.
+- [x] Wire, validate, and expose real playback for every tutor prompt.
+- [x] Complete the first 60-second learner flow offline in code and simulator.
 - [ ] Test with Ignacio from a clean install.
 - [ ] Record whether he completes the exchange without answer text.
 
@@ -1287,50 +1290,53 @@ Exit: one useful exchange learned by a real zero beginner.
       Realtime client-secret broker; otherwise keep the selected product path
       local-only. The later `/learning/next` broker path remains required for
       Phase 3 in either branch.
-- [ ] Normalize live events behind ConversationProvider when a live adapter is
-      permitted; keep ReplayAdapter available in every verdict branch.
-- [ ] Add natural-speed scene.
-- [ ] Add PASS floor behavior or PARTIAL explicit repair.
-- [ ] If Experiment D passed, add the rendered-audio ring buffer and exact
-      heard-window replay; otherwise use the last controlled labeled segment.
-- [ ] Add the verdict-appropriate repair card and local replay.
-- [ ] Resume at the same scene obligation.
-- [ ] Compare the next attempt.
+- [x] Keep live events unavailable because no live adapter was permitted; add
+      bounded normalized events and ReplayAdapter for the selected branch.
+- [x] Add natural-speed scene using bundled local tutor audio.
+- [x] Add PARTIAL explicit local repair.
+- [x] Because Experiment D did not run, keep characterization ring code out of
+      product claims and use the last complete controlled labeled segment. A
+      future exact heard-window path requires a new Experiment D PASS.
+- [x] Add the verdict-appropriate repair card and controlled local segment.
+- [x] Resume at the same scene obligation.
+- [x] Compare the next attempt.
 
 Exit: breakdown becomes a successful second attempt.
 
 ### Phase 3 — pedagogy and evidence
 
-- [ ] Define structured planner input and output.
-- [ ] Use the strongest eligible OpenAI reasoning model configured server-side.
-- [ ] Add deterministic guardrails and abstention.
-- [ ] Build evidence summary.
+- [x] Define structured planner input and output.
+- [x] Use the strongest eligible OpenAI reasoning model configured server-side.
+- [x] Add deterministic guardrails and abstention.
+- [x] Build evidence summary.
 - [ ] Validate Japanese content with a qualified speaker.
-- [ ] Add fixture replay for the complete hero path.
+- [x] Add labeled fixture replay for the complete hero path with no side effects.
 
 Exit: the model adapts within a controlled educational system.
 
 ### Phase 4 — demo polish
 
-- [ ] Make one hero screen visually excellent.
-- [ ] Add English submission subtitles.
-- [ ] Create one reproducible physical-device launch command or runbook.
+- [x] Freeze one hero flow and stop onboarding/menu redesign.
+- [x] Add the working English submission subtitle file.
+- [x] Create one reproducible physical-device launch command and runbook.
 - [ ] Rehearse live and replay paths.
 - [ ] Run the five-person ten-second comprehension test.
-- [ ] Remove diagnostics from the learner view.
+- [x] Keep developer diagnostics out of the learner view.
 - [ ] Record the submission video with the real learner as protagonist.
 
 Exit: cold viewers can say what changed for Ignacio in one sentence.
 
 ### Phase 5 — hardening
 
-- [ ] Privacy manifest and disclosure review.
-- [ ] Secret scan of the tracked set.
+- [x] Add and validate the privacy manifest and disclosure.
+- [x] Add and run the tracked/untracked plus Git-history secret scan.
 - [ ] Device route and network matrix.
 - [ ] Memory and performance profile.
-- [ ] Accessibility pass.
-- [ ] Failure-copy and recovery pass.
-- [ ] Final rubric evidence checklist.
+- [ ] Complete the physical VoiceOver/AX type/Reduce Motion accessibility pass;
+      simulator captions, motion gating, scalable controls, and tests are done.
+- [ ] Complete physical failure-copy and recovery checks; deterministic code
+      paths, Settings recovery, planner fallback, and deletion are implemented.
+- [x] Prepare the final rubric claim-to-evidence checklist.
 
 ## 13. Risks, kill criteria, and anti-plan
 

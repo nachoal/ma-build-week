@@ -8,6 +8,16 @@ struct KaiwaLoopView: View {
     var body: some View {
         VStack(spacing: 0) {
             ChromeBar(badge: feature.state.sourceBadge, onExit: onExit)
+            if feature.state.presentationSource == .labeledReplay {
+                Text("Replay visual controlado · sin micrófono, red ni audio en vivo")
+                    .font(MATheme.micro())
+                    .foregroundStyle(MATheme.stone)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, MATheme.sideMargin)
+                    .padding(.vertical, 6)
+                    .background(MATheme.mist)
+                    .accessibilityIdentifier("kaiwa.replay.disclosure")
+            }
             if let error = feature.state.lastError {
                 ProductAudioErrorBanner(error: error)
                     .padding(.horizontal, MATheme.sideMargin)
@@ -22,26 +32,280 @@ struct KaiwaLoopView: View {
     @ViewBuilder
     private var content: some View {
         let state = feature.state
+        if state.isLabeledReplay {
+            KaiwaReplayContent(state: state, send: feature.send)
+        } else {
+            switch state.phase {
+            case .setup:
+                KaiwaSetupScreen(state: state, send: feature.send)
+            case .coached:
+                KaiwaCoachedScreen(state: state, send: feature.send)
+            case .firstSuccess:
+                KaiwaFirstSuccessScreen(state: state, send: feature.send)
+            case .controls:
+                KaiwaControlsScreen(state: state, send: feature.send)
+            case .natural:
+                KaiwaNaturalScreen(state: state, send: feature.send)
+            case .repair:
+                KaiwaRepairScreen(state: state, send: feature.send)
+            case .resuming:
+                KaiwaResumingScreen(state: state, send: feature.send)
+            case .retry:
+                KaiwaRetryScreen(state: state, send: feature.send)
+            case .proof:
+                KaiwaProofScreen(state: state, send: feature.send)
+            }
+        }
+    }
+}
+
+/// The submission fallback has its own copy and controls so a sanitized
+/// visual replay can never inherit learner, microphone, or playback claims
+/// from the shipping local-product screens.
+private struct KaiwaReplayContent: View {
+    let state: KaiwaLoopState
+    let send: (KaiwaLoopIntent) -> Void
+
+    @ViewBuilder
+    var body: some View {
+        if state.phase == .proof {
+            KaiwaReplayProofScreen(state: state, send: send)
+        } else {
+            KaiwaReplayStageScreen(state: state)
+        }
+    }
+}
+
+private struct KaiwaReplayStageScreen: View {
+    let state: KaiwaLoopState
+
+    var body: some View {
+        AdaptiveScreen {
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 12) {
+                    MicroCapsLabel(text: stageLabel, color: MATheme.ai)
+                    Text(stageTitle)
+                        .font(MATheme.display())
+                        .tracking(MATheme.tightTracking(fontSize: 36))
+                        .foregroundStyle(MATheme.sumi)
+                    Text(stageDetail)
+                        .font(MATheme.body(16, weight: .regular))
+                        .foregroundStyle(MATheme.stone)
+                }
+                .padding(.horizontal, MATheme.sideMargin)
+                .padding(.top, 26)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    MicroCapsLabel(text: cardLabel)
+                    Text(cardJapanese)
+                        .font(MATheme.jp(30))
+                        .foregroundStyle(MATheme.sumi)
+                    Text(cardRomaji)
+                        .font(MATheme.caption())
+                        .foregroundStyle(MATheme.stone)
+                    if !cardSpanish.isEmpty {
+                        Text(cardSpanish)
+                            .font(MATheme.body(16, weight: .regular))
+                            .foregroundStyle(MATheme.sumi)
+                    }
+                }
+                .padding(20)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(MATheme.mist, in: RoundedRectangle(cornerRadius: 20))
+                .padding(.horizontal, MATheme.sideMargin)
+                .padding(.top, 28)
+                .accessibilityElement(children: .combine)
+
+                Spacer(minLength: 20)
+                Label("El replay avanza con eventos fijos de muestra.", systemImage: "play.rectangle")
+                    .font(MATheme.caption())
+                    .foregroundStyle(MATheme.stone)
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, MATheme.sideMargin)
+                    .padding(.bottom, 18)
+                    .accessibilityIdentifier("kaiwa.replay.stage")
+            }
+        }
+    }
+
+    private var stageLabel: String {
+        switch state.phase {
+        case .setup: "REPLAY VISUAL · INICIO"
+        case .coached: "REPLAY VISUAL · RESPUESTA DE MUESTRA"
+        case .firstSuccess: "REPLAY VISUAL · ANDAMIO COMPLETO"
+        case .controls: "REPLAY VISUAL · REGLA DE PAUSA"
+        case .natural: "REPLAY VISUAL · PUNTO DE PAUSA"
+        case .repair: "REPLAY VISUAL · SEGMENTO CONTROLADO"
+        case .resuming: "REPLAY VISUAL · MISMA OBLIGACIÓN"
+        case .retry: "REPLAY VISUAL · SEGUNDA MUESTRA"
+        case .proof: "REPLAY VISUAL · RESULTADO"
+        }
+    }
+
+    private var stageTitle: String {
+        switch state.phase {
+        case .setup: "Una muestra presenta la frase."
+        case .coached: "La ayuda se reduce en tres pasos."
+        case .firstSuccess: "El replay completó el andamio."
+        case .controls: "La muestra presenta pausa y ayuda."
+        case .natural: "La muestra llega al punto de pausa."
+        case .repair: "La muestra aísla un segmento preparado."
+        case .resuming: "La muestra vuelve a la misma situación."
+        case .retry: "Una segunda muestra intenta lo mismo."
+        case .proof: "El replay terminó."
+        }
+    }
+
+    private var stageDetail: String {
         switch state.phase {
         case .setup:
-            KaiwaSetupScreen(state: state, send: feature.send)
+            "Esta vista usa texto y tiempos fijos; no solicita permisos ni reproduce sonido."
         case .coached:
-            KaiwaCoachedScreen(state: state, send: feature.send)
+            "Los intentos son datos de demostración. No hay voz, captura ni autoevaluación del aprendiz."
         case .firstSuccess:
-            KaiwaFirstSuccessScreen(state: state, send: feature.send)
+            "Tres resultados fijos muestran cómo termina la práctica guiada; no son logros del espectador."
         case .controls:
-            KaiwaControlsScreen(state: state, send: feature.send)
+            "El replay muestra la regla del producto sin activar playout, micrófono ni red."
         case .natural:
-            KaiwaNaturalScreen(state: state, send: feature.send)
+            "La línea de tiempo fija demuestra dónde se pediría ayuda; no representa sonido reproducido."
         case .repair:
-            KaiwaRepairScreen(state: state, send: feature.send)
+            "Este segmento etiquetado no es una ventana exacta de algo oído y no se reproduce aquí."
         case .resuming:
-            KaiwaResumingScreen(state: state, send: feature.send)
+            "El evento conserva la obligación de pedir mesa para una persona; no activa sonido."
         case .retry:
-            KaiwaRetryScreen(state: state, send: feature.send)
+            "Los valores de la segunda muestra son fijos y no pertenecen al espectador."
         case .proof:
-            KaiwaProofScreen(state: state, send: feature.send)
+            "Datos fijos de demostración."
         }
+    }
+
+    private var cardLabel: String {
+        switch state.phase {
+        case .repair: "TEXTO DEL SEGMENTO DE MUESTRA"
+        case .resuming, .natural: "TEXTO DE LA MUESTRA"
+        default: "FRASE DE MUESTRA"
+        }
+    }
+
+    private var cardJapanese: String {
+        switch state.phase {
+        case .repair, .resuming: state.repairSegment.japanese
+        case .natural: RestaurantForOneFixture.continuationLine.japanese
+        default: RestaurantForOneFixture.phraseJapanese
+        }
+    }
+
+    private var cardRomaji: String {
+        switch state.phase {
+        case .repair, .resuming: state.repairSegment.romaji
+        case .natural: RestaurantForOneFixture.continuationLine.romaji
+        case .coached where state.scaffold == .rhythmOnly: "hi · to · ri · de · su"
+        case .coached where state.scaffold == .none: "sin texto en el producto"
+        default: RestaurantForOneFixture.phraseRomaji
+        }
+    }
+
+    private var cardSpanish: String {
+        switch state.phase {
+        case .repair, .resuming: state.repairSegment.spanish
+        case .natural: RestaurantForOneFixture.continuationLine.spanish
+        default: RestaurantForOneFixture.phraseSpanish
+        }
+    }
+}
+
+private struct KaiwaReplayProofScreen: View {
+    let state: KaiwaLoopState
+    let send: (KaiwaLoopIntent) -> Void
+
+    var body: some View {
+        AdaptiveScreen {
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 12) {
+                    MicroCapsLabel(text: "FIN DEL REPLAY · DOS INTENTOS DE MUESTRA", color: MATheme.ai)
+                    Text("La muestra reparó y regresó.")
+                        .font(MATheme.display())
+                        .accessibilityIdentifier("kaiwa.replay.proof.title")
+                    Text("Son datos fijos de demostración: no hubo aprendiz, captura, sonido ni evaluación.")
+                        .font(MATheme.body(16, weight: .regular))
+                        .foregroundStyle(MATheme.stone)
+                }
+                .padding(.horizontal, MATheme.sideMargin)
+                .padding(.top, 28)
+
+                if let first = state.completedPreRepairAttempt {
+                    sampleCard("MUESTRA ANTES DE LA REPARACIÓN", attempt: first)
+                        .padding(.top, 24)
+                }
+                if let second = state.completedPostRepairAttempt {
+                    sampleCard("MUESTRA DESPUÉS DE LA REPARACIÓN", attempt: second)
+                        .padding(.top, 12)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    MicroCapsLabel(text: "CAMBIO EN LOS DATOS FIJOS")
+                    Text("La segunda muestra empieza antes y completa la misma obligación después de la reparación.")
+                        .font(MATheme.heading())
+                    Text("Esta comparación describe el fixture; no describe a quien mira el replay.")
+                        .font(MATheme.caption())
+                        .foregroundStyle(MATheme.stone)
+                }
+                .padding(.horizontal, MATheme.sideMargin)
+                .padding(.top, 20)
+
+                if let action = state.nextLearningAction {
+                    VStack(alignment: .leading, spacing: 8) {
+                        MicroCapsLabel(text: "PLAN · REPLAY CONTROLADO", color: MATheme.ai)
+                        Text(action.explanationES)
+                            .font(MATheme.heading())
+                        Text(action.evidenceReasonES)
+                            .font(MATheme.caption())
+                            .foregroundStyle(MATheme.stone)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(MATheme.mist, in: RoundedRectangle(cornerRadius: 16))
+                    .padding(.horizontal, MATheme.sideMargin)
+                    .padding(.top, 16)
+                }
+
+                Spacer(minLength: 16)
+                PrimaryButton(title: "Reiniciar replay", identifier: "kaiwa.cta.restart") {
+                    send(.restart)
+                } icon: {
+                    Image(systemName: "arrow.counterclockwise")
+                }
+                .padding(.horizontal, MATheme.sideMargin)
+                .padding(.bottom, 10)
+            }
+        }
+    }
+
+    private func sampleCard(
+        _ title: String,
+        attempt: PracticeAttemptEvidence
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            MicroCapsLabel(text: title, color: MATheme.ai)
+            Label("Resultado fijo de demostración", systemImage: "checkmark.circle.fill")
+                .font(MATheme.body(16, weight: .semibold))
+            Text("Duración de muestra: \(attempt.capturedDuration.formatted(.number.precision(.fractionLength(1)))) s")
+                .font(MATheme.caption())
+                .foregroundStyle(MATheme.stone)
+            if let onset = attempt.estimatedVoiceOnset {
+                Text("Inicio de muestra: \(onset.formatted(.number.precision(.fractionLength(1)))) s")
+                    .font(MATheme.caption())
+                    .foregroundStyle(MATheme.stone)
+            }
+            Text("El replay no capturó ni descartó audio.")
+                .font(MATheme.micro())
+                .foregroundStyle(MATheme.stone)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(MATheme.mist, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, MATheme.sideMargin)
     }
 }
 
@@ -111,7 +375,8 @@ private struct KaiwaSetupScreen: View {
                 .font(MATheme.body(16, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 52)
+                .frame(minHeight: 52)
+                .padding(.vertical, 4)
                 .background(MATheme.ai, in: Capsule())
             }
             .buttonStyle(.plain)
@@ -348,6 +613,7 @@ private struct KaiwaControlsScreen: View {
 private struct KaiwaNaturalScreen: View {
     let state: KaiwaLoopState
     let send: (KaiwaLoopIntent) -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         AdaptiveScreen {
@@ -367,10 +633,16 @@ private struct KaiwaNaturalScreen: View {
                 VStack(spacing: 18) {
                     InkGlyph()
                         .frame(width: 160, height: 120)
-                        .symbolEffect(.pulse, options: .repeating, isActive: state.isPlaying)
+                        .symbolEffect(
+                            .pulse,
+                            options: .repeating,
+                            isActive: state.isPlaying && !reduceMotion
+                        )
                     MicroCapsLabel(text: BundledPrompt.tutorTurn.provenanceLabel, color: MATheme.ai)
+                    TutorCaptionCard(line: RestaurantForOneFixture.continuationLine)
                 }
                 .frame(maxWidth: .infinity)
+                .padding(.horizontal, MATheme.sideMargin)
                 .padding(.top, 46)
 
                 Spacer(minLength: 20)
@@ -447,7 +719,8 @@ private struct KaiwaRepairScreen: View {
                         .font(MATheme.body(15, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
+                        .frame(minHeight: 50)
+                        .padding(.vertical, 4)
                         .background(MATheme.ai, in: Capsule())
                     }
                     .buttonStyle(.plain)
@@ -493,6 +766,7 @@ private struct KaiwaResumingScreen: View {
                 InkGlyph()
                     .frame(width: 160, height: 120)
                     .frame(maxWidth: .infinity)
+                TutorCaptionCard(line: RestaurantForOneFixture.repairLine)
                 if !state.isPlaying {
                     PrimaryButton(title: "Intentar la continuación", identifier: "kaiwa.cta.resume.retry") {
                         send(.resumeScene)
@@ -504,6 +778,32 @@ private struct KaiwaResumingScreen: View {
             .padding(.horizontal, MATheme.sideMargin)
             .padding(.top, 32)
         }
+    }
+}
+
+private struct TutorCaptionCard: View {
+    let line: TutorLine
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            MicroCapsLabel(text: "SUBTÍTULOS DEL AUDIO")
+            Text(line.japanese)
+                .font(MATheme.jp(20))
+                .foregroundStyle(MATheme.sumi)
+            Text(line.romaji)
+                .font(MATheme.caption())
+                .foregroundStyle(MATheme.stone)
+            Text(line.spanish)
+                .font(MATheme.caption(.medium))
+                .foregroundStyle(MATheme.sumi)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(MATheme.mist, in: RoundedRectangle(cornerRadius: 14))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "Subtítulos del audio. Japonés: \(line.japanese). Romaji: \(line.romaji). Significado: \(line.spanish)"
+        )
     }
 }
 
@@ -608,6 +908,11 @@ private struct KaiwaProofScreen: View {
                     nextStepCard(action)
                         .padding(.top, 16)
                 }
+                if state.learningReport != nil,
+                   !state.remotePlannerRequestAttempted {
+                    optionalPlannerCard
+                        .padding(.top, 16)
+                }
 
                 Spacer(minLength: 16)
                 VStack(spacing: 10) {
@@ -628,13 +933,46 @@ private struct KaiwaProofScreen: View {
         }
     }
 
+    private var optionalPlannerCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            MicroCapsLabel(text: "OPCIONAL · PLAN CON GPT-5.6", color: MATheme.ai)
+            Text("Tú decides si estos hechos salen del iPhone.")
+                .font(MATheme.heading())
+                .foregroundStyle(MATheme.sumi)
+            Text("Se envían la escena, ayuda usada, duración, inicio estimado de voz, presencia de voz, tu confirmación y número de reparaciones. Nunca se envían audio ni transcripción.")
+                .font(MATheme.caption())
+                .foregroundStyle(MATheme.stone)
+            Button {
+                send(.requestRemotePlan)
+            } label: {
+                Text("Pedir mi plan opcional")
+                    .font(MATheme.body(15, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 50)
+                    .padding(.vertical, 2)
+                    .background(MATheme.ai, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("kaiwa.plan.request")
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(MATheme.mist, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, MATheme.sideMargin)
+    }
+
     private func evidenceCard(
         _ title: String,
         attempt: PracticeAttemptEvidence
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             MicroCapsLabel(text: title, color: MATheme.ai)
-            Label("Completado según tú", systemImage: "checkmark.circle.fill")
+            Label(
+                state.presentationSource == .labeledReplay
+                    ? "Resultado de demostración" : "Completado según tú",
+                systemImage: "checkmark.circle.fill"
+            )
                 .font(MATheme.body(16, weight: .semibold))
             Text(attempt.speechPresenceDetected
                  ? "Señal de voz local detectada"
@@ -649,6 +987,11 @@ private struct KaiwaProofScreen: View {
             Text("Audio crudo descartado")
                 .font(MATheme.micro())
                 .foregroundStyle(MATheme.stone)
+            if attempt.provenance == .replayFixture {
+                Text("Datos fijos de muestra; no pertenecen al aprendiz.")
+                    .font(MATheme.micro())
+                    .foregroundStyle(MATheme.stone)
+            }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)

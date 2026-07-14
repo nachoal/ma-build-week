@@ -7,6 +7,7 @@ struct HomeView: View {
     let onStartScene: (SceneID) -> Void
     let onReplayOnboarding: () -> Void
     let onResetChoices: () -> Void
+    let onDeleteAllData: () -> Void
     @State private var showingProfile = false
 
     var body: some View {
@@ -38,6 +39,10 @@ struct HomeView: View {
                 onResetChoices: {
                     showingProfile = false
                     onResetChoices()
+                },
+                onDeleteAllData: {
+                    showingProfile = false
+                    onDeleteAllData()
                 }
             )
             .presentationDetents([.medium, .large])
@@ -98,7 +103,7 @@ struct HomeView: View {
     }
 
     private var footer: some View {
-        Text("Audio incluido · tus elecciones se guardan solo en este iPhone.")
+        Text("Audio incluido · perfil local · plan GPT opcional y explícito.")
             .font(MATheme.caption())
             .foregroundStyle(MATheme.stone)
             .frame(maxWidth: .infinity)
@@ -162,6 +167,7 @@ struct SceneListRow: View {
         profile: .standard,
         onStartScene: { _ in },
         onReplayOnboarding: {},
-        onResetChoices: {}
+        onResetChoices: {},
+        onDeleteAllData: {}
     )
 }

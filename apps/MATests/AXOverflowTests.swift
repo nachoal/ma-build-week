@@ -90,7 +90,8 @@ struct AXOverflowTests {
             profile: .standard,
             onStartScene: { _ in },
             onReplayOnboarding: {},
-            onResetChoices: {}
+            onResetChoices: {},
+            onDeleteAllData: {}
         )
         let buffer = render(home, dynamicType: .accessibility3, screenshotName: "home-ax3")
         #expect(overflowPixelCount(in: buffer) == 0)
@@ -109,6 +110,26 @@ struct AXOverflowTests {
         #expect(overflowPixelCount(in: buffer) == 0)
     }
 
+    @Test("Labeled replay proof stays inside the margin at AX XL")
+    func replayProofNoOverflow() async {
+        let feature = KaiwaLoopFeature.labeledReplay()
+        feature.startLabeledReplay(delivery: .immediate)
+        for _ in 0..<500 where feature.state.phase != .proof {
+            await Task.yield()
+        }
+        #expect(feature.state.phase == .proof)
+        let buffer = render(
+            // Reserve the scanner's 16pt overflow band outside the root view.
+            // Kaiwa's full-width paper/chrome backgrounds are intentional and
+            // would otherwise look like escaped content to this pixel probe.
+            KaiwaLoopView(feature: feature)
+                .padding(.trailing, CGFloat(canvasWidth - overflowBandStart)),
+            dynamicType: .accessibility3,
+            screenshotName: "kaiwa-replay-proof-ax3"
+        )
+        #expect(overflowPixelCount(in: buffer) == 0)
+    }
+
     @Test("Compact reference renders (default type) also stay inside the margin")
     func compactNoOverflow() {
         let onboarding = render(
@@ -120,7 +141,8 @@ struct AXOverflowTests {
                 profile: .standard,
                 onStartScene: { _ in },
                 onReplayOnboarding: {},
-                onResetChoices: {}
+                onResetChoices: {},
+                onDeleteAllData: {}
             ),
             dynamicType: .large,
             screenshotName: "home-compact"

@@ -57,7 +57,8 @@ struct HeroSceneCard: View {
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 56)
+                .frame(minHeight: 56)
+                .padding(.vertical, 6)
                 .background(MATheme.ai, in: Capsule())
                 .padding(.top, 8)
             }

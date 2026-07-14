@@ -16,13 +16,13 @@ enum PracticePhase: Equatable, Sendable {
 
 /// Provenance is explicit: fixture animation can drive the same timeline as
 /// real rendered audio without becoming evidence that audio was heard.
-enum TimelineBeatSource: Equatable, Sendable {
+enum TimelineBeatSource: String, Codable, Equatable, Sendable {
     case fixtureSimulation
     case renderedAudio
 }
 
 /// One beat on the tutor timeline. Amplitude drives ink geometry only.
-struct TimelineBeat: Equatable, Sendable, Identifiable {
+struct TimelineBeat: Codable, Equatable, Sendable, Identifiable {
     let id: Int
     let start: Double
     let duration: Double
@@ -42,13 +42,13 @@ struct RepairFragment: Equatable, Sendable, Identifiable {
     let source: TimelineBeatSource
 }
 
-struct TutorLine: Equatable, Sendable {
+struct TutorLine: Codable, Equatable, Sendable {
     let japanese: String
     let romaji: String
     let spanish: String
 }
 
-enum ScaffoldLevel: Equatable, Sendable {
+enum ScaffoldLevel: String, Codable, Equatable, Sendable {
     case full
     case rhythmOnly
     case none

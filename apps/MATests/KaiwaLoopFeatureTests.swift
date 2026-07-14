@@ -74,6 +74,8 @@ struct KaiwaLoopFeatureTests {
         #expect(feature.state.learningReport?.isValidForPlannerTransport == true)
         #expect(feature.state.nextLearningAction?.source == .deterministicPolicy)
         #expect(feature.state.nextLearningAction?.action == .advance)
+        #expect(!feature.state.plannerIsRefreshing)
+        #expect(!feature.state.remotePlannerRequestAttempted)
     }
 
     @Test("Microphone denial stays recoverable and cannot fabricate an attempt")
@@ -119,7 +121,11 @@ struct KaiwaLoopFeatureTests {
 
         #expect(feature.state.phase == .proof)
         #expect(feature.state.nextLearningAction?.source == .deterministicPolicy)
+        #expect(!feature.state.plannerIsRefreshing)
+
+        feature.send(.requestRemotePlan)
         #expect(feature.state.plannerIsRefreshing)
+        #expect(feature.state.remotePlannerRequestAttempted)
 
         var requestedReport: LearningReport?
         for _ in 0..<200 where requestedReport == nil {
@@ -143,6 +149,28 @@ struct KaiwaLoopFeatureTests {
         #expect(feature.state.learningReport == nil)
         #expect(feature.state.nextLearningAction == nil)
         #expect(!feature.state.plannerIsRefreshing)
+    }
+
+    @Test("A queued capture receipt after restart cannot enter the fresh scene")
+    func staleCaptureAfterRestartIsIgnored() async throws {
+        let audio = FakeProductAudioController()
+        let feature = KaiwaLoopFeature(audio: audio)
+
+        feature.send(.beginCoachedPractice)
+        feature.send(.startAttempt)
+        #expect(await eventually { feature.state.isCapturing })
+        let staleReceipt = try #require(audio.receiptForActiveCapture())
+
+        feature.send(.restart)
+        #expect(await eventually { audio.stopReasons.contains(.restart) })
+        feature.send(.beginCoachedPractice)
+        audio.emitCaptureFinished(staleReceipt)
+        for _ in 0..<20 { await Task.yield() }
+
+        #expect(feature.state.phase == .coached)
+        #expect(feature.state.pendingReceipt == nil)
+        #expect(!feature.state.awaitingSelfAssessment)
+        #expect(feature.state.attempts.isEmpty)
     }
 
     private func driveToProof(
@@ -286,6 +314,14 @@ private final class FakeProductAudioController: ProductAudioControlling {
         let receipt = makeReceipt(request: request, disposition: disposition)
         state = .idle
         continuation.yield(.stateChanged(state))
+        continuation.yield(.captureFinished(receipt))
+    }
+
+    func receiptForActiveCapture() -> CaptureReceipt? {
+        activeRequest.map { makeReceipt(request: $0, disposition: .completed) }
+    }
+
+    func emitCaptureFinished(_ receipt: CaptureReceipt) {
         continuation.yield(.captureFinished(receipt))
     }
 

@@ -51,6 +51,13 @@ struct PlannerInstallCredentialStore: PlannerInstallCredentialLoading {
         return token
     }
 
+    func deleteToken() throws {
+        let status = SecItemDelete(baseQuery as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw PlannerCredentialError.keychain(status)
+        }
+    }
+
     static func isValid(token: String) -> Bool {
         (32...512).contains(token.count)
             && token.unicodeScalars.allSatisfy { (0x21...0x7E).contains($0.value) }

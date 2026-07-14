@@ -5,6 +5,8 @@ struct ProfileSheet: View {
     let profile: LearnerProfile
     let onReplayOnboarding: () -> Void
     let onResetChoices: () -> Void
+    let onDeleteAllData: () -> Void
+    @State private var confirmingDelete = false
 
     private var chosenInterests: String {
         let titles = SceneCatalog.upcomingScenes(orderedBy: profile.interests)
@@ -37,7 +39,8 @@ struct ProfileSheet: View {
                             .font(MATheme.body(16, weight: .semibold))
                             .foregroundStyle(MATheme.ai)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 52)
+                            .frame(minHeight: 52)
+                            .padding(.vertical, 4)
                             .background(MATheme.mist, in: Capsule())
                     }
                     .buttonStyle(.plain)
@@ -48,15 +51,29 @@ struct ProfileSheet: View {
                             .font(MATheme.body(16, weight: .medium))
                             .foregroundStyle(MATheme.sumi)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 52)
+                            .frame(minHeight: 52)
+                            .padding(.vertical, 4)
                             .overlay(Capsule().stroke(MATheme.hairline, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("perfil.restablecer")
+
+                    Button(role: .destructive) {
+                        confirmingDelete = true
+                    } label: {
+                        Text("Borrar todos mis datos")
+                            .font(MATheme.body(16, weight: .semibold))
+                            .foregroundStyle(.red)
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: 52)
+                            .overlay(Capsule().stroke(.red.opacity(0.45), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("perfil.borrar.todo")
                 }
                 .padding(.top, 28)
 
-                Text("Prototipo · sin cuenta, sin micrófono. Todo vive en este iPhone.")
+                Text("Sin cuenta ni rastreo. Tus elecciones quedan en este iPhone. Cada intento descarta el audio crudo. Solo si tú pides el plan opcional se envían hechos agregados de la práctica; nunca audio ni transcripción.")
                     .font(MATheme.caption())
                     .foregroundStyle(MATheme.stone)
                     .padding(.top, 18)
@@ -66,6 +83,18 @@ struct ProfileSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(MATheme.paper)
+        .confirmationDialog(
+            "¿Borrar elecciones y credencial local?",
+            isPresented: $confirmingDelete,
+            titleVisibility: .visible
+        ) {
+            Button("Borrar todos mis datos", role: .destructive) {
+                onDeleteAllData()
+            }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text("MA borrará el perfil local, el avance de introducción y la credencial del plan opcional. No conserva grabaciones ni transcripciones.")
+        }
     }
 
     private func summaryRow(label: String, value: String) -> some View {

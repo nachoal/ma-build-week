@@ -11,6 +11,10 @@ final class KaiwaLoopFeature {
     @ObservationIgnored private var operationTask: Task<Void, Never>?
     @ObservationIgnored private var eventTask: Task<Void, Never>?
     @ObservationIgnored private var plannerTask: Task<Void, Never>?
+    @ObservationIgnored private var replayTask: Task<Void, Never>?
+    @ObservationIgnored private var replayAdapter: ReplayAdapter?
+    @ObservationIgnored private var replayGeneration = 0
+    @ObservationIgnored private var activeCaptureRequestID: UUID?
 
     static func production() -> KaiwaLoopFeature {
         KaiwaLoopFeature(
@@ -19,12 +23,22 @@ final class KaiwaLoopFeature {
         )
     }
 
+    static func labeledReplay() -> KaiwaLoopFeature {
+        KaiwaLoopFeature(
+            audio: ReplayDisabledAudioController(),
+            learningPlanner: LearningPlanner(),
+            presentationSource: .labeledReplay
+        )
+    }
+
     init(
         audio: (any ProductAudioControlling)? = nil,
-        learningPlanner: any LearningPlanning = LearningPlanner()
+        learningPlanner: any LearningPlanning = LearningPlanner(),
+        presentationSource: KaiwaPresentationSource = .localProduct
     ) {
         self.audio = audio ?? AudioGraphController()
         self.learningPlanner = learningPlanner
+        state.presentationSource = presentationSource
         let events = self.audio.events
         eventTask = Task { [weak self] in
             for await event in events {
@@ -38,6 +52,7 @@ final class KaiwaLoopFeature {
         operationTask?.cancel()
         eventTask?.cancel()
         plannerTask?.cancel()
+        replayTask?.cancel()
     }
 
     func send(_ intent: KaiwaLoopIntent) {
@@ -45,15 +60,17 @@ final class KaiwaLoopFeature {
         // owner before admitting a new intent so a queued `.capturing` event
         // cannot reject the next round after hardware is already idle.
         state.audioState = audio.state
+        if state.presentationSource == .labeledReplay {
+            if intent == .restart { startLabeledReplay() }
+            return
+        }
         switch intent {
         case .playModel:
             play(.hitoriDesu)
 
         case .beginCoachedPractice:
             guard state.phase == .setup else { return }
-            state.phase = .coached
-            state.scaffold = .full
-            state.lastError = nil
+            transition(.beginCoached(.full))
 
         case .startAttempt:
             guard state.phase == .coached || state.phase == .retry,
@@ -74,16 +91,12 @@ final class KaiwaLoopFeature {
 
         case .acknowledgeFirstSuccess:
             guard state.phase == .firstSuccess else { return }
-            state.phase = .controls
+            transition(.confirmFirstExchange)
+            transition(.introduceControls)
 
         case .startNatural:
             guard state.phase == .controls || state.phase == .natural else { return }
-            state.phase = .natural
-            state.naturalTutorFinished = false
-            state.naturalPlaybackStarted = false
-            state.naturalStopRecorded = false
-            state.repairSegmentPlayed = false
-            state.resumePlaybackCompleted = false
+            transition(.beginNatural)
             play(.tutorTurn) { [weak self] in
                 self?.state.naturalTutorFinished = true
             }
@@ -94,30 +107,33 @@ final class KaiwaLoopFeature {
             operationTask = Task { [weak self] in
                 guard let self else { return }
                 await audio.stop(.explicitRepair)
-                state.repairCount += 1
-                state.naturalStopRecorded = true
-                state.phase = .repair
-                state.lastError = nil
+                transition(.requestRepair)
+                transition(.completeRepairStop)
             }
 
         case .playRepairSegment:
             guard state.phase == .repair else { return }
             play(.repairBeat) { [weak self] in
-                self?.state.repairSegmentPlayed = true
+                self?.transition(.completeControlledSegment)
             }
 
         case .resumeScene:
             guard (state.phase == .repair || state.phase == .resuming),
                   state.canResumeAfterRepair else { return }
-            state.phase = .resuming
-            play(.tutorResume) { [weak self] in
-                self?.state.resumePlaybackCompleted = true
-                self?.state.phase = .retry
+            if state.phase == .repair {
+                transition(.beginResume)
             }
+            play(.tutorResume) { [weak self] in
+                self?.transition(.completeResume)
+            }
+
+        case .requestRemotePlan:
+            requestRemotePlan()
 
         case .restart:
             operationTask?.cancel()
             plannerTask?.cancel()
+            activeCaptureRequestID = nil
             state = KaiwaLoopState()
             operationTask = Task { [weak self] in
                 guard let self else { return }
@@ -129,8 +145,62 @@ final class KaiwaLoopFeature {
     func stopForExit() async {
         operationTask?.cancel()
         plannerTask?.cancel()
+        replayTask?.cancel()
+        replayGeneration += 1
+        activeCaptureRequestID = nil
+        if let replayAdapter {
+            await replayAdapter.disconnect()
+            self.replayAdapter = nil
+        }
         await audio.stop(.exit)
         state = KaiwaLoopState()
+    }
+
+    /// Drives the same shipping Kaiwa presentation state from a bounded,
+    /// provider-neutral fixture. It never invokes audio or LearningPlanning.
+    func startLabeledReplay(
+        delivery: ReplayDelivery = .paced(
+            timeScale: 0.35,
+            maximumDelay: .milliseconds(450)
+        )
+    ) {
+        guard state.presentationSource == .labeledReplay else { return }
+        replayTask?.cancel()
+        if let replayAdapter {
+            Task { await replayAdapter.disconnect() }
+        }
+
+        replayGeneration += 1
+        let generation = replayGeneration
+        state = KaiwaLoopState()
+        state.presentationSource = .labeledReplay
+
+        let adapter = ReplayAdapter(delivery: delivery)
+        replayAdapter = adapter
+        let stream = adapter.events
+
+        replayTask = Task { [weak self] in
+            let producer = Task {
+                do {
+                    try await adapter.connect(configuration: KaiwaLoopReplayFixture.configuration)
+                    try await adapter.requestResponse()
+                } catch {
+                    await adapter.disconnect()
+                }
+            }
+
+            for await event in stream {
+                guard !Task.isCancelled,
+                      let self,
+                      generation == replayGeneration else {
+                    producer.cancel()
+                    await adapter.disconnect()
+                    return
+                }
+                state = KaiwaLoopReplayReducer.reduce(state, event)
+            }
+            _ = await producer.result
+        }
     }
 
     private func play(
@@ -163,6 +233,7 @@ final class KaiwaLoopFeature {
             scaffold: scaffold,
             attemptNumber: attemptNumber
         )
+        activeCaptureRequestID = request.id
         operationTask?.cancel()
         operationTask = Task { [weak self] in
             guard let self else { return }
@@ -170,8 +241,14 @@ final class KaiwaLoopFeature {
             do {
                 try await audio.startCapture(request)
             } catch let failure as ProductAudioFailure {
+                if activeCaptureRequestID == request.id {
+                    activeCaptureRequestID = nil
+                }
                 state.lastError = failure
             } catch {
+                if activeCaptureRequestID == request.id {
+                    activeCaptureRequestID = nil
+                }
                 state.lastError = .hardwareUnavailable
             }
         }
@@ -186,8 +263,10 @@ final class KaiwaLoopFeature {
                     consumeReceipt(receipt)
                 }
             } catch let failure as ProductAudioFailure {
+                activeCaptureRequestID = nil
                 state.lastError = failure
             } catch {
+                activeCaptureRequestID = nil
                 state.lastError = .hardwareUnavailable
             }
         }
@@ -201,30 +280,12 @@ final class KaiwaLoopFeature {
             selfReportedCompleted: completed,
             repairCount: state.phase == .retry ? max(1, state.repairCount) : 0
         )
-        if !state.attempts.contains(where: { $0.id == evidence.id }) {
-            state.attempts.append(evidence)
-        }
         state.pendingReceipt = nil
         state.awaitingSelfAssessment = false
+        transition(.recordAttempt(evidence))
 
-        guard completed else { return }
-        if state.phase == .retry {
-            guard state.naturalStopRecorded,
-                  state.repairSegmentPlayed,
-                  state.resumePlaybackCompleted else { return }
-            state.phase = .proof
-            startPlanning()
-            return
-        }
-        guard state.phase == .coached else { return }
-        state.successfulScaffolds.append(state.scaffold)
-        switch state.scaffold {
-        case .full:
-            state.scaffold = .rhythmOnly
-        case .rhythmOnly:
-            state.scaffold = .none
-        case .none:
-            state.phase = .firstSuccess
+        if completed, state.phase == .proof {
+            preparePlanning()
         }
     }
 
@@ -233,7 +294,7 @@ final class KaiwaLoopFeature {
         case .stateChanged(let audioState):
             state.audioState = audioState
             if audioState == .playing(.tutorTurn) {
-                state.naturalPlaybackStarted = true
+                transition(.naturalPlaybackBegan)
             }
         case .playbackFinished(let prompt):
             state.playedPrompts.insert(prompt)
@@ -245,18 +306,36 @@ final class KaiwaLoopFeature {
     }
 
     private func consumeReceipt(_ receipt: CaptureReceipt) {
+        guard receipt.id == activeCaptureRequestID else { return }
+        activeCaptureRequestID = nil
         guard receipt.disposition == .completed || receipt.disposition == .timeLimit,
+              state.phase == .coached || state.phase == .retry,
               state.pendingReceipt?.id != receipt.id,
               !state.attempts.contains(where: { $0.id == receipt.id }) else { return }
         state.pendingReceipt = receipt
         state.awaitingSelfAssessment = true
     }
 
-    private func startPlanning() {
+    private func transition(_ action: KaiwaLoopSemanticAction) {
+        state = KaiwaLoopReducer.reduce(state, action)
+    }
+
+    private func preparePlanning() {
         guard let report = LearningReport.make(from: state) else { return }
         let policy = DeterministicPedagogyPolicy()
         state.learningReport = report
         state.nextLearningAction = policy.fallback(for: report)
+        state.plannerIsRefreshing = false
+        state.remotePlannerRequestAttempted = false
+    }
+
+    private func requestRemotePlan() {
+        guard state.phase == .proof,
+              let report = state.learningReport,
+              report.isValidForPlannerTransport,
+              !state.remotePlannerRequestAttempted,
+              !state.plannerIsRefreshing else { return }
+        state.remotePlannerRequestAttempted = true
         state.plannerIsRefreshing = true
 
         plannerTask?.cancel()

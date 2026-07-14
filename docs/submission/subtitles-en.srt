@@ -1,0 +1,55 @@
+1
+00:00:00,000 --> 00:00:08,000
+I know zero Japanese. I need one table for one.
+
+2
+00:00:08,000 --> 00:00:19,000
+MA starts with one useful phrase, not an empty conversation.
+
+3
+00:00:19,000 --> 00:00:33,000
+The support disappears: full phrase, rhythm, then no answer text.
+
+4
+00:00:33,000 --> 00:00:44,000
+I decide whether I completed it. MA does not pretend to grade pronunciation.
+
+5
+00:00:44,000 --> 00:00:58,000
+Now the bundled restaurant scene sounds natural—and quickly becomes noise.
+
+6
+00:00:58,000 --> 00:01:09,000
+I tap Pause and help. MA stops its local tutor audio immediately.
+
+7
+00:01:09,000 --> 00:01:24,000
+This is one complete controlled segment, not an exact replay of what I heard.
+
+8
+00:01:24,000 --> 00:01:39,000
+MA turns that segment into a tiny Spanish repair lesson.
+
+9
+00:01:39,000 --> 00:01:53,000
+Then I return to the same obligation: a restaurant table for one.
+
+10
+00:01:53,000 --> 00:02:08,000
+I try again without answer text and self-assess a fresh attempt.
+
+11
+00:02:08,000 --> 00:02:22,000
+The proof compares bounded facts, not a score or a claim of mastery.
+
+12
+00:02:22,000 --> 00:02:39,000
+The next step works locally. I can explicitly opt in to a GPT-5.6 recommendation.
+
+13
+00:02:39,000 --> 00:02:50,000
+Only structured attempt facts leave the phone—never audio or a transcript.
+
+14
+00:02:50,000 --> 00:02:58,000
+I built the teacher I needed for when real Japanese becomes noise.

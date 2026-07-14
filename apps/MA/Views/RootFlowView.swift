@@ -12,6 +12,7 @@ struct RootFlowView: View {
 
     @State private var path: [SceneID] = []
     @State private var kaiwaFeature = KaiwaLoopFeature.production()
+    @State private var replayFeature = KaiwaLoopFeature.labeledReplay()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var profile: LearnerProfile {
@@ -32,40 +33,55 @@ struct RootFlowView: View {
         return onboardingCompleted
     }
 
+    /// Explicit operator-only fallback. The value is intentionally verbose so
+    /// it cannot be enabled accidentally or mistaken for a live product path.
+    private var labeledReplayRequested: Bool {
+        ProcessInfo.processInfo.environment["MA_DEMO_MODE"] == "labeled-replay-no-live"
+            || ProcessInfo.processInfo.arguments.contains("--ma-labeled-replay-no-live")
+    }
+
     var body: some View {
         Group {
-            switch AppRoute.initial(hasCompletedOnboarding: effectiveOnboardingCompleted) {
-            case .onboarding:
-                OnboardingView { completedProfile in
-                    save(completedProfile)
-                    withRouteAnimation { onboardingCompleted = true }
-                }
-                .transition(.opacity)
-            case .home:
-                NavigationStack(path: $path) {
-                    HomeView(
-                        profile: profile,
-                        onStartScene: { sceneID in
-                            guard SceneCatalog.info(for: sceneID)?.available == true else { return }
-                            kaiwaFeature.send(.restart)
-                            path.append(sceneID)
-                        },
-                        onReplayOnboarding: {
-                            withRouteAnimation { onboardingCompleted = false }
-                        },
-                        onResetChoices: {
-                            save(.standard)
-                        }
-                    )
-                    .navigationDestination(for: SceneID.self) { _ in
-                        KaiwaLoopView(feature: kaiwaFeature) {
-                            kaiwaFeature.send(.restart)
-                            path.removeAll()
-                        }
-                        .toolbar(.hidden, for: .navigationBar)
+            if labeledReplayRequested {
+                KaiwaLoopView(feature: replayFeature, onExit: nil)
+                    .task { replayFeature.startLabeledReplay() }
+            } else {
+                switch AppRoute.initial(hasCompletedOnboarding: effectiveOnboardingCompleted) {
+                case .onboarding:
+                    OnboardingView { completedProfile in
+                        save(completedProfile)
+                        withRouteAnimation { onboardingCompleted = true }
                     }
+                    .transition(.opacity)
+                case .home:
+                    NavigationStack(path: $path) {
+                        HomeView(
+                            profile: profile,
+                            onStartScene: { sceneID in
+                                guard SceneCatalog.info(for: sceneID)?.available == true else { return }
+                                kaiwaFeature.send(.restart)
+                                path.append(sceneID)
+                            },
+                            onReplayOnboarding: {
+                                withRouteAnimation { onboardingCompleted = false }
+                            },
+                            onResetChoices: {
+                                save(.standard)
+                            },
+                            onDeleteAllData: {
+                                deleteAllData()
+                            }
+                        )
+                        .navigationDestination(for: SceneID.self) { _ in
+                            KaiwaLoopView(feature: kaiwaFeature) {
+                                kaiwaFeature.send(.restart)
+                                path.removeAll()
+                            }
+                            .toolbar(.hidden, for: .navigationBar)
+                        }
+                    }
+                    .transition(.opacity)
                 }
-                .transition(.opacity)
             }
         }
     }
@@ -75,6 +91,14 @@ struct RootFlowView: View {
         rawGoal = profile.rawGoal
         rawSituations = profile.rawSituations
         rawDailyMinutes = profile.rawDailyMinutes
+    }
+
+    private func deleteAllData() {
+        try? PlannerInstallCredentialStore().deleteToken()
+        kaiwaFeature.send(.restart)
+        path.removeAll()
+        save(.standard)
+        onboardingCompleted = false
     }
 
     private func withRouteAnimation(_ change: () -> Void) {

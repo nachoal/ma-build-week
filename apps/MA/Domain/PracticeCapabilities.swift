@@ -19,6 +19,7 @@ struct PracticeCapabilities: Codable, Equatable, Sendable {
     let allowsOverlapFloorPolicy: Bool
     let allowsExactRenderedWindowReplay: Bool
     let allowsPostLessonPlanner: Bool
+    let conversation: ConversationCapabilitySnapshot
 
     static let gate0Partial = PracticeCapabilities(
         tutorSource: .bundledLocal,
@@ -27,7 +28,8 @@ struct PracticeCapabilities: Codable, Equatable, Sendable {
         allowsLiveRealtime: false,
         allowsOverlapFloorPolicy: false,
         allowsExactRenderedWindowReplay: false,
-        allowsPostLessonPlanner: true
+        allowsPostLessonPlanner: true,
+        conversation: .gate0PartialLocal
     )
 
     var tutorBadge: String { "LOCAL · AUDIO INCLUIDO" }

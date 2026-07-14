@@ -1,7 +1,7 @@
 import Foundation
 
 /// Stable scene identifiers, in curriculum order (todo.md §3 scene catalog).
-enum SceneID: String, CaseIterable, Sendable, Hashable {
+enum SceneID: String, CaseIterable, Codable, Sendable, Hashable {
     case restaurant
     case izakaya
     case konbini
