@@ -21,6 +21,7 @@ struct AudioGraphConfiguration: Codable, Sendable, Equatable {
     let ioBufferDuration: Double
     let inputLatency: Double
     let outputLatency: Double
+    let playerPresentationLatency: Double
     let inputNodeSampleRate: Double
     let inputNodeChannelCount: Int
     let mixerSampleRate: Double

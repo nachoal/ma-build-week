@@ -22,6 +22,20 @@ struct ProbeDiagnosticsTests {
         #expect(!redacted.contains("private prompt"))
     }
 
+    @Test("Compound credential keys are redacted")
+    func compoundCredentialRedaction() {
+        let source = Data(
+            #"{"type":"session.created","client_secret":"private-1","access_token":"private-2","api_key":"private-3","nested":{"credential_value":"private-4"}}"#.utf8
+        )
+
+        let redacted = ProviderEventRedactor.redactedJSONString(from: source)
+
+        #expect(!redacted.contains("private-1"))
+        #expect(!redacted.contains("private-2"))
+        #expect(!redacted.contains("private-3"))
+        #expect(!redacted.contains("private-4"))
+    }
+
     @Test("Event storage is ordered, bounded, and reports drops")
     func boundedStorage() async {
         let diagnostics = ProbeDiagnostics(capacity: 2)

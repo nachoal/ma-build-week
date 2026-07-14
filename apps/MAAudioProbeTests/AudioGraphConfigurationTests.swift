@@ -39,6 +39,7 @@ struct AudioGraphConfigurationTests {
             ioBufferDuration: 0.01,
             inputLatency: 0.01,
             outputLatency: 0.01,
+            playerPresentationLatency: 0.02,
             inputNodeSampleRate: 48_000,
             inputNodeChannelCount: 1,
             mixerSampleRate: 48_000,

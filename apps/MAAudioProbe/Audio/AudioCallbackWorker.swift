@@ -68,6 +68,7 @@ final class AudioCallbackWorker: @unchecked Sendable {
                     details: [
                         "bytes": String(input.data.count),
                         "frames": String(input.sourceFrameCount),
+                        "host_ns": Self.hostNanoseconds(input.timing.hostTime),
                         "host_time": input.timing.hostTime.map { String($0) } ?? "none",
                         "sample_time": input.timing.sampleTime.map { String($0) } ?? "none",
                         "source_rate": String(Int(input.sourceRate)),
@@ -86,6 +87,7 @@ final class AudioCallbackWorker: @unchecked Sendable {
                     .playbackRendered,
                     details: [
                         "frames": String(packet.samples.count),
+                        "host_ns": Self.hostNanoseconds(packet.timing.hostTime),
                         "host_time": packet.timing.hostTime.map { String($0) } ?? "none",
                         "rate": String(Int(packet.timing.sampleRate)),
                         "sample_time": packet.timing.sampleTime.map { String($0) } ?? "none",
@@ -199,6 +201,16 @@ final class AudioCallbackWorker: @unchecked Sendable {
             bytes: channel,
             count: Int(outputBuffer.frameLength) * MemoryLayout<Int16>.size
         )
+    }
+
+    private static func hostNanoseconds(_ hostTime: UInt64?) -> String {
+        guard let hostTime else { return "none" }
+        let seconds = AVAudioTime.seconds(forHostTime: hostTime)
+        guard seconds.isFinite, seconds >= 0,
+              seconds <= Double(UInt64.max) / 1_000_000_000 else {
+            return "none"
+        }
+        return String(UInt64((seconds * 1_000_000_000).rounded()))
     }
 }
 

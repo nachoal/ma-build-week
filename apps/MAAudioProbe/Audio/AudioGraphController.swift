@@ -1,4 +1,5 @@
 @preconcurrency import AVFAudio
+import Darwin
 import Foundation
 
 enum AudioGraphControllerError: LocalizedError, Equatable {
@@ -9,6 +10,8 @@ enum AudioGraphControllerError: LocalizedError, Equatable {
     case graphStartFailed
     case graphNotRunning
     case invalidProviderAudio
+    case unsupportedRoute
+    case stalePlayoutEpoch
 
     var errorDescription: String? {
         switch self {
@@ -26,6 +29,10 @@ enum AudioGraphControllerError: LocalizedError, Equatable {
             "Start the live probe first."
         case .invalidProviderAudio:
             "The tutor audio chunk was invalid."
+        case .unsupportedRoute:
+            "Use the built-in iPhone microphone and speaker for this probe."
+        case .stalePlayoutEpoch:
+            "Tutor audio from a stopped playout epoch was rejected."
         }
     }
 }
@@ -49,6 +56,7 @@ final class AudioGraphController {
     private var callbackWorker: AudioCallbackWorker?
     private var notificationTokens: [NSObjectProtocol] = []
     private var nextScheduledPlayerFrame: Int64 = 0
+    private var playoutEpoch: UInt64 = 0
     private(set) var isRunning = false
 
     init(
@@ -76,6 +84,12 @@ final class AudioGraphController {
             try session.setPreferredSampleRate(48_000)
             try session.setPreferredIOBufferDuration(0.01)
             try session.setActive(true)
+            guard session.currentRoute.inputs.count == 1,
+                  session.currentRoute.inputs[0].portType == .builtInMic,
+                  session.currentRoute.outputs.count == 1,
+                  session.currentRoute.outputs[0].portType == .builtInSpeaker else {
+                throw AudioGraphControllerError.unsupportedRoute
+            }
 
             let engine = AVAudioEngine()
             let player = AVAudioPlayerNode()
@@ -112,7 +126,9 @@ final class AudioGraphController {
                 throw AudioGraphControllerError.invalidHardwareFormat
             }
 
-            try await evidenceStore.configureMixer(sampleRate: mixerFormat.sampleRate)
+            playoutEpoch = try await evidenceStore.configureMixer(
+                sampleRate: mixerFormat.sampleRate
+            )
             let worker = AudioCallbackWorker(
                 inputSink: inputSink,
                 evidenceStore: evidenceStore,
@@ -134,6 +150,7 @@ final class AudioGraphController {
             let configuration = makeConfiguration(
                 input: input,
                 output: engine.outputNode,
+                player: player,
                 inputFormat: inputFormat,
                 mixerFormat: mixerFormat,
                 playbackFormat: playbackFormat
@@ -161,6 +178,9 @@ final class AudioGraphController {
                     "model": configuration.model,
                     "options": configuration.options.joined(separator: ","),
                     "output_latency_ms": Self.milliseconds(configuration.outputLatency),
+                    "player_presentation_latency_ms": Self.milliseconds(
+                        configuration.playerPresentationLatency
+                    ),
                     "output_routes": configuration.outputRouteTypes.joined(separator: ","),
                     "output_vp": String(configuration.outputVoiceProcessingEnabled),
                     "playback_channels": String(configuration.playbackChannelCount),
@@ -220,12 +240,17 @@ final class AudioGraphController {
             nextScheduledPlayerFrame,
             currentPlayerFrame(player)
         )
+        let scheduledEpoch = playoutEpoch
         try await evidenceStore.schedule(
             itemID: itemID,
             contentIndex: contentIndex,
             frameCount: Int64(frameCount),
-            playerStartFrame: playerStartFrame
+            playerStartFrame: playerStartFrame,
+            expectedEpoch: scheduledEpoch
         )
+        guard isRunning, scheduledEpoch == playoutEpoch else {
+            throw AudioGraphControllerError.stalePlayoutEpoch
+        }
         nextScheduledPlayerFrame = playerStartFrame + Int64(frameCount)
         player.scheduleBuffer(
             buffer,
@@ -252,9 +277,15 @@ final class AudioGraphController {
         guard isRunning, let player else {
             throw AudioGraphControllerError.graphNotRunning
         }
+        let stoppedEpoch = playoutEpoch
+        playoutEpoch &+= 1
         let renderedFrame = currentPlayerFrame(player)
+        let stopHostTime = mach_absolute_time()
         player.stop()
-        let evidence = try await evidenceStore.stop(playerRenderedFrame: renderedFrame)
+        let evidence = try await evidenceStore.stop(
+            playerRenderedFrame: renderedFrame,
+            expectedEpoch: stoppedEpoch
+        )
         nextScheduledPlayerFrame = 0
         await diagnostics.record(
             .playbackStopped,
@@ -262,16 +293,20 @@ final class AudioGraphController {
                 "epoch": String(evidence.epoch),
                 "rendered_frame": String(evidence.playerRenderedFrame),
                 "render_packet_drops": String(evidence.renderedPacketDropCount),
+                "stop_host_ns": Self.hostNanoseconds(stopHostTime).map { String($0) }
+                    ?? "unavailable",
+                "stop_host_time": String(stopHostTime),
                 "truncate_ms": evidence.truncationTarget.map {
                     String($0.audioEndMilliseconds)
                 } ?? "none",
-                "window": evidence.renderedWindow == nil ? "unavailable" : "available",
+                "window": "not_sealed",
             ]
         )
         return evidence
     }
 
     func teardown() async {
+        playoutEpoch &+= 1
         removeLifecycleObservers()
         if let engine {
             engine.inputNode.removeTap(onBus: 0)
@@ -390,12 +425,16 @@ final class AudioGraphController {
               let playerTime = player.playerTime(forNodeTime: nodeTime) else {
             return 0
         }
-        return max(0, playerTime.sampleTime)
+        let latencyFrames = Int64(
+            (player.outputPresentationLatency * playerTime.sampleRate).rounded(.up)
+        )
+        return max(0, playerTime.sampleTime - max(0, latencyFrames))
     }
 
     private func makeConfiguration(
         input: AVAudioInputNode,
         output: AVAudioOutputNode,
+        player: AVAudioPlayerNode,
         inputFormat: AVAudioFormat,
         mixerFormat: AVAudioFormat,
         playbackFormat: AVAudioFormat
@@ -420,6 +459,7 @@ final class AudioGraphController {
             ioBufferDuration: session.ioBufferDuration,
             inputLatency: session.inputLatency,
             outputLatency: session.outputLatency,
+            playerPresentationLatency: player.outputPresentationLatency,
             inputNodeSampleRate: inputFormat.sampleRate,
             inputNodeChannelCount: Int(inputFormat.channelCount),
             mixerSampleRate: mixerFormat.sampleRate,
@@ -431,6 +471,15 @@ final class AudioGraphController {
             inputVoiceProcessingBypassed: input.isVoiceProcessingBypassed,
             inputVoiceProcessingMuted: input.isVoiceProcessingInputMuted
         )
+    }
+
+    nonisolated private static func hostNanoseconds(_ hostTime: UInt64) -> UInt64? {
+        let seconds = AVAudioTime.seconds(forHostTime: hostTime)
+        guard seconds.isFinite, seconds >= 0,
+              seconds <= Double(UInt64.max) / 1_000_000_000 else {
+            return nil
+        }
+        return UInt64((seconds * 1_000_000_000).rounded())
     }
 
     private func observeLifecycle(engine: AVAudioEngine) {

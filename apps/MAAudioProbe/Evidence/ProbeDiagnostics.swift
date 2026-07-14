@@ -147,6 +147,14 @@ enum ProviderEventRedactor {
         "transcript",
         "value",
     ]
+    private static let deniedKeyFragments = [
+        "api_key",
+        "apikey",
+        "authorization",
+        "credential",
+        "secret",
+        "token",
+    ]
 
     static func eventType(from data: Data) -> String? {
         guard data.count <= 1_048_576,
@@ -175,8 +183,12 @@ enum ProviderEventRedactor {
     }
 
     private static func redact(_ value: Any, key: String?) -> Any {
-        if let key, deniedKeys.contains(key.lowercased()) {
-            return "<redacted>"
+        if let key {
+            let loweredKey = key.lowercased()
+            if deniedKeys.contains(loweredKey)
+                || deniedKeyFragments.contains(where: loweredKey.contains) {
+                return "<redacted>"
+            }
         }
         if let dictionary = value as? [String: Any] {
             return Dictionary(

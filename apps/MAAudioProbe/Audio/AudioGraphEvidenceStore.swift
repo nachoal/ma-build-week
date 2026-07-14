@@ -14,6 +14,10 @@ struct AudioGraphStopEvidence: Sendable, Equatable {
     let renderedPacketDropCount: UInt64
 }
 
+enum AudioGraphEvidenceStoreError: Error, Equatable {
+    case staleEpoch
+}
+
 actor AudioGraphEvidenceStore {
     private struct PlayerContentRange: Sendable {
         let playerStartFrame: Int64
@@ -34,7 +38,12 @@ actor AudioGraphEvidenceStore {
         self.ledger = try! RenderedPlayoutLedger(sampleRate: playbackSampleRate)
     }
 
-    func configureMixer(sampleRate: Double, capacitySeconds: TimeInterval = 12) throws {
+    @discardableResult
+    func configureMixer(
+        sampleRate: Double,
+        capacitySeconds: TimeInterval = 12
+    ) throws -> UInt64 {
+        epoch &+= 1
         ledger.reset()
         playerContentRanges.removeAll(keepingCapacity: true)
         ringBuffer = try RenderedAudioRingBuffer(
@@ -44,14 +53,19 @@ actor AudioGraphEvidenceStore {
         mixerRenderedFrameCount = 0
         lastMixerTiming = nil
         renderedPacketDropCount = 0
+        return epoch
     }
 
     func schedule(
         itemID: String,
         contentIndex: Int,
         frameCount: Int64,
-        playerStartFrame: Int64
+        playerStartFrame: Int64,
+        expectedEpoch: UInt64
     ) throws {
+        guard expectedEpoch == epoch else {
+            throw AudioGraphEvidenceStoreError.staleEpoch
+        }
         let contentRange = try ledger.schedule(
             itemID: itemID,
             contentIndex: contentIndex,
@@ -87,20 +101,21 @@ actor AudioGraphEvidenceStore {
         renderedPacketDropCount &+= 1
     }
 
-    func stop(playerRenderedFrame: Int64) throws -> AudioGraphStopEvidence {
+    func stop(
+        playerRenderedFrame: Int64,
+        expectedEpoch: UInt64
+    ) throws -> AudioGraphStopEvidence {
+        guard expectedEpoch == epoch else {
+            throw AudioGraphEvidenceStoreError.staleEpoch
+        }
         let boundedPlayerFrame = max(0, playerRenderedFrame)
         let contentRenderedFrame = contentFrame(for: boundedPlayerFrame)
         try ledger.markRendered(through: contentRenderedFrame)
         let truncationTarget = ledger.truncationTarget()
-        let renderedWindow: RenderedAudioWindow?
-        if let ringBuffer, renderedPacketDropCount == 0 {
-            renderedWindow = try? ringBuffer.window(
-                endingAt: ringBuffer.renderedFrameCount,
-                duration: 4
-            )
-        } else {
-            renderedWindow = nil
-        }
+        // The asynchronous mixer handoff is not a device-boundary freeze
+        // barrier. Keep collecting characterization samples, but never expose
+        // an "exact heard window" until a physical Experiment D seals it.
+        let renderedWindow: RenderedAudioWindow? = nil
 
         let stoppedEpoch = epoch
         let stoppedDropCount = renderedPacketDropCount
