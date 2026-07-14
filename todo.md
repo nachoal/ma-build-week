@@ -766,7 +766,7 @@ FAIL:
 ### Gate 0 implementation checklist
 
 - [ ] Copy docs/poc/verdict-template.md to docs/poc/verdict.md and timestamp it.
-- [ ] Generate/build/test MAAudioProbe; discover the paired iPhone dynamically.
+- [x] Generate/build/test MAAudioProbe; discover the paired iPhone dynamically.
 - [ ] Complete Experiment 0 and record the immutable topology.
 - [ ] Implement the authenticated short-lived-secret broker for
   gpt-realtime-2.1.

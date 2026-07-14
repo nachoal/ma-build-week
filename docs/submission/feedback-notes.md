@@ -45,11 +45,11 @@ Append exact evidence after each milestone.
 
 | Component | Root-task evidence | Commit | Device/test evidence | Status |
 |---|---|---|---|---|
-| Gate 0 probe and written verdict | Clock started 2026-07-14 01:18:10 CST; hard stop 2026-07-15 01:18:10 CST; fixed native-WebRTC audit completed without rounding its 29m48s root capture | `0432b6f`, `ecddafc` | physical protocol pending | in progress |
-| Selected one-owner audio topology | Root rejected stock native WebRTC after its public/binary surface exposed none of the three required hooks together; froze direct GA WebSocket plus one app-owned AVAudioEngine/VoiceProcessingIO graph | `ecddafc` | Apple SDK contract checked; graph/device proof pending | in progress |
-| Realtime transport/event normalization | Root added bounded monotonic diagnostics, provider redaction, effective-policy verification, typed/deduplicated events, bounded commands, and a cancellation-safe URLSession WebSocket actor that exposes no event before `session.created` policy verification | `d2e85d3`, `4966eb0`, `38f4686`, `2c95b6f`, `8081de1`, `30cb963` | probe suite 32/32; live transport pending | in progress |
+| Gate 0 probe and written verdict | Clock started 2026-07-14 01:18:10 CST; hard stop 2026-07-15 01:18:10 CST; fixed native-WebRTC audit completed without rounding its 29m48s root capture; root bound the frozen graph to the dedicated probe | `0432b6f`, `ecddafc`, `f8fda5d` | physical protocol pending | in progress |
+| Selected one-owner audio topology | Root rejected stock native WebRTC after its public/binary surface exposed none of the three required hooks together; implemented direct GA WebSocket plus one app-owned AVAudioEngine/VoiceProcessingIO graph, JIT permission, processed-input and mixer taps, route teardown, and runtime hash | `ecddafc`, `f8fda5d` | strict signed device build; physical route/render proof pending | in progress |
+| Realtime transport/event normalization | Root added bounded monotonic diagnostics, provider redaction, effective-policy verification, typed/deduplicated events, bounded commands, and a cancellation-safe URLSession WebSocket actor that exposes no event before `session.created` policy verification; one outbound serializer makes cancel-plus-truncate atomic against mic appends | `d2e85d3`, `4966eb0`, `38f4686`, `2c95b6f`, `8081de1`, `30cb963`, `f8fda5d` | probe suite 38/38; live transport pending | in progress |
 | Local cue classifier/floor policy | pending | pending | pending | pending |
-| Render ledger/ring buffer/repair replay | Root implemented a bounded rendered-only ring plus a player-timeline ledger that rejects future/backward cursors and derives item-relative truncation milliseconds only from marked-rendered frames | `12f3e65`, `9ac69d3` | 8 ring/ledger tests; graph/physical evidence pending | in progress |
+| Render ledger/ring buffer/repair replay | Root implemented a bounded rendered-only ring plus a gap-aware player-timeline ledger that rejects future/backward cursors and derives item-relative truncation milliseconds only from marked-rendered frames; the mixer tap now feeds the rendered ring | `12f3e65`, `9ac69d3`, `f8fda5d` | deterministic mapping/ring tests; physical exactness pending | in progress |
 | Session broker and secret handling | Root implemented the fixed-policy Worker, private install-token boundary, stable safety identifier, rate-limit binding, bounded response, iOS broker client, and this-device-only Keychain provisioning | `9d5cb2e`, `b0d1977` | Worker 7/7; iOS probe 5/5; Wrangler dry run; live health 200, unauthorized 401, caller override 400, authorized mint 200 | complete with recorded Gate limitation |
 | Real offline first-minute playback/capture | pending | pending | pending | pending |
 | Repair/resume and next-attempt evidence | pending | pending | pending | pending |
@@ -208,6 +208,36 @@ For each material decision, capture:
   route, negotiated-format, post-AEC, audible-render, local-stop, and runtime
   configuration-hash evidence remains pending; no verdict checkbox was marked
   from source inspection.
+
+### 2026-07-14 — Gate 0 root-owned audio graph binding
+
+- Root implemented the frozen topology in `f8fda5d`: one `AudioGraphController`
+  owns `AVAudioSession`, VoiceProcessingIO, capture, and tutor playout. It asks
+  for microphone access before minting the 120-second secret, asserts voice
+  processing on both I/O nodes, taps processed input and the main-mixer render
+  path, and tears the graph down on route, interruption, media-reset, or engine
+  configuration changes.
+- A serial converter produces bounded PCM16 mono 24 kHz uplink frames. A single
+  outbound queue prevents mic appends from interleaving inside the local-first
+  cancel-plus-one-render-derived-truncate batch. Tutor chunks require complete
+  event, response, item, and content identifiers and are capped at one second.
+- The render ledger now maps physical player time across scheduling gaps to
+  contiguous content time, so silence or underrun gaps cannot be mislabeled as
+  heard tutor audio. Local stop snapshots player time, stops the node first,
+  resets the epoch, rejects late output from the stopped response, then sends
+  provider control.
+- The first atomic-order test run hung because its injected socket incorrectly
+  closed immediately after the handshake. Root stopped the run, made the mock
+  suspend like an open WebSocket, and reran both suites. MAAudioProbe passed
+  38/38 test cases (40 parameterized device passes) and MA remained 78/78 on
+  iPhone 17 / iOS 26.5 Simulator; both signed generic-device builds succeeded.
+  The probe additionally passed complete Swift concurrency checking with all
+  warnings treated as errors. These are code/build results only; no physical
+  audio criterion is checked yet.
+- The signed `f8fda5d` MA and MAAudioProbe artifacts both installed on the
+  dynamically rediscovered iPhone 17 Pro / iOS 27.0 beta. The phone auto-locked
+  before either process launch, so this milestone records install success and a
+  launch blocker—not runtime, microphone, graph, transport, or learner proof.
 
 ## Final feedback preparation
 
