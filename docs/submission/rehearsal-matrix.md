@@ -33,7 +33,7 @@ iOS version, route, network, evidence path, and exact failure.
 
 | Case | Required observation | Result | Evidence |
 |---|---|---|---|
-| Fresh English install | English objective and controls are immediately clear | PENDING | — |
+| Fresh English install | English objective and controls are immediately clear | PENDING; exact candidate installed, launch lock-denied before observation | `.build/device-evidence/20260714T210505Z-product` |
 | Spanish switch | Same lesson phase; all guided review/permission-facing copy coherent | PENDING | — |
 | First-tap bundled model | Audible once; completion unlocks record; no second tap | PENDING | — |
 | JIT microphone permission | Prompt appears only after record; denial/recovery accurate | PENDING | — |

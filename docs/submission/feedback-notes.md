@@ -59,7 +59,7 @@ Append exact evidence after each milestone.
 | Guided bilingual Realtime product | After the learner rejected the fixture-first flow, root replaced the shipping route with an English-default/Spanish-switchable lesson: explained target, one-tap bundled model, explicit bounded capture, enum-only transcript-grounded Realtime review, canonical bilingual feedback, retry/continue, a briefed captioned waiter turn, second capture/review, and completion without scores or self-rating. One `AudioGraphController` owns every product audio operation | `a9eb988` | Frozen combined simulator result passed 175/175 test cases (167 Swift + 8 UI) at `.build/test-results/MA-complete-freeze-20260714.xcresult`; this includes the English Apple permission prompt and real AVAudio playback/capture/stop integration test | code, service, and simulator complete; physical live review pending |
 | Guided aggregate planner and hardened product broker | Root added separate v2 aggregate-only guided planning, explicit opt-in, deterministic local fallback, cancellation/generation fencing, a fixed `gpt-5.6-sol` Responses contract, and an independently re-audited product Realtime mint/review policy. Authenticated quota is consumed before bounded body parsing; exact JSON media types and enum-only review arguments fail closed | `a9eb988` | Worker 30/30; security re-audit DEPLOY; live version `e45a3b92-217b-4830-8841-a50a7465a6da` passed health, invalid-media 400, exact-key mint, local policy-hash match, and bilingual guided-plan validation | complete for authorized private single-device demo; not public/TestFlight auth |
 | Current guided device/submission evidence | Root generated, signed, and installed the guided build, rewrote the submission story around the actual bilingual two-review product, and made the operator-only replay's not-live badge bilingual | `a9eb988` | `.build/device-evidence/20260714T160140Z-product`: build/install succeeded; launch was denied because the iPhone re-locked. The frozen simulator evidence is `.build/test-results/MA-complete-freeze-20260714.xcresult` (175/175), `.build/test-results/MAAudioProbe-freeze-20260714.xcresult` (49/49), and `.build/evidence/MA-complete-freeze-attachments-20260714/` | simulator/service complete; unlocked physical runtime, human/Japanese review, video, archive refresh, `/feedback`, and submission remain gated |
-| Production-realistic simulator and policy closure | Root added a DEBUG-only harness that substitutes only deterministic bundled microphone input while retaining the production broker, `gpt-realtime-2.1` WebSocket, effective-policy verifier, structured two-turn review, spoken feedback, waiter audio, shipping playout, and `gpt-5.6-sol` planner. Root fixed cross-runtime hash normalization, pinned `reasoning.effort=low` in the broker-owned policy, and rejects client attempts to weaken it | pending verified candidate commit | Live smoke 2/2; repeated bilingual journey 10/10 (five English, five Spanish) at `.build/test-results/MA-live-low-reasoning-bilingual-stress5.xcresult`; real simulator permission/capture 1/1; standard no-secret suite 206/206 executions; Worker 30/30 | simulator/code/service complete; physical microphone/route/human quality remain gated |
+| Production-realistic simulator and policy closure | Root added a DEBUG-only harness that substitutes only deterministic bundled microphone input while retaining the production broker, `gpt-realtime-2.1` WebSocket, effective-policy verifier, structured two-turn review, spoken feedback, waiter audio, shipping playout, and `gpt-5.6-sol` planner. Root fixed cross-runtime hash normalization, pinned `reasoning.effort=low` in the broker-owned policy, and rejects client attempts to weaken it | `bebac3c` | Live smoke 2/2; repeated bilingual journey 10/10 (five English, five Spanish) at `.build/test-results/MA-live-low-reasoning-bilingual-stress5.xcresult`; real simulator permission/capture 1/1; standard no-secret suite 206/206 executions; Worker 30/30 | simulator/code/service complete; physical microphone/route/human quality remain gated |
 
 ## Delegated tasks and sessions
 
@@ -825,6 +825,22 @@ For each material decision, capture:
   interfaces show the correct language switch, two reviewed attempts, the
   model-backed next-practice card, and the restart control without clipping,
   missing text, stale loading state, or fallback label.
+- Local implementation commit `bebac3c47c4846cbc339ae130978f0384115bbef`
+  (`fix: verify guided realtime end to end`) contains the policy, transport,
+  harness, tests, runner separation, privacy logging, and release-tool changes.
+  Nothing was pushed.
+- The exact committed Debug app built, signed, and installed on the dynamically
+  discovered iPhone 17 Pro (iOS 27.0) at
+  `.build/device-evidence/20260714T210505Z-product`. Launch was denied because
+  the phone had re-locked, so this remains install evidence only; no microphone,
+  review, route, or learner claim was closed.
+- Clean commit `bebac3c47c4846cbc339ae130978f0384115bbef` produced
+  `.build/submission/candidate-bebac3c47c4846cbc339ae130978f0384115bbef/`.
+  The signed Release archive, embedded privacy manifest, and
+  `ITSAppUsesNonExemptEncryption=false` passed; all 26 manifest entries rehashed,
+  the staged packet plus compiled executable scan passed, and
+  `MA.xcarchive.zip` SHA-256 is
+  `3f14ecf07eaf8e594622df8f9ae43d33d3788f6117c7d7652cffd0352427605c`.
 
 ## Final feedback preparation
 

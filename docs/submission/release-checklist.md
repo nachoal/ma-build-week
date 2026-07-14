@@ -5,12 +5,14 @@ Devpost submission. Those require Ignacio's explicit approval.
 
 ## Freeze identity
 
-- [ ] Final commit: `________________`
-- [ ] Xcode/Swift/iOS build versions recorded
-- [ ] Release `.xcarchive` built from that clean commit
-- [ ] `PrivacyInfo.xcprivacy` verified inside `MA.app`
+- [x] Frozen implementation/archive commit:
+      `bebac3c47c4846cbc339ae130978f0384115bbef`
+- [x] Xcode/Swift/iOS build versions recorded in the candidate packet
+- [x] Release `.xcarchive` built from that clean commit
+- [x] `PrivacyInfo.xcprivacy` verified inside `MA.app`
 - [ ] Signed physical install/launch verified on the dynamically discovered device
-- [ ] `scripts/scan-secrets.sh` rerun after the final commit
+- [x] `scripts/scan-secrets.sh` rerun after the frozen implementation commit,
+      including the archived app and compiled executable
 
 ## Automated and service evidence
 
@@ -74,7 +76,8 @@ Stage optional redacted logs/video under ignored `.build/submission-inputs/`;
 the archive tool rejects paths outside its canonical roots, records the build
 environment and exact commit, and rescans staged copy.
 
-- [ ] Archive checksum: `________________`
+- [x] Archive checksum:
+      `3f14ecf07eaf8e594622df8f9ae43d33d3788f6117c7d7652cffd0352427605c`
 - [ ] Video checksum: `________________`
 - [ ] Subtitle checksum: `________________`
 - [ ] Sanitized fixture checksum(s): `________________`
