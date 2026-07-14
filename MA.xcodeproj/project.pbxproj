@@ -22,6 +22,7 @@
 		27DCF306829A48AC0C59C7B7 /* ProbeAppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35408EBF1A372E4DB46CFDB2 /* ProbeAppModelTests.swift */; };
 		2A5ACDBAEAD2B29029C4DF8C /* RailLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC0C26355B279A707F69EFA /* RailLayoutTests.swift */; };
 		2F6E93CBC683D5A11FBF2E4F /* MAAudioProbeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D4CFE16DD1C32E80DE5A277 /* MAAudioProbeApp.swift */; };
+		32BA2BD93EBADBC6132009C8 /* AudioGraphConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2128273A67F59FFCEF16904B /* AudioGraphConfiguration.swift */; };
 		36281D5DD0223D1BB7E69763 /* DynamicTypeContainmentUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78DB6FD310956248577B63A8 /* DynamicTypeContainmentUITests.swift */; };
 		370689073927191D843D5602 /* MAApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4486F882E472A661434FEFF /* MAApp.swift */; };
 		3727BA637F1349CBF2A56A04 /* RenderedAudioRingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 466B9BD8E3A7973EFB5707FA /* RenderedAudioRingBuffer.swift */; };
@@ -62,6 +63,7 @@
 		B373BE18A468901F4299376E /* ChromeBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2041445B9E146B42D52A757 /* ChromeBar.swift */; };
 		B3BBD1AB832D87F6FD424DCE /* RenderedPlayoutLedgerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 223E19776AA8E940A441182C /* RenderedPlayoutLedgerTests.swift */; };
 		B44D2E7D56DB59C6947C5043 /* ProbeGateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19C16B634C6C1B2FBE302214 /* ProbeGateView.swift */; };
+		B467BCCB2FCA4FBCC81CC9E8 /* AudioGraphConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BD9CD8E25F1CA9D59E53D37 /* AudioGraphConfigurationTests.swift */; };
 		B54F260BDB9E14FA5322D557 /* RealtimeServerEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D8941D30742E1B9090B34D /* RealtimeServerEvent.swift */; };
 		B8CC1F1D9E32B3508F2900D4 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3568626AD76B0F6D70C7C83 /* OnboardingView.swift */; };
 		BA2EF7F1776EED6BDEF6A53B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A8FEB62A7218824DC02C99 /* HomeView.swift */; };
@@ -125,6 +127,7 @@
 		1AC0C26355B279A707F69EFA /* RailLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RailLayoutTests.swift; sourceTree = "<group>"; };
 		1F124651CCB19B4C7876516B /* CoachedPracticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachedPracticeView.swift; sourceTree = "<group>"; };
 		20A8FEB62A7218824DC02C99 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		2128273A67F59FFCEF16904B /* AudioGraphConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioGraphConfiguration.swift; sourceTree = "<group>"; };
 		223E19776AA8E940A441182C /* RenderedPlayoutLedgerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderedPlayoutLedgerTests.swift; sourceTree = "<group>"; };
 		3330761BE1C4E07FEEA2B042 /* OnboardingProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingProgress.swift; sourceTree = "<group>"; };
 		35408EBF1A372E4DB46CFDB2 /* ProbeAppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProbeAppModelTests.swift; sourceTree = "<group>"; };
@@ -157,6 +160,7 @@
 		850959DD1C299DAB5B3C26B6 /* PracticeEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeEvent.swift; sourceTree = "<group>"; };
 		877D99D9C1E311DE200CFBDE /* ProbeConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProbeConfiguration.swift; sourceTree = "<group>"; };
 		88E6EDCEFE3D230DB3412D40 /* ListeningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListeningView.swift; sourceTree = "<group>"; };
+		8BD9CD8E25F1CA9D59E53D37 /* AudioGraphConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioGraphConfigurationTests.swift; sourceTree = "<group>"; };
 		906C02CDA15F528A25E9F8C9 /* SessionBrokerClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionBrokerClientTests.swift; sourceTree = "<group>"; };
 		9399B8163F519BDA8548A0DB /* VoiceInkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceInkView.swift; sourceTree = "<group>"; };
 		95A2E3A0128CAC7AADC0782B /* LearnerProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LearnerProfile.swift; sourceTree = "<group>"; };
@@ -297,6 +301,7 @@
 		614B1D83677DEACDD89AE8F5 /* Audio */ = {
 			isa = PBXGroup;
 			children = (
+				2128273A67F59FFCEF16904B /* AudioGraphConfiguration.swift */,
 				466B9BD8E3A7973EFB5707FA /* RenderedAudioRingBuffer.swift */,
 				71FB2C09E3ADA8718B6819F3 /* RenderedPlayoutLedger.swift */,
 			);
@@ -363,6 +368,7 @@
 		DC207936A3EED53E4844ECD6 /* MAAudioProbeTests */ = {
 			isa = PBXGroup;
 			children = (
+				8BD9CD8E25F1CA9D59E53D37 /* AudioGraphConfigurationTests.swift */,
 				35408EBF1A372E4DB46CFDB2 /* ProbeAppModelTests.swift */,
 				19A51E4F4E48A1454D511D00 /* ProbeDiagnosticsTests.swift */,
 				D24CE619F2F526CDF0EEA5A4 /* ProbeGateStateTests.swift */,
@@ -598,6 +604,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B467BCCB2FCA4FBCC81CC9E8 /* AudioGraphConfigurationTests.swift in Sources */,
 				27DCF306829A48AC0C59C7B7 /* ProbeAppModelTests.swift in Sources */,
 				F99C2A96AB3E8C240BB39BB1 /* ProbeDiagnosticsTests.swift in Sources */,
 				27083A3247DFF0F2BA56DD9C /* ProbeGateStateTests.swift in Sources */,
@@ -644,6 +651,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				32BA2BD93EBADBC6132009C8 /* AudioGraphConfiguration.swift in Sources */,
 				5AB4A1603E360CBD03B271B5 /* InstallCredentialStore.swift in Sources */,
 				2F6E93CBC683D5A11FBF2E4F /* MAAudioProbeApp.swift in Sources */,
 				87E2A4C3C2BEF22D86BE954D /* ProbeAppModel.swift in Sources */,
