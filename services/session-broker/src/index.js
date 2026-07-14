@@ -10,7 +10,7 @@ export const learningPlannerPolicy = Object.freeze({
   model: "gpt-5.6-sol",
   reasoningEffort: "low",
   maxOutputTokens: 320,
-  upstreamTimeoutMs: 7_000,
+  upstreamTimeoutMs: 10_000,
   maxAttempts: 2,
 });
 
@@ -733,7 +733,9 @@ function isGuidedActionReasonSupported(action, reason, report) {
 }
 
 function isRetryableUpstreamStatus(status) {
-  return status === 408 || status === 409 || status === 429 || status >= 500;
+  // An immediate retry cannot honor an upstream Retry-After window and can
+  // double spend under the install-scoped limiter, so 429 fails closed.
+  return status === 408 || status === 409 || status >= 500;
 }
 
 function parseLearningRecommendation(payload, report) {

@@ -24,10 +24,10 @@ enum GuidedBrokerLearningPlannerError: Error, Equatable, Sendable {
 }
 
 actor GuidedBrokerLearningPlanner: GuidedRemoteLearningPlanning {
-    /// The Worker may make two bounded seven-second provider attempts. Leave
+    /// The Worker may make two bounded ten-second provider attempts. Leave
     /// enough room for both attempts plus the broker round trip while staying
     /// below the learner-visible 35-second terminal wait.
-    static let requestTimeout: TimeInterval = 22
+    static let requestTimeout: TimeInterval = 27
 
     static let endpoint = URL(
         string: "https://ma-session-broker.ignacio-alley.workers.dev/learning/guided-next"

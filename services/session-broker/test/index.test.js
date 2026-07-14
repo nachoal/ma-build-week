@@ -15,6 +15,7 @@ import {
 
 const installToken = "t".repeat(48);
 const productInstallToken = "p".repeat(48);
+const OPENAI_RESPONSES_URL_FOR_TESTS = "https://api.openai.com/v1/responses";
 const completedLearningReportFixture = JSON.parse(
   readFileSync(
     new URL(
@@ -774,7 +775,7 @@ describe("MA session broker", () => {
     assert.equal(response.status, 200);
     assert.equal(calls, 2);
     assert.equal(learningPlannerPolicy.maxAttempts, 2);
-    assert.equal(learningPlannerPolicy.upstreamTimeoutMs, 7_000);
+    assert.equal(learningPlannerPolicy.upstreamTimeoutMs, 10_000);
   });
 
   it("stops after the declared planner retry budget", async () => {
@@ -1027,6 +1028,141 @@ describe("MA session broker", () => {
       "report_id",
     ]) {
       assert.equal(serialized.includes(forbidden), false, forbidden);
+    }
+  });
+
+  it("retries the guided planner once after a transient upstream timeout", async () => {
+    let calls = 0;
+    const response = await handleRequest(
+      request("/learning/guided-next", {
+        method: "POST",
+        headers: authorizedHeaders(),
+        body: JSON.stringify(validGuidedLearningReport()),
+      }),
+      environment(),
+      async () => {
+        calls += 1;
+        if (calls === 1) {
+          throw new DOMException("The operation timed out", "TimeoutError");
+        }
+        return guidedLearningUpstreamResponse();
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(calls, 2);
+    assert.equal(learningPlannerPolicy.maxAttempts, 2);
+    assert.equal(learningPlannerPolicy.upstreamTimeoutMs, 10_000);
+  });
+
+  it("retries one guided 502 with the identical sanitized fixed request", async () => {
+    let limiterCalls = 0;
+    const upstreamRequests = [];
+    const response = await handleRequest(
+      request("/learning/guided-next", {
+        method: "POST",
+        headers: authorizedHeaders(),
+        body: JSON.stringify(validGuidedLearningReport()),
+      }),
+      environment({
+        RATE_LIMITER: {
+          async limit() {
+            limiterCalls += 1;
+            return { success: true };
+          },
+        },
+      }),
+      async (url, options) => {
+        upstreamRequests.push({ url, options });
+        return upstreamRequests.length === 1
+          ? new Response("private transient body", { status: 502 })
+          : guidedLearningUpstreamResponse();
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(limiterCalls, 1);
+    assert.equal(upstreamRequests.length, 2);
+    assert.equal(upstreamRequests[0].url, OPENAI_RESPONSES_URL_FOR_TESTS);
+    assert.equal(upstreamRequests[1].url, OPENAI_RESPONSES_URL_FOR_TESTS);
+    assert.equal(upstreamRequests[0].options.method, "POST");
+    assert.equal(upstreamRequests[1].options.method, "POST");
+    assert.equal(
+      upstreamRequests[0].options.headers.authorization,
+      "Bearer test-server-api-key",
+    );
+    assert.equal(
+      upstreamRequests[1].options.headers.authorization,
+      "Bearer test-server-api-key",
+    );
+    assert.equal(
+      upstreamRequests[0].options.body,
+      upstreamRequests[1].options.body,
+    );
+    assert.ok(upstreamRequests[0].options.signal instanceof AbortSignal);
+    assert.ok(upstreamRequests[1].options.signal instanceof AbortSignal);
+
+    const upstreamBody = JSON.parse(upstreamRequests[0].options.body);
+    assert.equal(upstreamBody.model, "gpt-5.6-sol");
+    assert.equal(upstreamBody.store, false);
+    assert.deepEqual(upstreamBody.text.format.schema, guidedLearningActionSchema);
+    assert.match(upstreamBody.safety_identifier, /^ma_[a-f0-9]{48}$/);
+    const serialized = JSON.stringify(upstreamBody);
+    for (const forbidden of [productInstallToken, "test-server-api-key"]) {
+      assert.equal(serialized.includes(forbidden), false, forbidden);
+    }
+    const forwarded = upstreamBody.input[0].content[0].text;
+    for (const forbidden of [
+      "report_id",
+      "raw_audio",
+      "transcript",
+      "heard_japanese",
+    ]) {
+      assert.equal(forwarded.includes(forbidden), false, forbidden);
+    }
+  });
+
+  it("stops guided 502 retries at two without forwarding the upstream body", async () => {
+    let calls = 0;
+    const response = await handleRequest(
+      request("/learning/guided-next", {
+        method: "POST",
+        headers: authorizedHeaders(),
+        body: JSON.stringify(validGuidedLearningReport()),
+      }),
+      environment(),
+      async () => {
+        calls += 1;
+        return new Response("private upstream diagnostic", { status: 502 });
+      },
+    );
+
+    assert.equal(calls, 2);
+    assert.equal(response.status, 502);
+    const body = await response.json();
+    assert.deepEqual(body, { error: "upstream_rejected" });
+    assert.equal(JSON.stringify(body).includes("private upstream diagnostic"), false);
+  });
+
+  it("does not retry permanent or rate-limited guided upstream failures", async () => {
+    for (const status of [400, 401, 403, 422, 429]) {
+      let calls = 0;
+      const response = await handleRequest(
+        request("/learning/guided-next", {
+          method: "POST",
+          headers: authorizedHeaders(),
+          body: JSON.stringify(validGuidedLearningReport()),
+        }),
+        environment(),
+        async () => {
+          calls += 1;
+          return new Response("must not be forwarded", { status });
+        },
+      );
+
+      assert.equal(calls, 1, `status ${status}`);
+      assert.equal(response.status, 502, `status ${status}`);
+      assert.deepEqual(await response.json(), { error: "upstream_rejected" });
     }
   });
 

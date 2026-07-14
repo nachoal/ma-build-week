@@ -34,8 +34,7 @@ final class GuidedProductionRealtimeUITests: XCTestCase {
         XCTAssertTrue(language.waitForExistence(timeout: 8))
         XCTAssertEqual(language.label, "Switch to Spanish")
         if inSpanish {
-            language.tap()
-            XCTAssertEqual(language.label, "Cambiar a inglés")
+            switchToSpanish(language, in: app)
         }
 
         XCTAssertTrue(app.buttons["hero.restaurant"].waitForExistence(timeout: 8))
@@ -121,6 +120,57 @@ final class GuidedProductionRealtimeUITests: XCTestCase {
             : "production-realtime-complete-en"
         attachment.lifetime = .keepAlways
         add(attachment)
+    }
+
+    /// SpringBoard banners can arrive between XCTest resolving an element and
+    /// dispatching its tap on a physical phone. Preserve the one-tap product
+    /// assertion: retry only when a real system banner is found and dismissed.
+    @MainActor
+    private func switchToSpanish(_ language: XCUIElement, in app: XCUIApplication) {
+        _ = dismissNotificationBannerIfPresent(timeout: 0.2)
+        app.activate()
+        XCTAssertTrue(language.isHittable, "The language control is not tappable")
+
+        language.tap()
+        if waitForLabel("Cambiar a inglés", on: language, timeout: 2) {
+            return
+        }
+
+        XCTAssertTrue(
+            dismissNotificationBannerIfPresent(timeout: 1),
+            "The language control ignored one unobstructed tap"
+        )
+        app.activate()
+        XCTAssertTrue(language.isHittable, "The language control did not recover after the system banner")
+        language.tap()
+        XCTAssertTrue(
+            waitForLabel("Cambiar a inglés", on: language, timeout: 5),
+            "The language control did not switch after the intercepted tap was retried"
+        )
+    }
+
+    @MainActor
+    private func dismissNotificationBannerIfPresent(timeout: TimeInterval) -> Bool {
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let banner = springboard.descendants(matching: .any)
+            .matching(identifier: "NotificationShortLookView")
+            .firstMatch
+        guard banner.waitForExistence(timeout: timeout) else { return false }
+        banner.swipeUp()
+        return true
+    }
+
+    @MainActor
+    private func waitForLabel(
+        _ expected: String,
+        on element: XCUIElement,
+        timeout: TimeInterval
+    ) -> Bool {
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label == %@", expected),
+            object: element
+        )
+        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
     }
 
     @MainActor

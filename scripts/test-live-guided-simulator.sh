@@ -115,6 +115,7 @@ xcodebuild test-without-building \
   -scheme "$TEST_SCHEME" \
   -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
   -derivedDataPath "$DERIVED_DATA" \
+  -collect-test-diagnostics never \
   -only-testing:"$TEST_SELECTION" \
   "${iteration_arguments[@]}" \
   -resultBundlePath "$RESULT_PATH" \

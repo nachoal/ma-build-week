@@ -187,6 +187,7 @@ xcodebuild test-without-building \
   -scheme "$TEST_SCHEME" \
   -destination "platform=iOS,id=$DEVICE_ID" \
   -derivedDataPath "$DERIVED_DATA" \
+  -collect-test-diagnostics never \
   -only-testing:"$TEST_SELECTION" \
   -resultBundlePath "$RESULT_PATH" \
   >>"$LOG_PATH" 2>&1
