@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 enum GuidedBrokerLearningPlannerError: Error, Equatable, Sendable {
     case missingCredential
@@ -8,9 +9,26 @@ enum GuidedBrokerLearningPlannerError: Error, Equatable, Sendable {
     case serviceUnavailable
     case invalidResponse
     case requestFailed
+
+    var diagnosticCode: String {
+        switch self {
+        case .missingCredential: "missing_credential"
+        case .invalidReport: "invalid_report"
+        case .unauthorized: "unauthorized"
+        case .rateLimited: "rate_limited"
+        case .serviceUnavailable: "service_unavailable"
+        case .invalidResponse: "invalid_response"
+        case .requestFailed: "request_failed"
+        }
+    }
 }
 
 actor GuidedBrokerLearningPlanner: GuidedRemoteLearningPlanning {
+    /// The Worker may make two bounded seven-second provider attempts. Leave
+    /// enough room for both attempts plus the broker round trip while staying
+    /// below the learner-visible 35-second terminal wait.
+    static let requestTimeout: TimeInterval = 22
+
     static let endpoint = URL(
         string: "https://ma-session-broker.ignacio-alley.workers.dev/learning/guided-next"
     )!
@@ -18,6 +36,10 @@ actor GuidedBrokerLearningPlanner: GuidedRemoteLearningPlanning {
     private let session: URLSession
     private let endpointURL: URL
     private let credentials: any PlannerInstallCredentialLoading
+    private let diagnosticLogger = Logger(
+        subsystem: "com.ia.ma",
+        category: "GuidedPlannerBroker"
+    )
 
     init(
         session: URLSession = URLSession(configuration: .ephemeral),
@@ -47,7 +69,7 @@ actor GuidedBrokerLearningPlanner: GuidedRemoteLearningPlanning {
         var request = URLRequest(
             url: endpointURL,
             cachePolicy: .reloadIgnoringLocalAndRemoteCacheData,
-            timeoutInterval: 16
+            timeoutInterval: Self.requestTimeout
         )
         request.httpMethod = "POST"
         request.httpBody = body
@@ -61,17 +83,32 @@ actor GuidedBrokerLearningPlanner: GuidedRemoteLearningPlanning {
             (data, response) = try await session.data(for: request)
         } catch {
             if Task.isCancelled { throw CancellationError() }
+            let nsError = error as NSError
+            diagnosticLogger.error(
+                "transport_failed domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public)"
+            )
             throw GuidedBrokerLearningPlannerError.requestFailed
         }
         guard let http = response as? HTTPURLResponse else {
             throw GuidedBrokerLearningPlannerError.invalidResponse
         }
         switch http.statusCode {
-        case 200: break
-        case 401: throw GuidedBrokerLearningPlannerError.unauthorized
-        case 429: throw GuidedBrokerLearningPlannerError.rateLimited
-        case 502, 503, 504: throw GuidedBrokerLearningPlannerError.serviceUnavailable
-        default: throw GuidedBrokerLearningPlannerError.requestFailed
+        case 200:
+            diagnosticLogger.notice("response_succeeded")
+        case 401:
+            diagnosticLogger.error("response_failed code=unauthorized")
+            throw GuidedBrokerLearningPlannerError.unauthorized
+        case 429:
+            diagnosticLogger.error("response_failed code=rate_limited")
+            throw GuidedBrokerLearningPlannerError.rateLimited
+        case 502, 503, 504:
+            diagnosticLogger.error("response_failed code=service_unavailable")
+            throw GuidedBrokerLearningPlannerError.serviceUnavailable
+        default:
+            diagnosticLogger.error(
+                "response_failed code=unexpected_status status=\(http.statusCode, privacy: .public)"
+            )
+            throw GuidedBrokerLearningPlannerError.requestFailed
         }
 
         guard http.value(forHTTPHeaderField: "Content-Type")?
@@ -83,6 +120,7 @@ actor GuidedBrokerLearningPlanner: GuidedRemoteLearningPlanning {
               action.reportID == report.id,
               action.model == GuidedPedagogyPolicy.expectedRemoteModel,
               action.source == .model else {
+            diagnosticLogger.error("response_failed code=invalid_response")
             throw GuidedBrokerLearningPlannerError.invalidResponse
         }
         return action

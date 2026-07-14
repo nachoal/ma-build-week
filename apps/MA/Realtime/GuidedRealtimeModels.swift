@@ -24,6 +24,30 @@ enum GuidedRealtimeError: Error, LocalizedError, Equatable, Sendable {
     case responseIncomplete
     case playbackUnavailable
 
+    /// A fixed, non-sensitive identifier suitable for local device
+    /// diagnostics. Realtime payloads, transcripts, provider text, event IDs,
+    /// and credentials are deliberately excluded.
+    var diagnosticCode: String {
+        switch self {
+        case .missingCredential: "missing_credential"
+        case .unauthorized: "unauthorized"
+        case .rateLimited: "rate_limited"
+        case .serviceUnavailable: "service_unavailable"
+        case .invalidBrokerResponse: "invalid_broker_response"
+        case .invalidClientSecret: "invalid_client_secret"
+        case .connectionFailed: "connection_failed"
+        case .configurationMismatch: "configuration_mismatch"
+        case .disconnected: "disconnected"
+        case .invalidAudio: "invalid_audio"
+        case .noSpeech: "no_speech"
+        case .providerRejected: "provider_rejected"
+        case .invalidReview: "invalid_review"
+        case .responseTimedOut: "response_timed_out"
+        case .responseIncomplete: "response_incomplete"
+        case .playbackUnavailable: "playback_unavailable"
+        }
+    }
+
     var errorDescription: String? {
         message(in: .english)
     }

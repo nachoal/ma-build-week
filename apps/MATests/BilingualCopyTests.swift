@@ -31,6 +31,8 @@ struct BilingualCopyTests {
             for failure in [
                 GuidedAttemptFailure.microphoneDenied,
                 .noSpeech,
+                .realtime(.unauthorized),
+                .realtime(.responseTimedOut),
                 .reviewUnavailable,
                 .interrupted,
             ] {

@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 protocol GuidedRealtimeSecretMinting: Sendable {
     func mintClientSecret() async throws -> GuidedRealtimeClientSecret
@@ -25,6 +26,10 @@ actor GuidedRealtimeSessionBrokerClient: GuidedRealtimeSecretMinting {
     private let endpoint: URL
     private let credentials: any PlannerInstallCredentialLoading
     private let now: @Sendable () -> Date
+    private let diagnosticLogger = Logger(
+        subsystem: "com.ia.ma",
+        category: "GuidedRealtimeBroker"
+    )
 
     init(
         session: URLSession = URLSession(configuration: .ephemeral),
@@ -39,7 +44,19 @@ actor GuidedRealtimeSessionBrokerClient: GuidedRealtimeSecretMinting {
     }
 
     func mintClientSecret() async throws -> GuidedRealtimeClientSecret {
-        guard let token = try credentials.loadToken(),
+        let storedToken: String?
+        do {
+            storedToken = try credentials.loadToken()
+        } catch PlannerCredentialError.keychain(let status) {
+            diagnosticLogger.error(
+                "credential_load_failed keychain_status=\(status, privacy: .public)"
+            )
+            throw GuidedRealtimeError.missingCredential
+        } catch {
+            diagnosticLogger.error("credential_load_failed invalid_value")
+            throw GuidedRealtimeError.missingCredential
+        }
+        guard let token = storedToken,
               PlannerInstallCredentialStore.isValid(token: token) else {
             throw GuidedRealtimeError.missingCredential
         }
@@ -99,6 +116,7 @@ actor GuidedRealtimeSessionBrokerClient: GuidedRealtimeSecretMinting {
               decoded.expiresAt <= currentSeconds + 300 else {
             throw GuidedRealtimeError.invalidBrokerResponse
         }
+        diagnosticLogger.notice("mint_succeeded")
         return GuidedRealtimeClientSecret(
             value: decoded.value,
             expiresAt: decoded.expiresAt,

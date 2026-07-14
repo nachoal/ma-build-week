@@ -290,6 +290,8 @@ private struct GuidedAttemptScreen: View {
                 Text(failure.message(in: language))
                     .font(MATheme.body(17, weight: .regular))
                     .foregroundStyle(MATheme.sumi)
+                    .accessibilityIdentifier("guided.review.error")
+                    .accessibilityValue(failure.diagnosticCode)
                 if failure == .microphoneDenied {
                     Button(language.text(english: "Open Settings", spanish: "Abrir Ajustes")) {
                         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
@@ -374,13 +376,30 @@ private struct GuidedAttemptScreen: View {
                         spanish: "Repite la frase una vez, con el mismo ritmo."
                     )
             )
-            if state.audioState == .playingRealtime {
+            if state.spokenFeedbackPreparing {
+                Label(language.text(
+                    english: "MA is preparing a short spoken explanation…",
+                    spanish: "MA prepara una explicación breve en audio…"
+                ), systemImage: "ellipsis.bubble.fill")
+                    .font(MATheme.caption(.semibold))
+                    .foregroundStyle(MATheme.ai)
+                    .accessibilityIdentifier("guided.feedback.audio-preparing")
+            } else if state.audioState == .playingRealtime {
                 Label(language.text(
                     english: "MA is explaining this adjustment…",
                     spanish: "MA está explicando este ajuste…"
                 ), systemImage: "waveform")
                     .font(MATheme.caption(.semibold))
                     .foregroundStyle(MATheme.ai)
+                    .accessibilityIdentifier("guided.feedback.audio-playing")
+            } else if state.spokenFeedbackCompleted {
+                Label(language.text(
+                    english: "Spoken explanation finished.",
+                    spanish: "Terminó la explicación en audio."
+                ), systemImage: "checkmark.circle.fill")
+                    .font(MATheme.caption(.semibold))
+                    .foregroundStyle(MATheme.ai)
+                    .accessibilityIdentifier("guided.feedback.audio-completed")
             } else if state.spokenFeedbackUnavailable {
                 Text(language.text(
                     english: "The review is complete on screen; its audio wasn’t available.",
@@ -388,6 +407,7 @@ private struct GuidedAttemptScreen: View {
                 ))
                     .font(MATheme.caption())
                     .foregroundStyle(MATheme.stone)
+                    .accessibilityIdentifier("guided.feedback.audio-unavailable")
             }
         }
     }

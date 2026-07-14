@@ -329,7 +329,8 @@ private actor ScriptedGuidedTransport: GuidedRealtimeTransporting {
             await handler?(.responseFinished(
                 eventID: "server-review-done",
                 responseID: "response-review",
-                status: reviewStatus
+                status: reviewStatus,
+                incompleteReason: reviewStatus == "completed" ? nil : "max_output_tokens"
             ))
 
         case "spoken_attempt_feedback":
@@ -418,7 +419,8 @@ private actor ScriptedGuidedTransport: GuidedRealtimeTransporting {
         await selectedHandler(.responseFinished(
             eventID: "\(responseID)-done",
             responseID: responseID,
-            status: "completed"
+            status: "completed",
+            incompleteReason: nil
         ))
     }
 }

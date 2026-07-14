@@ -56,6 +56,7 @@
 		5B6475660F7D535AEE04CE88 /* GuidedRealtimeServerEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88BCF9B8796771B62DF2FF1 /* GuidedRealtimeServerEvent.swift */; };
 		5C7E9FD2243ADA31F3E03E8F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8F478B6F3A34654F827463C7 /* InfoPlist.strings */; };
 		5D6FB91E62CBA2DB8ED6C980 /* AudioGraphEvidenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06F8AB80BF1805A3BEB89991 /* AudioGraphEvidenceStoreTests.swift */; };
+		5DF8656224411C66859F502D /* GuidedProductionRealtimeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B92B34F16A34E9AE502A55C /* GuidedProductionRealtimeUITests.swift */; };
 		60DAE1A10078DFCB596D6EFB /* KaiwaLoopFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD1AF7CB9DA01D3330C13448 /* KaiwaLoopFeatureTests.swift */; };
 		60DB1AB5510B16DFECA3EA79 /* RealtimeCaptureWorker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B85BBE940D84FF10F24FB8FE /* RealtimeCaptureWorker.swift */; };
 		666CB3A6D34B8F721D9252E0 /* repair-beat.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 508550C2E38EDF6D68AF4798 /* repair-beat.m4a */; };
@@ -159,6 +160,13 @@
 			remoteGlobalIDString = 38B2F7EA319073995D5BFE00;
 			remoteInfo = MA;
 		};
+		C4362DE8EAE769212A43C82F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6B7FC0E200C5BDDEE9051C1E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 38B2F7EA319073995D5BFE00;
+			remoteInfo = MA;
+		};
 		DFEBC1100EF172508F9774D0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 6B7FC0E200C5BDDEE9051C1E /* Project object */;
@@ -206,6 +214,7 @@
 		22ABDE7647A25D9863005A87 /* DidacticRealtimeProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DidacticRealtimeProvider.swift; sourceTree = "<group>"; };
 		2306CE17CFFE2198C3F4DF91 /* KaiwaProductSmokeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KaiwaProductSmokeUITests.swift; sourceTree = "<group>"; };
 		25F01125FF9BD4D92C35F85A /* ReplayAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplayAdapter.swift; sourceTree = "<group>"; };
+		2B92B34F16A34E9AE502A55C /* GuidedProductionRealtimeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedProductionRealtimeUITests.swift; sourceTree = "<group>"; };
 		309ABC2469E059E9E9558C06 /* learning-report-completed.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "learning-report-completed.json"; sourceTree = "<group>"; };
 		3330761BE1C4E07FEEA2B042 /* OnboardingProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingProgress.swift; sourceTree = "<group>"; };
 		35408EBF1A372E4DB46CFDB2 /* ProbeAppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProbeAppModelTests.swift; sourceTree = "<group>"; };
@@ -290,6 +299,7 @@
 		B9C0DB466F0F0EBBB26A2AE9 /* MA.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MA.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA3FD28D2947F48BDB854780 /* RealtimeClientCommandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeClientCommandTests.swift; sourceTree = "<group>"; };
 		C2041445B9E146B42D52A757 /* ChromeBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeBar.swift; sourceTree = "<group>"; };
+		C6C7BA2421E00A8D36BAD774 /* MALiveUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MALiveUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C6D97E63E358E2F44E262533 /* KaiwaLoopReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KaiwaLoopReducer.swift; sourceTree = "<group>"; };
 		C7E1C18D3F69A26AD957E4FC /* next-learning-action-completed.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "next-learning-action-completed.json"; sourceTree = "<group>"; };
 		C99E215606C2BFE2E7F4A9F9 /* RepairView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepairView.swift; sourceTree = "<group>"; };
@@ -512,6 +522,7 @@
 			children = (
 				78DB6FD310956248577B63A8 /* DynamicTypeContainmentUITests.swift */,
 				B1A8B097C3B811E19D71EB76 /* GuidedLiveAudioIntegrationUITests.swift */,
+				2B92B34F16A34E9AE502A55C /* GuidedProductionRealtimeUITests.swift */,
 				43F7704FA8468D5EE8A4C132 /* HeroAccessibilityUITests.swift */,
 				2306CE17CFFE2198C3F4DF91 /* KaiwaProductSmokeUITests.swift */,
 				5B45E5F0B0F4B256265EF31D /* KaiwaReplaySmokeUITests.swift */,
@@ -684,6 +695,7 @@
 				B9C0DB466F0F0EBBB26A2AE9 /* MA.app */,
 				12791F3A18A8DFEF656DC8BD /* MAAudioProbe.app */,
 				1301D3DEEF8FE1F45BEB6823 /* MAAudioProbeTests.xctest */,
+				C6C7BA2421E00A8D36BAD774 /* MALiveUITests.xctest */,
 				38B1567D46058BF236FBF972 /* MATests.xctest */,
 				38A26651B63A69422EC6A4F1 /* MAUITests.xctest */,
 			);
@@ -760,6 +772,24 @@
 			productReference = 12791F3A18A8DFEF656DC8BD /* MAAudioProbe.app */;
 			productType = "com.apple.product-type.application";
 		};
+		867CF74C7E9174319828A4F3 /* MALiveUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C5E1A568D65875484594C569 /* Build configuration list for PBXNativeTarget "MALiveUITests" */;
+			buildPhases = (
+				662C4FD9EEC6BA322739650D /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5C4E09DF559179C7BB46B5F8 /* PBXTargetDependency */,
+			);
+			name = MALiveUITests;
+			packageProductDependencies = (
+			);
+			productName = MALiveUITests;
+			productReference = C6C7BA2421E00A8D36BAD774 /* MALiveUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		DEBE68A9DFA4C57B74BEA1F2 /* MAAudioProbeTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A5950F18092B76E2481C5A19 /* Build configuration list for PBXNativeTarget "MAAudioProbeTests" */;
@@ -819,6 +849,11 @@
 						DevelopmentTeam = 38CFN3HCUJ;
 						ProvisioningStyle = Automatic;
 					};
+					867CF74C7E9174319828A4F3 = {
+						DevelopmentTeam = 38CFN3HCUJ;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 38B2F7EA319073995D5BFE00;
+					};
 					DEBE68A9DFA4C57B74BEA1F2 = {
 						DevelopmentTeam = 38CFN3HCUJ;
 						ProvisioningStyle = Automatic;
@@ -847,6 +882,7 @@
 				38B2F7EA319073995D5BFE00 /* MA */,
 				6718DFE0A603182466C64613 /* MAAudioProbe */,
 				DEBE68A9DFA4C57B74BEA1F2 /* MAAudioProbeTests */,
+				867CF74C7E9174319828A4F3 /* MALiveUITests */,
 				F2B4A0255BB8DD343C795FD9 /* MATests */,
 				245AC34ED1D8B51689A44DE7 /* MAUITests */,
 			);
@@ -899,6 +935,14 @@
 				FA2052C43808C68CB7439E1C /* RenderedAudioRingBufferTests.swift in Sources */,
 				B3BBD1AB832D87F6FD424DCE /* RenderedPlayoutLedgerTests.swift in Sources */,
 				502EB409366DB83DF65E4B88 /* SessionBrokerClientTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		662C4FD9EEC6BA322739650D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5DF8656224411C66859F502D /* GuidedProductionRealtimeUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1066,6 +1110,11 @@
 			target = 38B2F7EA319073995D5BFE00 /* MA */;
 			targetProxy = 151CE2FF3B65CA51374AC2E9 /* PBXContainerItemProxy */;
 		};
+		5C4E09DF559179C7BB46B5F8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 38B2F7EA319073995D5BFE00 /* MA */;
+			targetProxy = C4362DE8EAE769212A43C82F /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
@@ -1127,6 +1176,25 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
+		};
+		62ECAB73F1D90381BAB46524 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ia.ma.live-uitests";
+				PRODUCT_NAME = MALiveUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = MA;
+			};
+			name = Release;
 		};
 		6D63532BDB9D3795AD280DB6 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -1257,6 +1325,25 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		AE7ECAF45CF40617DE3E11B9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ia.ma.live-uitests";
+				PRODUCT_NAME = MALiveUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = MA;
 			};
 			name = Debug;
 		};
@@ -1467,6 +1554,15 @@
 			buildConfigurations = (
 				8A79E10EB5BC693FC7CD9090 /* Debug */,
 				C6B96C352F51062F34CDD455 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C5E1A568D65875484594C569 /* Build configuration list for PBXNativeTarget "MALiveUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AE7ECAF45CF40617DE3E11B9 /* Debug */,
+				62ECAB73F1D90381BAB46524 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

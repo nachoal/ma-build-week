@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import OSLog
 
 @MainActor
 @Observable
@@ -21,9 +22,26 @@ final class GuidedLessonFeature {
     @ObservationIgnored private var activeRequest: GuidedAttemptRequest?
     @ObservationIgnored private var activeCaptureRequest: CaptureRequest?
     @ObservationIgnored private var generation: UInt64 = 0
+    @ObservationIgnored private let diagnosticLogger = Logger(
+        subsystem: "com.ia.ma",
+        category: "GuidedRealtime"
+    )
 
     static func production() -> GuidedLessonFeature {
         #if DEBUG
+        if ProcessInfo.processInfo.environment["MA_UI_TEST_GUIDED_LIVE"] == "true" {
+            let credentials = PlannerInstallCredentialStore()
+            try? credentials.provisionFromProcessEnvironment()
+            return GuidedLessonFeature(
+                audio: GuidedLessonLiveUITestAudioController(),
+                realtime: DidacticRealtimeProvider(
+                    broker: GuidedRealtimeSessionBrokerClient(credentials: credentials)
+                ),
+                planner: GuidedLearningPlanner(
+                    remote: GuidedBrokerLearningPlanner(credentials: credentials)
+                )
+            )
+        }
         if ProcessInfo.processInfo.environment["MA_UI_TEST_GUIDED_FIXTURE"] == "true" {
             return GuidedLessonFeature(
                 audio: GuidedLessonUITestAudioController(),
@@ -197,6 +215,8 @@ final class GuidedLessonFeature {
         activeRequest = request
         activeCaptureRequest = capture
         state.spokenFeedbackUnavailable = false
+        state.spokenFeedbackPreparing = false
+        state.spokenFeedbackCompleted = false
         state.phase = .attempt(context: context, step: .requestingPermission)
         let operationGeneration = generation
 
@@ -282,14 +302,26 @@ final class GuidedLessonFeature {
                 startSpokenFeedback(for: result, generation: operationGeneration)
             } catch let error as GuidedRealtimeError {
                 guard !Task.isCancelled, generation == operationGeneration else { return }
+                diagnosticLogger.error(
+                    "review_failed code=\(error.diagnosticCode, privacy: .public)"
+                )
+                #if DEBUG
+                print("MA_REALTIME review_failed code=\(error.diagnosticCode)")
+                #endif
                 activeRequest = nil
                 activeCaptureRequest = nil
                 state.phase = .attempt(
                     context: context,
-                    step: .recoverableError(error == .noSpeech ? .noSpeech : .reviewUnavailable)
+                    step: .recoverableError(
+                        error == .noSpeech ? .noSpeech : .realtime(error)
+                    )
                 )
             } catch {
                 guard !Task.isCancelled, generation == operationGeneration else { return }
+                diagnosticLogger.error("review_failed code=unexpected")
+                #if DEBUG
+                print("MA_REALTIME review_failed code=unexpected")
+                #endif
                 activeRequest = nil
                 activeCaptureRequest = nil
                 state.phase = .attempt(
@@ -317,6 +349,8 @@ final class GuidedLessonFeature {
         spokenFeedbackTask = nil
         activeRequest = nil
         activeCaptureRequest = nil
+        state.spokenFeedbackPreparing = false
+        state.spokenFeedbackCompleted = false
         state.feedbackTransition = .retrying
         let operationGeneration = generation
         operationTask = Task { [weak self] in
@@ -338,6 +372,8 @@ final class GuidedLessonFeature {
         let pendingSpokenFeedback = spokenFeedbackTask
         pendingSpokenFeedback?.cancel()
         spokenFeedbackTask = nil
+        state.spokenFeedbackPreparing = false
+        state.spokenFeedbackCompleted = false
         state.feedbackTransition = .continuing
         let operationGeneration = generation
         operationTask = Task { [weak self] in
@@ -399,6 +435,15 @@ final class GuidedLessonFeature {
                       generation == operationGeneration,
                       state.phase == .complete,
                       state.learningReport?.id == report.id else { return }
+                if let plannerError = error as? GuidedBrokerLearningPlannerError {
+                    diagnosticLogger.error(
+                        "planner_failed code=\(plannerError.diagnosticCode, privacy: .public)"
+                    )
+                } else if error is GuidedLearningPlannerError {
+                    diagnosticLogger.error("planner_failed code=validation_failed")
+                } else {
+                    diagnosticLogger.error("planner_failed code=unknown")
+                }
                 state.plannerStep = .unavailable(fallback)
             }
         }
@@ -469,6 +514,8 @@ final class GuidedLessonFeature {
             activeCaptureRequest = nil
             if case .attempt(let context, let step) = state.phase {
                 if case .feedback = step {
+                    state.spokenFeedbackPreparing = false
+                    state.spokenFeedbackCompleted = false
                     state.spokenFeedbackUnavailable = true
                 } else {
                     state.phase = .attempt(
@@ -488,6 +535,8 @@ final class GuidedLessonFeature {
     ) {
         spokenFeedbackTask?.cancel()
         state.spokenFeedbackUnavailable = false
+        state.spokenFeedbackPreparing = true
+        state.spokenFeedbackCompleted = false
         spokenFeedbackTask = Task { [weak self] in
             guard let self else { return }
             do {
@@ -495,11 +544,18 @@ final class GuidedLessonFeature {
                 guard !Task.isCancelled,
                       generation == operationGeneration,
                       isShowingFeedback(for: result.request.id) else { return }
+                state.spokenFeedbackPreparing = false
                 try await audio.playRealtimePCM16(spoken.pcm16Data)
+                guard !Task.isCancelled,
+                      generation == operationGeneration,
+                      isShowingFeedback(for: result.request.id) else { return }
+                state.spokenFeedbackCompleted = true
             } catch {
                 guard !Task.isCancelled,
                       generation == operationGeneration,
                       isShowingFeedback(for: result.request.id) else { return }
+                state.spokenFeedbackPreparing = false
+                state.spokenFeedbackCompleted = false
                 state.spokenFeedbackUnavailable = true
             }
         }

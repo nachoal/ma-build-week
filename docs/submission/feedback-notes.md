@@ -59,6 +59,7 @@ Append exact evidence after each milestone.
 | Guided bilingual Realtime product | After the learner rejected the fixture-first flow, root replaced the shipping route with an English-default/Spanish-switchable lesson: explained target, one-tap bundled model, explicit bounded capture, enum-only transcript-grounded Realtime review, canonical bilingual feedback, retry/continue, a briefed captioned waiter turn, second capture/review, and completion without scores or self-rating. One `AudioGraphController` owns every product audio operation | `a9eb988` | Frozen combined simulator result passed 175/175 test cases (167 Swift + 8 UI) at `.build/test-results/MA-complete-freeze-20260714.xcresult`; this includes the English Apple permission prompt and real AVAudio playback/capture/stop integration test | code, service, and simulator complete; physical live review pending |
 | Guided aggregate planner and hardened product broker | Root added separate v2 aggregate-only guided planning, explicit opt-in, deterministic local fallback, cancellation/generation fencing, a fixed `gpt-5.6-sol` Responses contract, and an independently re-audited product Realtime mint/review policy. Authenticated quota is consumed before bounded body parsing; exact JSON media types and enum-only review arguments fail closed | `a9eb988` | Worker 30/30; security re-audit DEPLOY; live version `e45a3b92-217b-4830-8841-a50a7465a6da` passed health, invalid-media 400, exact-key mint, local policy-hash match, and bilingual guided-plan validation | complete for authorized private single-device demo; not public/TestFlight auth |
 | Current guided device/submission evidence | Root generated, signed, and installed the guided build, rewrote the submission story around the actual bilingual two-review product, and made the operator-only replay's not-live badge bilingual | `a9eb988` | `.build/device-evidence/20260714T160140Z-product`: build/install succeeded; launch was denied because the iPhone re-locked. The frozen simulator evidence is `.build/test-results/MA-complete-freeze-20260714.xcresult` (175/175), `.build/test-results/MAAudioProbe-freeze-20260714.xcresult` (49/49), and `.build/evidence/MA-complete-freeze-attachments-20260714/` | simulator/service complete; unlocked physical runtime, human/Japanese review, video, archive refresh, `/feedback`, and submission remain gated |
+| Production-realistic simulator and policy closure | Root added a DEBUG-only harness that substitutes only deterministic bundled microphone input while retaining the production broker, `gpt-realtime-2.1` WebSocket, effective-policy verifier, structured two-turn review, spoken feedback, waiter audio, shipping playout, and `gpt-5.6-sol` planner. Root fixed cross-runtime hash normalization, pinned `reasoning.effort=low` in the broker-owned policy, and rejects client attempts to weaken it | pending verified candidate commit | Live smoke 2/2; repeated bilingual journey 10/10 (five English, five Spanish) at `.build/test-results/MA-live-low-reasoning-bilingual-stress5.xcresult`; real simulator permission/capture 1/1; standard no-secret suite 206/206 executions; Worker 30/30 | simulator/code/service complete; physical microphone/route/human quality remain gated |
 
 ## Delegated tasks and sessions
 
@@ -93,6 +94,10 @@ audited. Core implementation remains in the root task.
 | `/root/final_static_hygiene_audit` (coordination API exposed no opaque ID) | Read-only final claims, evidence-path, secret, and working-tree hygiene audit | No files; reconciled 175/49/30 evidence paths, ignored artifacts, secrets, and claims; returned PASS | no |
 | `019f61a4-a9d0-7cc1-873b-28b8070cfb6b` (`/root/release_script_audit`) | Read-only archive and release-command audit | No files; clean-tree, signature, privacy-manifest, export-compliance, and checksum procedure only | no |
 | `019f61fa-3f45-7ce1-87d1-f3b0dae1de5e` (`/root/realtime_contract_audit`) | Read-only physical review-failure contract audit | No files; independently checked the live event sequence, audio-session/text-response validity, token accounting, minimal fix, and regression matrix | no |
+| `019f6215-5d61-7981-a68e-716caa30661f` (`/root/policy_normalization_audit`) | Read-only cross-runtime effective-policy audit | No files; isolated the JS/Swift `0.92` canonicalization mismatch and specified the exact fail-closed hash/mutation coverage | no |
+| `019f6245-5309-7aa1-9038-8eea09eb02eb` (`/root/realtime_reasoning_policy_audit`) | Read-only current OpenAI Realtime reasoning-policy audit | No files; verified official session/response placement, recommended low voice-agent effort, override risk, and required deployment/live verification | no |
+| `019f6260-11a2-7650-b1ee-7b4baddc9134` (`/root/simulator_evidence_audit`) | Read-only result-bundle and live-journey evidence audit | No files; independently reconciled 2/2 smoke, 10/10 bilingual stress, 1/1 audio integration, 205 parameterized deterministic executions, assertions, warnings, and physical-evidence qualifications | no |
+| `/root/candidate_hygiene_audit` (coordination API exposed no opaque ID) | Read-only current candidate secret, logging, artifact, signing, and release-tool audit | No files; found provider-controlled public logging and compiled-binary scan gaps, both corrected by root; otherwise clean | no |
 
 ## Codex implementation journal
 
@@ -722,6 +727,104 @@ For each material decision, capture:
   valid inside the audio session and that the live-observed token ceiling is the
   failure cause. Root performed the protocol reproduction, code/test/script
   changes, credential rotation, simulator runs, and device work.
+
+### 2026-07-14 — Production-realistic simulator gate after repeated device failure
+
+- The token-cap correction was necessary but did not close the physical failure:
+  the next exact device build still showed “I could not review this attempt.”
+  Root stopped device handoffs and acknowledged that the prior 175/175 suite was
+  fixture-backed and therefore could not validate the production broker/provider
+  path. The user is not being used as the QA loop.
+- Root added a DEBUG-only realistic simulator harness that substitutes only a
+  deterministic bundled microphone waveform while retaining the shipping audio
+  conversion, private broker, `gpt-realtime-2.1` WebSocket, response parser,
+  structured review validation, response audio, full two-attempt lesson, and
+  bounded `gpt-5.6-sol` planner. Its UI test treats any recoverable review error
+  as a hard failure and uses accessibility-identified, condition-based waits.
+- The first production-realistic runs exposed two defects hidden by fixtures.
+  An unsigned simulator app could not read the Keychain credential
+  (`errSecMissingEntitlement`); the harness now uses a signed build and waits for
+  a value-free credential-readiness sentinel. With that corrected, the private
+  broker minted successfully and the real WebSocket received
+  `session.created`, but the app failed its configuration check before review.
+- A redacted live comparison proved that OpenAI adds six harmless top-level
+  effective-session fields, all already excluded by the app's projection. It
+  also proved the broker's JS stable JSON hash and Swift Foundation's sorted JSON
+  hash differ for the same requested policy. This cross-runtime canonicalization
+  defect—not microphone capture—is the current reproduced blocker. No prompt,
+  transcript, credential, or raw provider payload was retained or printed.
+- Independent read-only audit session
+  `019f6215-5d61-7981-a68e-716caa30661f` is reviewing the policy normalization
+  boundary and regression coverage. Root owns the diagnostic, verifier fix,
+  production-live simulator path, and all subsequent implementation and device
+  decisions.
+
+### 2026-07-14 — Low-reasoning policy correction and simulator closure
+
+- Root fixed the cross-runtime policy defect by requiring the exact decimal
+  output speed, projecting a canonical `0.92`, requiring explicit null tracing,
+  pinning a fixed Worker-derived policy hash, and adding 26 fail-closed policy
+  mutations. A live client-secret/session diagnostic then matched the local
+  hash; the only six provider-added fields were the already-characterized
+  effective-session metadata.
+- Increasing response ceilings alone was not accepted as a fix. The interrupted
+  cap-only stress result at
+  `.build/test-results/MA-live-production-bilingual-spoken-512-stress5.xcresult`
+  executed nine journeys: five passed and four failed, with one spoken-feedback
+  and three waiter responses ending incomplete at `max_output_tokens`; the
+  tenth did not complete. Root stopped that repeated red run when Ignacio
+  reported that the app was looping without useful change.
+- Current OpenAI [gpt-realtime-2.1 model documentation](https://developers.openai.com/api/docs/models/gpt-realtime-2.1)
+  and [Realtime prompting guidance](https://developers.openai.com/api/docs/guides/realtime-models-prompting#set-reasoning-effort),
+  plus independent read-only session
+  `019f6245-5309-7aa1-9038-8eea09eb02eb` established that
+  `gpt-realtime-2.1` is a reasoning model, higher effort consumes additional
+  latency/output tokens, and low effort is the recommended production starting
+  point for most voice agents. Root added `reasoning.effort=low` to the
+  broker-owned session, included it in the exact Swift verifier/hash, rejected
+  `session.update`, and rejects any per-response reasoning value other than the
+  same exact low policy.
+- Worker 30/30 and the focused 16-test Swift policy/transport suite passed. Root
+  deployed private Worker version `62c634a7-5a10-4b7a-b755-96b5abe96d96` and
+  verified the live effective policy before resuming a complete lesson.
+- The corrected production-realistic smoke passed 2/2. The deliberate repeated
+  gate then passed 10/10 complete journeys—five English and five Spanish—at
+  `.build/test-results/MA-live-low-reasoning-bilingual-stress5.xcresult`. Each
+  repetition required two valid reviews, two completed spoken explanations, a
+  completed waiter turn, one-tap bundled model playback, and a non-fallback
+  `gpt-5.6-sol` plan. The test substitutes only deterministic bundled learner
+  input; it does not stand in for physical microphone, route, or human-quality
+  evidence.
+- The separate shipping-audio integration passed 1/1 at
+  `.build/test-results/MA-live-audio-integration.xcresult`: microphone privacy
+  was reset, Apple's prompt appeared, Allow was tapped, one-tap playback
+  unlocked recording, and real `AVAudioEngine` capture/stop exited without a
+  hang. After isolating the credentialed journey in the opt-in `MALive` scheme,
+  the exact documented no-secret `MA` command passed 206/206 executions with
+  zero skips at `.build/test-results/MA-standard-no-secret.xcresult` (177 test
+  definitions including parameterized cases) and contained no `MALiveUITests`
+  execution.
+- Final pre-commit hardening passed Worker 30/30 at
+  `.build/test-results/MAWorker-low-reasoning-20260714.tap`, `git diff --check`,
+  current-set plus all-reachable-history secret scanning, the current
+  characterization suite at 51/51 executions (49 test definitions), and exact
+  XcodeGen reproducibility at project hash
+  `457c754c2e16eddc36d2694f687b02e0af151a253788748812c57cf309dd8ae8`.
+  No phone install or stronger physical claim was made from these simulator
+  results. The scanner now also has a redacted compiled-executable mode, and
+  the release archive must pass it before checksums are accepted.
+- Read-only `/root/candidate_hygiene_audit` caught two release-hygiene gaps.
+  Root stopped logging the raw provider-controlled `status_details.reason` and
+  now emits only fixed local codes (`output_limit`, `missing`, or `other`). Root
+  also wired the archived Mach-O executable through the scanner's new binary
+  mode. A negative fixture proved the mode fails without printing the matched
+  value, while the current compiled simulator app passed.
+- Root exported all ten retained live completion screenshots to
+  `.build/evidence/MA-live-low-reasoning-stress-attachments/` and visually
+  inspected English and Spanish repetitions at original resolution. Both
+  interfaces show the correct language switch, two reviewed attempts, the
+  model-backed next-practice card, and the restart control without clipping,
+  missing text, stale loading state, or fallback label.
 
 ## Final feedback preparation
 

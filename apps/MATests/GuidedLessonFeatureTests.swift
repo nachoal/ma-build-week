@@ -53,6 +53,9 @@ struct GuidedLessonFeatureTests {
         #expect(first.review.positiveES == "La transcripción de MA captó parte de la frase.")
         #expect(first.review.retryFocusES == "Di hi-to-ri de-su una vez, a un ritmo parejo.")
         #expect(await eventually { audio.realtimePlaybackCount == 1 })
+        #expect(await eventually { feature.state.spokenFeedbackCompleted })
+        #expect(!feature.state.spokenFeedbackPreparing)
+        #expect(!feature.state.spokenFeedbackUnavailable)
 
         feature.send(.continueWithFeedback)
         #expect(await eventually { feature.state.phase == .situationBrief })
@@ -124,7 +127,7 @@ struct GuidedLessonFeatureTests {
         #expect(await eventually {
             feature.state.phase == .attempt(
                 context: .taughtPhrase,
-                step: .recoverableError(.reviewUnavailable)
+                step: .recoverableError(.realtime(.connectionFailed))
             )
         })
         #expect(feature.state.reviewedAttempts.isEmpty)
@@ -289,6 +292,8 @@ struct GuidedLessonFeatureTests {
             else { false }
         })
         #expect(await eventually { await realtime.hasPendingSpokenFeedback() })
+        #expect(feature.state.spokenFeedbackPreparing)
+        #expect(!feature.state.spokenFeedbackCompleted)
 
         feature.send(.continueWithFeedback)
         #expect(await eventually { feature.state.phase == .situationBrief })

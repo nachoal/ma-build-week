@@ -1,6 +1,10 @@
 import Foundation
 
 enum GuidedRealtimeClientCommand {
+    static let reviewMaxOutputTokens = 512
+    static let spokenFeedbackMaxOutputTokens = 512
+    static let restaurantTurnMaxOutputTokens = 192
+
     static func appendInputAudio(_ data: Data, eventID: String) throws -> Data {
         guard !data.isEmpty,
               data.count <= 48_000,
@@ -50,14 +54,13 @@ enum GuidedRealtimeClientCommand {
                     "name": "report_attempt",
                 ],
                 "output_modalities": ["text"],
-                // The constrained report_attempt payload can exceed 128
-                // Realtime tokens even though its JSON is small. At 128 the
-                // provider can emit function_call_arguments.done and still
-                // finish response.done as incomplete/max_output_tokens, which
-                // must fail closed. Keep this bounded but large enough for the
-                // complete four-field tool call observed against the live
-                // product session policy.
-                "max_output_tokens": 256,
+                // Reasoning plus the constrained report_attempt payload varies
+                // across otherwise-identical live runs. Both 128 and 256 have
+                // produced a finished function call followed by
+                // incomplete/max_output_tokens. The fixed session ceiling is
+                // 512, so use that same bounded ceiling and still require a
+                // completed response.done before accepting the tool call.
+                "max_output_tokens": reviewMaxOutputTokens,
                 "metadata": [
                     "purpose": "attempt_review",
                     "attempt_id": request.id.uuidString.lowercased(),
@@ -113,7 +116,12 @@ enum GuidedRealtimeClientCommand {
                 ].joined(separator: " "),
                 "tool_choice": "none",
                 "output_modalities": ["audio"],
-                "max_output_tokens": 160,
+                // The fixed two-sentence explanations failed 10/10 at 160
+                // live output tokens. A 384-token bound then passed a direct
+                // 10-run probe but still clipped one of six complete,
+                // same-session lessons. Use the fixed 512-token session
+                // ceiling and continue to require completed response.done.
+                "max_output_tokens": spokenFeedbackMaxOutputTokens,
                 "metadata": ["purpose": "spoken_attempt_feedback"],
             ],
         ])
@@ -131,7 +139,12 @@ enum GuidedRealtimeClientCommand {
                 ].joined(separator: " "),
                 "tool_choice": "none",
                 "output_modalities": ["audio"],
-                "max_output_tokens": 64,
+                // Five direct generations used 46...83 output tokens, but the
+                // complete same-session stress path still clipped three waiter
+                // turns at 96 while reasoning effort was implicit. The broker
+                // now pins low reasoning; 192 retains a strict bound with
+                // measured headroom for the one exact question.
+                "max_output_tokens": restaurantTurnMaxOutputTokens,
                 "metadata": ["purpose": "restaurant_waiter_turn"],
             ],
         ])

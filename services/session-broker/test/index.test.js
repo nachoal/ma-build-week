@@ -332,7 +332,11 @@ describe("MA session broker", () => {
       "expires_at",
       "value",
     ]);
-    assert.equal(result.expected_configuration_hash.length, 64);
+    assert.equal(
+      result.expected_configuration_hash,
+      "903205f1f3b40b8fac4b48c9f5ea699c524fae8a27b6aec99abc46c7cc570f8e",
+      "The Swift verifier and Worker must share the exact cross-runtime policy hash",
+    );
     assert.equal(observedRequest.url, "https://api.openai.com/v1/realtime/client_secrets");
     assert.match(
       observedRequest.options.headers["OpenAI-Safety-Identifier"],
@@ -341,6 +345,7 @@ describe("MA session broker", () => {
 
     const upstreamBody = JSON.parse(observedRequest.options.body);
     assert.deepEqual(upstreamBody.session, didacticRealtimeSessionPolicy);
+    assert.deepEqual(upstreamBody.session.reasoning, { effort: "low" });
     assert.equal(upstreamBody.session.audio.input.turn_detection, null);
     assert.equal(
       upstreamBody.session.audio.input.transcription.model,

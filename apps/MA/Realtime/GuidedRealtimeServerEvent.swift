@@ -31,7 +31,12 @@ enum GuidedRealtimeServerEvent: Sendable, Equatable {
     )
     case functionCall(GuidedRealtimeFunctionCall)
     case responseStarted(eventID: String?, responseID: String)
-    case responseFinished(eventID: String?, responseID: String, status: String)
+    case responseFinished(
+        eventID: String?,
+        responseID: String,
+        status: String,
+        incompleteReason: String?
+    )
     case providerError(eventID: String?, code: String?)
     case transportFailed
     case ignored(type: String, eventID: String?)
@@ -45,7 +50,7 @@ enum GuidedRealtimeServerEvent: Sendable, Equatable {
              .outputAudioFinished(let eventID, _, _),
              .outputTranscript(let eventID, _, _, _),
              .responseStarted(let eventID, _),
-             .responseFinished(let eventID, _, _),
+             .responseFinished(let eventID, _, _, _),
              .providerError(let eventID, _),
              .ignored(_, let eventID):
             eventID
@@ -178,6 +183,7 @@ enum GuidedRealtimeServerEventParser {
 
         case "response.done":
             let response = event["response"] as? [String: Any]
+            let statusDetails = response?["status_details"] as? [String: Any]
             guard let responseID = boundedIdentifier(response?["id"], maximum: 256),
                   let status = boundedIdentifier(response?["status"], maximum: 32) else {
                 throw GuidedRealtimeError.providerRejected
@@ -185,7 +191,11 @@ enum GuidedRealtimeServerEventParser {
             return .responseFinished(
                 eventID: eventID,
                 responseID: responseID,
-                status: status
+                status: status,
+                incompleteReason: optionalIdentifier(
+                    statusDetails?["reason"],
+                    maximum: 64
+                )
             )
 
         case "error":

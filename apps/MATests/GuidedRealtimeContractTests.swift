@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 import Testing
 @testable import MA
@@ -160,6 +159,38 @@ struct GuidedRealtimeReviewContractTests {
 
 @Suite("Guided Realtime wire protocol")
 struct GuidedRealtimeWireProtocolTests {
+    private let workerPolicyHash =
+        "903205f1f3b40b8fac4b48c9f5ea699c524fae8a27b6aec99abc46c7cc570f8e"
+
+    private enum PolicyMutation: String, CaseIterable, Sendable {
+        case sessionType
+        case model
+        case reasoningMissing
+        case reasoningEffort
+        case reasoningExtraKey
+        case modalities
+        case maxTokens
+        case instructions
+        case toolChoice
+        case tracingMissing
+        case tracingNonNull
+        case toolType
+        case toolName
+        case toolDescription
+        case toolSchema
+        case inputFormat
+        case inputRate
+        case noiseReduction
+        case transcriptionModel
+        case transcriptionLanguage
+        case transcriptionPrompt
+        case turnDetection
+        case outputFormat
+        case outputRate
+        case voice
+        case speed
+    }
+
     @Test("The learner turn is clear, append, commit, then one forced review tool")
     func outboundTurnOrderingAndShape() throws {
         let request = GuidedAttemptRequest(
@@ -191,11 +222,13 @@ struct GuidedRealtimeWireProtocolTests {
         #expect(toolChoice["type"] as? String == "function")
         #expect(toolChoice["name"] as? String == "report_attempt")
         #expect(response["output_modalities"] as? [String] == ["text"])
-        // Live gpt-realtime-2.1 evidence showed that 128 can complete the
-        // function arguments yet leave response.done incomplete. The client
-        // must preserve the verified 256-token bound so the validated review
-        // is accompanied by a completed response.
-        #expect(response["max_output_tokens"] as? Int == 256)
+        // Live stress evidence showed that both 128 and 256 can complete the
+        // function arguments yet leave response.done incomplete. The review
+        // uses the fixed session ceiling and still requires completed status.
+        #expect(
+            response["max_output_tokens"] as? Int
+                == GuidedRealtimeClientCommand.reviewMaxOutputTokens
+        )
         #expect((response["instructions"] as? String)?.contains("score") == true)
     }
 
@@ -249,6 +282,8 @@ struct GuidedRealtimeWireProtocolTests {
         let spanishInstructions = try #require(
             (spanish["response"] as? [String: Any])?["instructions"] as? String
         )
+        let englishResponse = try #require(english["response"] as? [String: Any])
+        let spanishResponse = try #require(spanish["response"] as? [String: Any])
         #expect(englishInstructions.contains("Speak in English"))
         #expect(englishInstructions.contains("MA’s transcription caught part"))
         #expect(!englishInstructions.contains("La transcripción"))
@@ -257,6 +292,57 @@ struct GuidedRealtimeWireProtocolTests {
         #expect(!spanishInstructions.contains("MA’s transcription"))
         #expect(!englishInstructions.contains("一人です"))
         #expect(!spanishInstructions.contains("一人です"))
+        #expect(
+            englishResponse["max_output_tokens"] as? Int
+                == GuidedRealtimeClientCommand.spokenFeedbackMaxOutputTokens
+        )
+        #expect(GuidedRealtimeClientCommand.spokenFeedbackMaxOutputTokens == 512)
+        #expect(
+            spanishResponse["max_output_tokens"] as? Int
+                == GuidedRealtimeClientCommand.spokenFeedbackMaxOutputTokens
+        )
+
+        let waiter = try object(
+            GuidedRealtimeClientCommand.createRestaurantTurn(eventID: "event-waiter")
+        )
+        let waiterResponse = try #require(waiter["response"] as? [String: Any])
+        #expect(
+            waiterResponse["max_output_tokens"] as? Int
+                == GuidedRealtimeClientCommand.restaurantTurnMaxOutputTokens
+        )
+        #expect(GuidedRealtimeClientCommand.restaurantTurnMaxOutputTokens == 192)
+    }
+
+    @Test("Transport cannot weaken the broker-owned reasoning policy")
+    func outboundReasoningPolicy() throws {
+        func encoded(_ object: [String: Any]) throws -> Data {
+            try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+        }
+
+        try GuidedRealtimeOutboundPolicy.validate(encoded([
+            "type": "response.create",
+            "response": ["reasoning": ["effort": "low"]],
+        ]))
+        #expect(throws: GuidedRealtimeError.providerRejected) {
+            try GuidedRealtimeOutboundPolicy.validate(encoded([
+                "type": "session.update",
+                "session": ["reasoning": ["effort": "minimal"]],
+            ]))
+        }
+        #expect(throws: GuidedRealtimeError.providerRejected) {
+            try GuidedRealtimeOutboundPolicy.validate(encoded([
+                "type": "response.create",
+                "response": ["reasoning": ["effort": "medium"]],
+            ]))
+        }
+        #expect(throws: GuidedRealtimeError.providerRejected) {
+            try GuidedRealtimeOutboundPolicy.validate(encoded([
+                "type": "response.create",
+                "response": [
+                    "reasoning": ["effort": "low", "summary": "auto"],
+                ],
+            ]))
+        }
     }
 
     @Test("Bounded server events parse without treating response done as success")
@@ -298,13 +384,18 @@ struct GuidedRealtimeWireProtocolTests {
         {
           "type":"response.done",
           "event_id":"evt-done",
-          "response":{"id":"resp-review","status":"incomplete"}
+          "response":{
+            "id":"resp-review",
+            "status":"incomplete",
+            "status_details":{"reason":"max_output_tokens"}
+          }
         }
         """#.utf8))
         #expect(incomplete == .responseFinished(
             eventID: "evt-done",
             responseID: "resp-review",
-            status: "incomplete"
+            status: "incomplete",
+            incompleteReason: "max_output_tokens"
         ))
     }
 
@@ -352,13 +443,14 @@ struct GuidedRealtimeWireProtocolTests {
     @Test("The live product policy requires explicit push-to-talk and one review tool")
     func verifiesDidacticSessionPolicy() throws {
         var session = policySession()
-        let canonical = try JSONSerialization.data(
-            withJSONObject: session,
-            options: [.sortedKeys, .withoutEscapingSlashes]
-        )
-        let expectedHash = SHA256.hash(data: canonical)
-            .map { String(format: "%02x", $0) }
-            .joined()
+        // Fixed from the Worker's ECMAScript stableStringify contract. A
+        // Swift-self-derived hash would miss cross-runtime number formatting.
+        session["id"] = "provider-added-session-id"
+        session["object"] = "realtime.session"
+        session["expires_at"] = 1_800_000_000
+        session["include"] = NSNull()
+        session["prompt"] = NSNull()
+        session["truncation"] = "auto"
         let event = try JSONSerialization.data(withJSONObject: [
             "type": "session.created",
             "session": session,
@@ -366,14 +458,16 @@ struct GuidedRealtimeWireProtocolTests {
 
         try GuidedRealtimePolicyVerifier.verifySessionCreated(
             event,
-            expectedHash: expectedHash
+            expectedHash: workerPolicyHash
         )
+    }
 
-        var audio = session["audio"] as! [String: Any]
-        var input = audio["input"] as! [String: Any]
-        input["turn_detection"] = ["type": "server_vad"]
-        audio["input"] = input
-        session["audio"] = audio
+    @Test(
+        "Every security-relevant live policy mutation fails closed",
+        arguments: PolicyMutation.allCases
+    )
+    private func rejectsPolicyMutation(_ mutation: PolicyMutation) throws {
+        let session = mutatePolicySession(mutation)
         let mismatched = try JSONSerialization.data(withJSONObject: [
             "type": "session.created",
             "session": session,
@@ -381,9 +475,114 @@ struct GuidedRealtimeWireProtocolTests {
         #expect(throws: GuidedRealtimeError.configurationMismatch) {
             try GuidedRealtimePolicyVerifier.verifySessionCreated(
                 mismatched,
-                expectedHash: expectedHash
+                expectedHash: workerPolicyHash
             )
         }
+    }
+
+    private func mutatePolicySession(
+        _ mutation: PolicyMutation
+    ) -> [String: Any] {
+        var session = policySession()
+        switch mutation {
+        case .sessionType:
+            session["type"] = "conversation"
+        case .model:
+            session["model"] = "different-model"
+        case .reasoningMissing:
+            session.removeValue(forKey: "reasoning")
+        case .reasoningEffort:
+            session["reasoning"] = ["effort": "medium"]
+        case .reasoningExtraKey:
+            session["reasoning"] = ["effort": "low", "summary": "auto"]
+        case .modalities:
+            session["output_modalities"] = ["text"]
+        case .maxTokens:
+            session["max_output_tokens"] = 511
+        case .instructions:
+            session["instructions"] = "Changed instructions"
+        case .toolChoice:
+            session["tool_choice"] = "auto"
+        case .tracingMissing:
+            session.removeValue(forKey: "tracing")
+        case .tracingNonNull:
+            session["tracing"] = "auto"
+        case .toolType, .toolName, .toolDescription, .toolSchema:
+            var tools = session["tools"] as! [[String: Any]]
+            var tool = tools[0]
+            switch mutation {
+            case .toolType:
+                tool["type"] = "custom"
+            case .toolName:
+                tool["name"] = "other_tool"
+            case .toolDescription:
+                tool["description"] = "Changed tool description"
+            case .toolSchema:
+                var schema = tool["parameters"] as! [String: Any]
+                schema["additionalProperties"] = true
+                tool["parameters"] = schema
+            default:
+                break
+            }
+            tools[0] = tool
+            session["tools"] = tools
+        case .inputFormat, .inputRate, .noiseReduction,
+             .transcriptionModel, .transcriptionLanguage,
+             .transcriptionPrompt, .turnDetection:
+            var audio = session["audio"] as! [String: Any]
+            var input = audio["input"] as! [String: Any]
+            switch mutation {
+            case .inputFormat:
+                var format = input["format"] as! [String: Any]
+                format["type"] = "audio/pcmu"
+                input["format"] = format
+            case .inputRate:
+                var format = input["format"] as! [String: Any]
+                format["rate"] = 16_000
+                input["format"] = format
+            case .noiseReduction:
+                input["noise_reduction"] = ["type": "far_field"]
+            case .transcriptionModel, .transcriptionLanguage,
+                 .transcriptionPrompt:
+                var transcription = input["transcription"] as! [String: Any]
+                if mutation == .transcriptionModel {
+                    transcription["model"] = "different-transcriber"
+                } else if mutation == .transcriptionLanguage {
+                    transcription["language"] = "en"
+                } else {
+                    transcription["prompt"] = "Changed prompt"
+                }
+                input["transcription"] = transcription
+            case .turnDetection:
+                input["turn_detection"] = ["type": "server_vad"]
+            default:
+                break
+            }
+            audio["input"] = input
+            session["audio"] = audio
+        case .outputFormat, .outputRate, .voice, .speed:
+            var audio = session["audio"] as! [String: Any]
+            var output = audio["output"] as! [String: Any]
+            switch mutation {
+            case .outputFormat:
+                var format = output["format"] as! [String: Any]
+                format["type"] = "audio/pcmu"
+                output["format"] = format
+            case .outputRate:
+                var format = output["format"] as! [String: Any]
+                format["rate"] = 16_000
+                output["format"] = format
+            case .voice:
+                output["voice"] = "different-voice"
+            case .speed:
+                output["speed"] = 0.920_001
+            default:
+                break
+            }
+            audio["output"] = output
+            session["audio"] = audio
+        }
+        return session
     }
 
     private func object(_ data: Data) throws -> [String: Any] {
@@ -448,6 +647,7 @@ struct GuidedRealtimeWireProtocolTests {
         return [
             "type": "realtime",
             "model": "gpt-realtime-2.1",
+            "reasoning": ["effort": "low"],
             "output_modalities": ["audio"],
             "max_output_tokens": 512,
             "instructions": instructions,

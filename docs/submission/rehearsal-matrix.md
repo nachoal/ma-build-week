@@ -10,15 +10,21 @@ product.
 
 | Path | Expected result | Current evidence | Status |
 |---|---|---|---|
-| Guided state machine | Model gate → explicit attempt → review → briefed waiter → explicit attempt → review → completion | `.build/test-results/MA-review-fix-full-20260714.xcresult`: 175/175 test cases (167 Swift + 8 UI) after the live review-cap correction | PASS (simulator/code) |
-| English/Spanish switch | English fresh default; toggle preserves route, phase, transcript, and feedback semantics | Copy, state, and UI tests | PASS (simulator/code) |
-| Real simulator audio | One model tap completes; English permission disclosure; AVAudio capture/stop exits cleanly | `MA-review-fix-full-20260714.xcresult`: all 8 UI tests, including the real-audio integration test | PASS (simulator only) |
-| Realtime review contract | Enum-only function, ASR grounding, canonical bilingual copy, no provider prose | Focused 14/14 simulator suites plus redacted live transaction `.build/test-results/MA-live-review-fix-20260714.log`; 128-token physical branch failed incomplete, 256 completed | PASS (code/service); corrected iPhone rerun pending |
-| Guided planner | Local result first; explicit aggregate-only GPT-5.6 request; stale/double-tap fenced | Swift + live Worker verification | PASS (code/service) |
-| Worker contract suite | Fixed Realtime/planner policies, bounded schemas, auth/rate limits, privacy guards | `.build/test-results/MAWorker-freeze-20260714.tap`: 30/30 | PASS (service) |
+| Guided state machine | Model gate → explicit attempt → review → briefed waiter → explicit attempt → review → completion | `.build/test-results/MA-standard-no-secret.xcresult`: 206/206 executions, 0 skipped (177 test definitions, including parameterized cases); the isolated private `MALive` target was absent | PASS (simulator/code) |
+| Production-realistic guided route | Complete broker → `gpt-realtime-2.1` → validator → spoken feedback → waiter → second review → `gpt-5.6-sol` planner journey; only microphone input is deterministic | `.build/test-results/MA-live-low-reasoning-bilingual-stress5.xcresult`: 10/10 complete repetitions, five English and five Spanish; no review, spoken-audio, waiter, or planner fallback accepted by the UI assertions | PASS (simulator/service); physical capture rerun pending |
+| English/Spanish switch | English fresh default; toggle preserves route, phase, transcript, and feedback semantics | Five English plus five Spanish production-realistic repetitions, plus copy/state/UI regressions in the 206-execution suite | PASS (simulator/code/service) |
+| Real simulator audio | One model tap completes; English permission disclosure; AVAudio capture/stop exits cleanly | `.build/test-results/MA-live-audio-integration.xcresult`: 1/1; microphone privacy reset, Apple prompt observed, Allow tapped, capture stop exited in 13.9 seconds | PASS (simulator only) |
+| Realtime review contract | Enum-only function, ASR grounding, canonical bilingual copy, no provider prose; broker pins `reasoning.effort=low` and the client rejects session/response policy weakening | `.build/test-results/MA-low-reasoning-focused.xcresult`: 16/16 focused tests with 26 fail-closed policy mutations; live smoke 2/2 and stress 10/10 | PASS (code/service/simulator); corrected iPhone rerun pending |
+| Guided planner | Local result first; explicit aggregate-only GPT-5.6 request; stale/double-tap fenced | All 10 production-realistic repetitions required the model plan and failed if the safe local fallback appeared | PASS (code/service/simulator) |
+| Worker contract suite | Fixed low-reasoning Realtime/planner policies, bounded schemas, auth/rate limits, privacy guards | `.build/test-results/MAWorker-low-reasoning-20260714.tap`: 30/30; private deployment version `62c634a7-5a10-4b7a-b755-96b5abe96d96` | PASS (service) |
 | Labeled historical replay | No microphone, audio, network, learner, or planner side effect | Replay unit + UI test | PASS (simulator/code) |
 | Privacy manifest and export compliance | No tracking; declared Realtime audio/aggregate use; CA92.1; non-exempt encryption explicitly `NO` | `plutil`, unit tests, generated Info settings; archive recheck pending | PASS before final archive refresh |
-| Secret scan | Current set, staged inputs, and reachable history | `scripts/scan-secrets.sh` after the 175/175 freeze | PASS on current frozen tree; rerun after commit |
+| Secret scan | Current set, staged inputs, reachable history, and compiled executable strings | `scripts/scan-secrets.sh` after the 206/206, 10/10, and 1/1 simulator gates | PASS on current candidate; rerun against final archive after commit |
+
+The production-realistic repetitions decode the bundled `hitori-desu.m4a`
+through the shipping 24 kHz PCM16 capture converter so that identical learner
+input can be repeated. They do not prove the physical microphone, device route,
+or human Japanese quality. Those remain explicit rows in the iPhone matrix.
 
 ## Physical iPhone matrix
 

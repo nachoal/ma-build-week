@@ -14,7 +14,9 @@ fixture replay. Scripts must discover devices dynamically.
   product token is read from macOS Keychain, never printed or written to a
   file/log, and persists only in this-device-only iOS Keychain until deletion.
 - `scan-secrets.sh` scans the current tracked/untracked source set and every
-  reachable Git commit, redacting any candidate value and failing closed.
+  reachable Git commit, redacting any candidate value and failing closed. Its
+  `--binary PATH` mode also scans printable strings in a compiled executable
+  without emitting a matched value.
 - `archive-submission.sh` refuses tracked or untracked drift, constrains output
   and optional inputs to ignored repository-local roots, reruns the secret scan
   after staging, creates and verifies the signed Release archive and privacy

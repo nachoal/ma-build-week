@@ -2,6 +2,16 @@ import CryptoKit
 import Foundation
 
 enum GuidedRealtimePolicyVerifier {
+    /// Foundation preserves the provider's JSON number as a binary `Double`
+    /// and serializes 0.92 as 0.92000000000000004. The Worker uses
+    /// ECMAScript JSON number formatting and hashes the same value as 0.92.
+    /// Validate the effective value exactly, then project this decimal value so
+    /// both runtimes hash the same policy bytes.
+    private static let canonicalOutputSpeed = NSDecimalNumber(
+        string: "0.92",
+        locale: Locale(identifier: "en_US_POSIX")
+    )
+
     static func verifySessionCreated(
         _ eventData: Data,
         expectedHash: String
@@ -36,6 +46,9 @@ enum GuidedRealtimePolicyVerifier {
     ) -> [String: Any]? {
         guard session["type"] as? String == "realtime",
               session["model"] as? String == "gpt-realtime-2.1",
+              let reasoning = session["reasoning"] as? [String: Any],
+              Set(reasoning.keys) == Set(["effort"]),
+              reasoning["effort"] as? String == "low",
               let modalities = session["output_modalities"] as? [String],
               modalities == ["audio"],
               let maxTokens = session["max_output_tokens"] as? NSNumber,
@@ -46,7 +59,8 @@ enum GuidedRealtimePolicyVerifier {
               tools.count == 1,
               tools[0]["name"] as? String == "report_attempt",
               session["tool_choice"] as? String == "none",
-              session["tracing"] == nil || session["tracing"] is NSNull,
+              session.keys.contains("tracing"),
+              session["tracing"] is NSNull,
               let audio = session["audio"] as? [String: Any],
               let input = audio["input"] as? [String: Any],
               let output = audio["output"] as? [String: Any],
@@ -65,13 +79,14 @@ enum GuidedRealtimePolicyVerifier {
               (outputFormat["rate"] as? NSNumber)?.intValue == 24_000,
               output["voice"] as? String == "marin",
               let speed = output["speed"] as? NSNumber,
-              abs(speed.doubleValue - 0.92) < 0.000_001 else {
+              speed.decimalValue == canonicalOutputSpeed.decimalValue else {
             return nil
         }
 
         return [
             "type": "realtime",
             "model": "gpt-realtime-2.1",
+            "reasoning": ["effort": "low"],
             "output_modalities": modalities,
             "max_output_tokens": maxTokens,
             "instructions": instructions,
@@ -88,7 +103,7 @@ enum GuidedRealtimePolicyVerifier {
                 "output": [
                     "format": outputFormat,
                     "voice": "marin",
-                    "speed": speed,
+                    "speed": canonicalOutputSpeed,
                 ],
             ],
         ]

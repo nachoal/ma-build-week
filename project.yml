@@ -63,12 +63,28 @@ targets:
     deploymentTarget: "18.0"
     sources:
       - path: apps/MAUITests
+        excludes:
+          - GuidedProductionRealtimeUITests.swift
     dependencies:
       - target: MA
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ia.ma.uitests
         PRODUCT_NAME: MAUITests
+        GENERATE_INFOPLIST_FILE: YES
+
+  MALiveUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: apps/MAUITests/GuidedProductionRealtimeUITests.swift
+    dependencies:
+      - target: MA
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ia.ma.live-uitests
+        PRODUCT_NAME: MALiveUITests
         GENERATE_INFOPLIST_FILE: YES
 
   MAAudioProbe:
@@ -110,3 +126,14 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.ia.ma.audio-probe.tests
         PRODUCT_NAME: MAAudioProbeTests
         GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  MALive:
+    build:
+      targets:
+        MA: all
+        MALiveUITests: [test]
+    test:
+      gatherCoverageData: false
+      targets:
+        - MALiveUITests

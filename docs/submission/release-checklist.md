@@ -14,19 +14,28 @@ Devpost submission. Those require Ignacio's explicit approval.
 
 ## Automated and service evidence
 
-- [x] Complete MA scheme result bundle after the live review-cap correction:
-      167 unit + 8 UI tests at
-      `.build/test-results/MA-review-fix-full-20260714.xcresult`
-- [x] Real-audio simulator UI test includes English permission disclosure,
-      one-tap model completion, capture, and stop
-- [x] Complete MAAudioProbe result bundle (49/49, characterization only) at
-      `.build/test-results/MAAudioProbe-freeze-20260714.xcresult`
-- [x] Worker 30/30 contract output at
-      `.build/test-results/MAWorker-freeze-20260714.tap`
+- [x] Exact documented, no-secret MA result bundle after the
+      production-Realtime corrections: 206/206 executions, 0 skipped (177 test
+      definitions); the isolated private `MALive` target was absent at
+      `.build/test-results/MA-standard-no-secret.xcresult`
+- [x] Production-realistic bilingual simulator gate uses the private broker,
+      `gpt-realtime-2.1`, structured validator, response audio, waiter turn, two
+      reviews, and `gpt-5.6-sol` planner; 10/10 repetitions passed (five English,
+      five Spanish) at
+      `.build/test-results/MA-live-low-reasoning-bilingual-stress5.xcresult`
+- [x] Separate real-audio simulator result includes English permission
+      disclosure, one-tap model completion, real AVAudio capture, and stop; 1/1
+      at `.build/test-results/MA-live-audio-integration.xcresult`
+- [x] Complete MAAudioProbe result bundle (51/51 executions, 49 test
+      definitions, characterization only) at
+      `.build/test-results/MAAudioProbe-current.xcresult`
+- [x] Worker 30/30 low-reasoning policy contract output at
+      `.build/test-results/MAWorker-low-reasoning-20260714.tap`
 - [x] Live private health, malformed-media rejection, Realtime mint,
       exact policy-hash, and guided-planner verification
-- [x] Secret scan passes the current frozen tree, staged inputs, and reachable
-      history; the separate post-commit rerun above remains required
+- [x] Secret scan passes the current candidate, staged inputs, reachable
+      history, and the current compiled simulator executable after the 206/206,
+      10/10, and 1/1 gates; the final archived executable rerun remains required
 
 ## Physical and human evidence
 

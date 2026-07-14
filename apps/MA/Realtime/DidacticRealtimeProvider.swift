@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 private actor GuidedRealtimeEventMailbox {
     private struct Waiter {
@@ -75,6 +76,11 @@ private actor GuidedRealtimeEventMailbox {
 }
 
 actor DidacticRealtimeProvider: GuidedRealtimeProviding {
+    private enum AudioResponsePurpose: String {
+        case spokenAttemptFeedback = "spoken_attempt_feedback"
+        case restaurantWaiterTurn = "restaurant_waiter_turn"
+    }
+
     private struct ReviewEnvelope {
         let call: GuidedRealtimeFunctionCall
         let arguments: String
@@ -103,6 +109,10 @@ actor DidacticRealtimeProvider: GuidedRealtimeProviding {
     private let transport: any GuidedRealtimeTransporting
     private let mailbox = GuidedRealtimeEventMailbox()
     private let clock = ContinuousClock()
+    private let diagnosticLogger = Logger(
+        subsystem: "com.ia.ma",
+        category: "GuidedRealtimeProvider"
+    )
 
     private var connected = false
     private var operationActive = false
@@ -170,6 +180,10 @@ actor DidacticRealtimeProvider: GuidedRealtimeProviding {
             }
             throw error
         } catch {
+            let nsError = error as NSError
+            diagnosticLogger.error(
+                "connection_attempt_failed domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public)"
+            )
             if connectionAttempt?.generation == attempt.generation {
                 connectionAttempt = nil
             }
@@ -286,7 +300,7 @@ actor DidacticRealtimeProvider: GuidedRealtimeProviding {
                 )
                 try Task.checkCancellation()
                 return try await awaitAudioResponse(
-                    purpose: "spoken_attempt_feedback",
+                    purpose: .spokenAttemptFeedback,
                     inputItemID: pending.itemID,
                     approximateTranscript: result.approximateTranscript
                 )
@@ -336,7 +350,7 @@ actor DidacticRealtimeProvider: GuidedRealtimeProviding {
                 )
                 try Task.checkCancellation()
                 return try await awaitAudioResponse(
-                    purpose: "restaurant_waiter_turn",
+                    purpose: .restaurantWaiterTurn,
                     inputItemID: nil,
                     approximateTranscript: nil
                 )
@@ -469,10 +483,14 @@ actor DidacticRealtimeProvider: GuidedRealtimeProviding {
                 responseID = candidate.responseID
                 call = candidate
 
-            case .responseFinished(_, let id, let status):
+            case .responseFinished(_, let id, let status, let reason):
                 guard responseID == nil || responseID == id else { continue }
                 responseID = id
                 guard status == "completed" else {
+                    let reasonCode = Self.incompleteReasonCode(reason)
+                    diagnosticLogger.error(
+                        "response_incomplete purpose=attempt_review reason_code=\(reasonCode, privacy: .public)"
+                    )
                     throw GuidedRealtimeError.responseIncomplete
                 }
                 responseCompleted = true
@@ -537,7 +555,7 @@ actor DidacticRealtimeProvider: GuidedRealtimeProviding {
     }
 
     private func awaitAudioResponse(
-        purpose: String,
+        purpose: AudioResponsePurpose,
         inputItemID: String?,
         approximateTranscript: String?
     ) async throws -> SpokenEnvelope {
@@ -574,10 +592,14 @@ actor DidacticRealtimeProvider: GuidedRealtimeProviding {
                 responseID = id
                 transcript = value
 
-            case .responseFinished(_, let id, let status):
+            case .responseFinished(_, let id, let status, let reason):
                 guard responseID == nil || responseID == id else { continue }
                 responseID = id
                 guard status == "completed" else {
+                    let reasonCode = Self.incompleteReasonCode(reason)
+                    diagnosticLogger.error(
+                        "response_incomplete purpose=\(purpose.rawValue, privacy: .public) reason_code=\(reasonCode, privacy: .public)"
+                    )
                     throw GuidedRealtimeError.responseIncomplete
                 }
                 responseCompleted = true
@@ -599,12 +621,25 @@ actor DidacticRealtimeProvider: GuidedRealtimeProviding {
             }
 
             if responseID != nil, responseCompleted, audioFinished, !audioData.isEmpty {
-                _ = purpose
                 _ = retainedInputTranscript
                 return SpokenEnvelope(transcript: transcript, pcm16Data: audioData)
             }
         }
         throw GuidedRealtimeError.responseTimedOut
+    }
+
+    /// Provider status details are untrusted payload. Preserve only the one
+    /// operational distinction needed for bounded-token diagnosis and collapse
+    /// every other value to a fixed local code before it reaches OSLog.
+    private static func incompleteReasonCode(_ reason: String?) -> String {
+        switch reason {
+        case "max_output_tokens":
+            "output_limit"
+        case nil:
+            "missing"
+        default:
+            "other"
+        }
     }
 
     private func nextEvent(

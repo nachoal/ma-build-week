@@ -145,6 +145,7 @@ struct GuidedPlannerTests {
         #expect(result == response)
         let request = try #require(GuidedPlannerURLProtocol.lastRequest)
         #expect(request.url?.path == "/learning/guided-next")
+        #expect(request.timeoutInterval == GuidedBrokerLearningPlanner.requestTimeout)
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer \(installToken)")
         #expect(request.value(forHTTPHeaderField: "Cache-Control") == "no-store")
         let body = try #require(GuidedPlannerURLProtocol.lastBody)

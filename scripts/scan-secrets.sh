@@ -17,15 +17,30 @@ WORKING_FINDINGS="$(mktemp -t ma-secret-working-findings.XXXXXX)"
 HISTORY_RAW="$(mktemp -t ma-secret-history.XXXXXX)"
 HISTORY_FINDINGS="$(mktemp -t ma-secret-history-findings.XXXXXX)"
 EXTRA_RAW="$(mktemp -t ma-secret-extra.XXXXXX)"
+BINARY_FINDINGS="$(mktemp -t ma-secret-binary-findings.XXXXXX)"
+BINARY_STRINGS="$(mktemp -t ma-secret-binary-strings.XXXXXX)"
 FILE_LIST="$(mktemp -t ma-secret-files.XXXXXX)"
 COMMIT_LIST="$(mktemp -t ma-secret-commits.XXXXXX)"
 ERROR_LOG="$(mktemp -t ma-secret-errors.XXXXXX)"
-trap 'rm -f "$WORKING_RAW" "$WORKING_FINDINGS" "$HISTORY_RAW" "$HISTORY_FINDINGS" "$EXTRA_RAW" "$FILE_LIST" "$COMMIT_LIST" "$ERROR_LOG"' EXIT
+trap 'rm -f "$WORKING_RAW" "$WORKING_FINDINGS" "$HISTORY_RAW" "$HISTORY_FINDINGS" "$EXTRA_RAW" "$BINARY_FINDINGS" "$BINARY_STRINGS" "$FILE_LIST" "$COMMIT_LIST" "$ERROR_LOG"' EXIT
 
 fail_scan() {
   printf 'Secret scan failed before completion (%s). No PASS recorded.\n' "$1" >&2
   exit 2
 }
+
+EXTRA_PATHS=()
+BINARY_PATHS=()
+while (($#)); do
+  if [[ "$1" == "--binary" ]]; then
+    shift
+    (($#)) || fail_scan "--binary path missing"
+    BINARY_PATHS+=("$1")
+  else
+    EXTRA_PATHS+=("$1")
+  fi
+  shift
+done
 
 scan_path() {
   local path="$1"
@@ -74,12 +89,29 @@ while IFS= read -r commit; do
 done <"$COMMIT_LIST"
 filter_allowlist "$HISTORY_RAW" "$HISTORY_ALLOWLIST" "$HISTORY_FINDINGS"
 
-for path in "$@"; do
+for path in "${EXTRA_PATHS[@]}"; do
   [[ -e "$path" ]] || fail_scan "extra scan path missing"
   scan_path "$path" "$EXTRA_RAW"
 done
 
-if [[ -s "$WORKING_FINDINGS" || -s "$HISTORY_FINDINGS" || -s "$EXTRA_RAW" ]]; then
+if ((${#BINARY_PATHS[@]})); then
+  command -v strings >/dev/null || fail_scan "strings command missing"
+fi
+for path in "${BINARY_PATHS[@]}"; do
+  [[ -f "$path" && ! -L "$path" ]] || fail_scan "binary scan path invalid"
+  : >"$BINARY_STRINGS"
+  strings -a "$path" >"$BINARY_STRINGS" 2>>"$ERROR_LOG" || \
+    fail_scan "binary string extraction error"
+  if rg -q -e "$PATTERN" -- "$BINARY_STRINGS" 2>>"$ERROR_LOG"; then
+    printf '%s\n' "$path" >>"$BINARY_FINDINGS"
+  else
+    status=$?
+    [[ "$status" == "1" ]] || fail_scan "binary string scan error"
+  fi
+done
+
+if [[ -s "$WORKING_FINDINGS" || -s "$HISTORY_FINDINGS" || -s "$EXTRA_RAW" \
+   || -s "$BINARY_FINDINGS" ]]; then
   printf 'Potential secret material found. Values are intentionally redacted.\n' >&2
   if [[ -s "$WORKING_FINDINGS" ]]; then
     printf 'Current tracked/untracked paths:\n' >&2
@@ -93,7 +125,12 @@ if [[ -s "$WORKING_FINDINGS" || -s "$HISTORY_FINDINGS" || -s "$EXTRA_RAW" ]]; th
     printf 'Additional staged input locations:\n' >&2
     awk -F: '{print "  " $1 ":" $2}' "$EXTRA_RAW" | sort -u >&2
   fi
+  if [[ -s "$BINARY_FINDINGS" ]]; then
+    printf 'Compiled binary locations:\n' >&2
+    sed 's/^/  /' "$BINARY_FINDINGS" | sort -u >&2
+  fi
   exit 1
 fi
 
-printf 'Secret scan passed: current tracked/untracked set, all reachable Git history, and %s additional staged input(s); only exact fixture placeholders allow-listed.\n' "$#"
+printf 'Secret scan passed: current tracked/untracked set, all reachable Git history, %s additional staged input(s), and %s compiled binary input(s); only exact fixture placeholders allow-listed.\n' \
+  "${#EXTRA_PATHS[@]}" "${#BINARY_PATHS[@]}"

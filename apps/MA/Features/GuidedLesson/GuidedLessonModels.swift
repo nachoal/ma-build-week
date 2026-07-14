@@ -9,6 +9,7 @@ enum GuidedModelStep: Equatable, Sendable {
 enum GuidedAttemptFailure: Equatable, Sendable {
     case microphoneDenied
     case noSpeech
+    case realtime(GuidedRealtimeError)
     case reviewUnavailable
     case interrupted
 
@@ -24,6 +25,8 @@ enum GuidedAttemptFailure: Equatable, Sendable {
                 english: "I could not hear enough voice. Move closer to the iPhone and say it once more.",
                 spanish: "No pude oír suficiente voz. Acércate al iPhone y dilo una vez más."
             )
+        case .realtime(let error):
+            error.message(in: language)
         case .reviewUnavailable:
             language.text(
                 english: "I could not review this attempt. Your progress did not change; you can record it again.",
@@ -34,6 +37,16 @@ enum GuidedAttemptFailure: Equatable, Sendable {
                 english: "The recording was interrupted. Start a new attempt when you are ready.",
                 spanish: "La grabación se interrumpió. Cuando estés listo, empieza un intento nuevo."
             )
+        }
+    }
+
+    var diagnosticCode: String {
+        switch self {
+        case .microphoneDenied: "microphone_denied"
+        case .noSpeech: "no_speech"
+        case .realtime(let error): error.diagnosticCode
+        case .reviewUnavailable: "review_unavailable"
+        case .interrupted: "interrupted"
         }
     }
 
@@ -78,6 +91,8 @@ struct GuidedLessonState: Equatable, Sendable {
     var reviewedAttempts: [GuidedAttemptFact] = []
     var answerSupportVisible = true
     var spokenFeedbackUnavailable = false
+    var spokenFeedbackPreparing = false
+    var spokenFeedbackCompleted = false
     var feedbackTransition: GuidedFeedbackTransition?
     var connectionReady = false
     var learningReport: GuidedLearningReport?

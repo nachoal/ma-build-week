@@ -101,6 +101,12 @@ APP_PATH="$ARCHIVE_PATH/Products/Applications/MA.app"
   exit 67
 }
 plutil -lint "$APP_PATH/PrivacyInfo.xcprivacy" >/dev/null
+APP_EXECUTABLE_NAME="$(plutil -extract CFBundleExecutable raw -o - "$APP_PATH/Info.plist")"
+APP_EXECUTABLE_PATH="$APP_PATH/$APP_EXECUTABLE_NAME"
+[[ -f "$APP_EXECUTABLE_PATH" && ! -L "$APP_EXECUTABLE_PATH" ]] || {
+  printf 'Archived MA.app has no regular executable to scan.\n' >&2
+  exit 67
+}
 if ! ENCRYPTION_DECLARATION="$(
   plutil -extract ITSAppUsesNonExemptEncryption raw -o - "$APP_PATH/Info.plist"
 )" || [[ "$ENCRYPTION_DECLARATION" != "false" ]]; then
@@ -137,9 +143,11 @@ git rev-parse HEAD >"$OUTPUT_DIR/GIT_COMMIT"
 
 scripts/scan-secrets.sh \
   "$OUTPUT_DIR/archive.log" \
+  "$APP_PATH" \
   "$OUTPUT_DIR/sanitized-fixtures" \
   "$OUTPUT_DIR/submission-copy" \
-  "$OUTPUT_DIR/BUILD_ENVIRONMENT"
+  "$OUTPUT_DIR/BUILD_ENVIRONMENT" \
+  --binary "$APP_EXECUTABLE_PATH"
 
 ditto -c -k --sequesterRsrc --keepParent "$ARCHIVE_PATH" "$OUTPUT_DIR/MA.xcarchive.zip"
 (

@@ -237,6 +237,9 @@ export const reportAttemptTool = Object.freeze({
 export const didacticRealtimeSessionPolicy = Object.freeze({
   type: "realtime",
   model: "gpt-realtime-2.1",
+  reasoning: {
+    effort: "low",
+  },
   output_modalities: ["audio"],
   max_output_tokens: 512,
   instructions: [

@@ -70,6 +70,19 @@ cd services/session-broker
 npm test
 ```
 
+The standard `MA` scheme is secret-free. The credentialed production-Realtime
+UI gate is isolated in `MALive` and runs only through the local provisioning
+helper on the authorized development Mac:
+
+```sh
+scripts/test-live-guided-simulator.sh
+MA_LIVE_SIM_ITERATIONS=5 scripts/test-live-guided-simulator.sh
+```
+
+That gate retains the production broker, WebSocket, validation, output audio,
+waiter turn, and planner while substituting only deterministic bundled learner
+input. It is simulator/service evidence, not physical microphone evidence.
+
 Private deployment configuration is intentionally absent. Copy
 `.dev.vars.example` only into ignored local configuration and use Wrangler's
 encrypted secret store for deployment values.

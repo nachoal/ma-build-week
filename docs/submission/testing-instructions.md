@@ -13,12 +13,28 @@ xcodebuild test -project MA.xcodeproj -scheme MAAudioProbe \
 cd services/session-broker && npm test
 ```
 
-No secret is required for automated tests. Guided provider responses and the
-historical replay use sanitized deterministic fixtures. A separate UI
-integration test resets the simulator microphone permission, verifies the
-English Apple permission disclosure, exercises the shipping audio owner, and
-proves that one model tap unlocks real capture/stop without a crash or stuck
-control. It does not claim provider or physical-device evidence.
+No secret is required for the standard `MA` or `MAAudioProbe` schemes. The
+private production-Realtime UI suite is isolated in the opt-in `MALive` scheme,
+so a normal `xcodebuild test` never depends on a private credential or network
+provider. Guided deterministic tests and the historical replay use sanitized
+fixtures. The real-audio integration test exercises the shipping audio owner
+and accepts the simulator's honest recoverable no-speech/provider-unavailable
+state; it does not claim a successful semantic review.
+
+On the authorized development Mac, the production-realistic gate provisions
+the separately revocable product credential from macOS Keychain without
+printing it, runs the complete `MALive` journey, and deletes the simulator copy:
+
+```sh
+scripts/test-live-guided-simulator.sh
+MA_LIVE_SIM_ITERATIONS=5 scripts/test-live-guided-simulator.sh
+```
+
+The first command runs one English and one Spanish journey. The second runs
+five of each. Only microphone input is deterministic; the private broker,
+Realtime session, validation, spoken feedback, waiter audio, playback, and
+optional planner are production implementations. These checks still do not
+substitute for physical-device capture, route, or learner evidence.
 
 ## Physical product
 
