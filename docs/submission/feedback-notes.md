@@ -45,7 +45,7 @@ Append exact evidence after each milestone.
 
 | Component | Root-task evidence | Commit | Device/test evidence | Status |
 |---|---|---|---|---|
-| Gate 0 probe and written verdict | pending | pending | pending | pending |
+| Gate 0 probe and written verdict | Clock started 2026-07-14 01:18:10 CST; hard stop 2026-07-15 01:18:10 CST | start commit pending | physical protocol pending | in progress |
 | Selected one-owner audio topology | pending | pending | pending | pending |
 | Realtime transport/event normalization | pending | pending | pending | pending |
 | Local cue classifier/floor policy | pending | pending | pending | pending |
@@ -113,6 +113,16 @@ For each material decision, capture:
   Studio Display speaker/microphone take recovered the sync marker under
   synthesized speech. This changed the evidence rule from assumed mono
   readiness to explicit per-take ambiguity failure.
+
+### 2026-07-14 — Gate 0 clock start
+
+- Started at: 2026-07-14 01:18:10 CST (UTC-06:00).
+- Hard stop: 2026-07-15 01:18:10 CST (UTC-06:00), with no extension.
+- Clean pre-clock boundary: `adadf7a`.
+- Human held-out-trial availability and the named Japanese reviewer were still
+  unconfirmed. The task explicitly accepted automatic characterization-only
+  PARTIAL if the full physical protocol cannot run; no missing evidence may be
+  upgraded through narrative or replaced trials.
 
 ## Final feedback preparation
 
