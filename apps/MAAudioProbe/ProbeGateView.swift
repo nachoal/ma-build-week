@@ -73,7 +73,7 @@ struct ProbeGateView: View {
                     Button("Request tutor") {
                         Task { await model.requestTutor() }
                     }
-                    .disabled(model.runStatus != .active)
+                    .disabled(!model.canRequestTutor)
 
                     Button("Local stop", role: .destructive) {
                         Task { await model.localStop() }

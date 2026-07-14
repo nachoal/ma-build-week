@@ -55,8 +55,7 @@ final class ProbeAppModel {
     private let audioGraph: AudioGraphController
 
     private var nextCommandSequence: UInt64 = 0
-    private var activeResponseID: String?
-    private var stoppedResponseIDs: Set<String> = []
+    private var responseGate = ProbeResponseGate()
     private var metricsTask: Task<Void, Never>?
 
     var credentialStatus: ProbeCredentialStatus = .checking
@@ -69,6 +68,10 @@ final class ProbeAppModel {
     var renderedWindowAvailable = false
     var evidenceExportURL: URL?
     var evidenceExportLabel = "not prepared"
+
+    var canRequestTutor: Bool {
+        runStatus == .active && responseGate.canRequest
+    }
 
     init(
         credentialStore: any InstallCredentialStoring = InstallCredentialStore(),
@@ -120,7 +123,7 @@ final class ProbeAppModel {
         activityLabel = "Requesting microphone access and starting one audio graph…"
         renderedCursorMilliseconds = nil
         renderedWindowAvailable = false
-        stoppedResponseIDs.removeAll(keepingCapacity: true)
+        responseGate.reset()
 
         do {
             let runtime = try await audioGraph.start { [inputPump] data in
@@ -158,7 +161,7 @@ final class ProbeAppModel {
     }
 
     func requestTutor() async {
-        guard runStatus == .active else { return }
+        guard runStatus == .active, responseGate.beginRequest() else { return }
         do {
             let command = try RealtimeClientCommand.createResponse(
                 eventID: nextCommandID(prefix: "response")
@@ -166,6 +169,7 @@ final class ProbeAppModel {
             try await outboundQueue.send(command)
             activityLabel = "Tutor response requested; waiting for rendered PCM…"
         } catch {
+            responseGate.cancelPendingRequest()
             runStatus = .failed
             activityLabel = "Tutor request failed closed."
         }
@@ -175,11 +179,8 @@ final class ProbeAppModel {
         guard runStatus == .active else { return }
         runStatus = .stopping
         do {
-            let responseID = activeResponseID
+            let responseID = responseGate.stopActiveResponse()
             let evidence = try await audioGraph.localStop()
-            if let responseID {
-                stoppedResponseIDs.insert(responseID)
-            }
 
             var commands: [Data] = [
                 try RealtimeClientCommand.cancelResponse(
@@ -203,7 +204,6 @@ final class ProbeAppModel {
             try await outboundQueue.sendBatch(commands)
 
             renderedWindowAvailable = evidence.renderedWindow != nil
-            activeResponseID = nil
             runStatus = .active
             activityLabel = evidence.truncationTarget == nil
                 ? "Output stopped locally; no defensible truncate cursor was available."
@@ -235,12 +235,20 @@ final class ProbeAppModel {
         case .sessionConfiguration:
             activityLabel = "Realtime policy verified; one graph is active."
         case .outputAudio(let chunk):
-            if let responseID = chunk.responseID,
-               stoppedResponseIDs.contains(responseID) {
+            let disposition = responseGate.admitOutput(responseID: chunk.responseID)
+            guard disposition == .accept else {
                 await diagnostics.record(
                     .providerEvent,
-                    details: ["disposition": "stale_output_rejected"]
+                    details: [
+                        "disposition": disposition == .rejectStopped
+                            ? "stale_output_rejected"
+                            : "unexpected_output_rejected",
+                    ]
                 )
+                if disposition == .rejectUnexpected {
+                    runStatus = .failed
+                    activityLabel = "Unexpected tutor output was rejected."
+                }
                 return
             }
             do {
@@ -258,18 +266,21 @@ final class ProbeAppModel {
         case .inputSpeechStopped:
             activityLabel = "Server VAD ended the learner segment; server owns commit."
         case .responseStarted(_, let responseID):
-            activeResponseID = responseID
-            activityLabel = "Tutor response active."
-        case .responseFinished(_, let responseID, let status):
-            if activeResponseID == responseID {
-                activeResponseID = nil
+            if responseGate.observeResponseStarted(responseID) {
+                activityLabel = "Tutor response active."
+            } else {
+                runStatus = .failed
+                activityLabel = "An unexpected response start was rejected."
             }
+        case .responseFinished(_, let responseID, let status):
+            responseGate.observeResponseFinished(responseID)
             activityLabel = "Tutor response finished (\(status ?? "unknown"))."
         case .outputItemAdded:
             break
         case .outputItemFinished:
             break
         case .providerError:
+            responseGate.cancelPendingRequest()
             runStatus = .failed
             activityLabel = "Realtime returned a sanitized provider error."
         case .ignored:
@@ -305,7 +316,7 @@ final class ProbeAppModel {
         await inputPump.reset()
         await transport.disconnect()
         await audioGraph.teardown()
-        activeResponseID = nil
+        responseGate.reset()
         if !preserveStatus {
             runStatus = .idle
             activityLabel = "Stopped. The audio session and graph are inactive."
