@@ -55,6 +55,11 @@ Devpost submission. Those require Ignacio's explicit approval.
       explicit stop, recoverable terminal state, verified credential deletion,
       and evidence scan; 1/1 at
       `.build/test-results/MA-live-audio-cleanup-proof-device.xcresult`
+- [x] Exact-frozen-implementation local-deletion gate on the iPhone 17 Pro,
+      iOS 27.0: 4/4 transaction/real-Keychain tests at
+      `.build/test-results/MA-local-data-deletion-unit-device-arm64.xcresult`
+      and 3/3 English failure, Spanish failure, and verified-success UI journeys
+      at `.build/test-results/MA-local-data-deletion-ui-device-arm64.xcresult`
 
 - [ ] Fresh-install English guided flow
 - [ ] Spanish switch preserves phase and produces coherent visible/spoken review

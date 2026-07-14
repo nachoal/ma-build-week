@@ -16,7 +16,9 @@ fixture replay. Scripts must discover devices dynamically.
 - `test-live-guided-device.sh` refuses a locked paired device, provisions the
   private test credential through a value-free app-container sentinel, and runs
   either the complete production-Realtime UI journey or the real-microphone
-  integration test before deleting the test credential.
+  integration test before deleting the test credential. It pins the generated
+  `arm64` XCTest architecture because Xcode advertises both `arm64e` and
+  `arm64` destinations for the paired phone.
 - `scan-secrets.sh` scans the current tracked/untracked source set and every
   reachable Git commit, redacting any candidate value and failing closed. Its
   `--binary PATH` mode also scans printable strings in a compiled executable

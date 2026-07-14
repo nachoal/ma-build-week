@@ -70,6 +70,11 @@ MA_LIVE_DEVICE_TEST=MAUITests/GuidedLiveAudioIntegrationUITests/testOneTapModelP
   scripts/test-live-guided-device.sh
 ```
 
+The runner dynamically discovers the phone but explicitly selects its `arm64`
+XCTest destination. On this iPhone/Xcode combination, omitting the architecture
+can select an advertised `arm64e` destination for the generated `arm64` test
+bundle and fail before app assertions with `Bad CPU type in executable`.
+
 The first retains the production broker/Realtime/planner path with repeatable
 bundled learner input. The second uses the actual microphone permission and
 capture graph and accepts an honest silence/recoverable-review result. Neither
