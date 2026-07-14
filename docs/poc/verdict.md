@@ -18,27 +18,27 @@ to extend the timer.
 ## Frozen same-topology configuration
 
 - physical device and OS: dynamically discovered iPhone 17 Pro, iOS 27.0 beta
-- built-in input/output route:
-- transport:
-- media/audio library and exact version:
+- built-in input/output route: built-in microphone plus built-in speaker required; runtime confirmation pending
+- transport: direct GA Realtime WebSocket with a broker-minted short-lived client secret; no WebRTC media dependency
+- media/audio library and exact version: Apple AVFAudio `AVAudioEngine` / VoiceProcessingIO, Xcode 26.6 with iPhoneOS 26.5 SDK, runtime iOS 27.0 beta
 - Realtime model: gpt-realtime-2.1
-- transcription model/path:
-- VAD type and settings:
-- create_response:
-- interrupt_response:
-- input commit owner and policy:
-- transport-appropriate output flush policy:
-- audio-device owner:
-- AVAudioSession category/mode/options:
-- AEC or voice-processing path:
-- post-AEC mic tap:
-- playout/render-head tap:
-- sample rate/channels/I/O buffer:
+- transcription model/path: none during Experiment 0; provider transcription is not evidence
+- VAD type and settings: `server_vad`, threshold 0.5, prefix padding 300 ms, silence 500 ms
+- create_response: false
+- interrupt_response: false
+- input commit owner and policy: server-owned commit under B1; app appends PCM and never duplicates commit
+- transport-appropriate output flush policy: snapshot player render cursor, stop and unschedule `AVAudioPlayerNode` locally, then send one `response.cancel` and exactly one render-derived `conversation.item.truncate`
+- audio-device owner: one root-implemented `AudioGraphController`
+- AVAudioSession category/mode/options: `playAndRecord` / `voiceChat` / `defaultToSpeaker`
+- AEC or voice-processing path: AVAudioEngine VoiceProcessingIO enabled on both I/O nodes; input bypass false and input mute false are required assertions
+- post-AEC mic tap: input-node output bus 0 after voice processing is asserted enabled; physical echo-control evidence pending
+- playout/render-head tap: main-mixer output tap for rendered samples plus `AVAudioPlayerNode.lastRenderTime` converted with `playerTime(forNodeTime:)` before local stop
+- sample rate/channels/I/O buffer: transport PCM16 mono 24 kHz; session preference 48 kHz and 10 ms; negotiated physical values pending
 - measured input/output route latency:
-- classifier version and labels:
+- classifier version and labels: not frozen in Experiment 0; frame observability precedes classification
 - backchannel playback profile: no-duck / duck, attenuation in dB
-- configuration hash:
-- configuration_frozen_at:
+- configuration hash: pending runtime route/rate/latency snapshot on the physical iPhone
+- configuration_frozen_at: 2026-07-14 02:48:10 CST (-0600)
 - randomized schedule seed: 20260714
 
 Confirm with evidence, not prose:
