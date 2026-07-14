@@ -17,6 +17,7 @@
 		245BF8D6D931295DA0AF4D56 /* ProofFactsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E5BC72F41C0BD59F696240E /* ProofFactsTests.swift */; };
 		27083A3247DFF0F2BA56DD9C /* ProbeGateStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D24CE619F2F526CDF0EEA5A4 /* ProbeGateStateTests.swift */; };
 		278C51526221CD99A04A9F19 /* ListeningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88E6EDCEFE3D230DB3412D40 /* ListeningView.swift */; };
+		27DCF306829A48AC0C59C7B7 /* ProbeAppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35408EBF1A372E4DB46CFDB2 /* ProbeAppModelTests.swift */; };
 		2A5ACDBAEAD2B29029C4DF8C /* RailLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC0C26355B279A707F69EFA /* RailLayoutTests.swift */; };
 		2F6E93CBC683D5A11FBF2E4F /* MAAudioProbeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D4CFE16DD1C32E80DE5A277 /* MAAudioProbeApp.swift */; };
 		36281D5DD0223D1BB7E69763 /* DynamicTypeContainmentUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78DB6FD310956248577B63A8 /* DynamicTypeContainmentUITests.swift */; };
@@ -34,6 +35,7 @@
 		794A6A672A8304F9356C29F3 /* AXOverflowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F644A5A0AB9ED90350E2F39C /* AXOverflowTests.swift */; };
 		79DA244675DD1FE7EC0C7F74 /* RootFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4719C53EEFEF2BEFEECD7750 /* RootFlowView.swift */; };
 		80725FE06A8BBDCD251EF18F /* ControlsIntroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 758534CC01A2F4EB5647EDCF /* ControlsIntroView.swift */; };
+		87E2A4C3C2BEF22D86BE954D /* ProbeAppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5640640202127DBA4646CE55 /* ProbeAppModel.swift */; };
 		8C3DBB2FB0204DD647BCFAEF /* tutor-resume.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 3E94D58E6F8EA931E8940FA0 /* tutor-resume.m4a */; };
 		8C4CD145B4607474F6D6F627 /* InteractiveFixtureFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1F226ADF2D15507F36130B4 /* InteractiveFixtureFlowTests.swift */; };
 		902B4E9CB233C3FBAF74E46C /* RepairView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99E215606C2BFE2E7F4A9F9 /* RepairView.swift */; };
@@ -110,6 +112,7 @@
 		1F124651CCB19B4C7876516B /* CoachedPracticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachedPracticeView.swift; sourceTree = "<group>"; };
 		20A8FEB62A7218824DC02C99 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		3330761BE1C4E07FEEA2B042 /* OnboardingProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingProgress.swift; sourceTree = "<group>"; };
+		35408EBF1A372E4DB46CFDB2 /* ProbeAppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProbeAppModelTests.swift; sourceTree = "<group>"; };
 		36F2C066D6529B49C0B0EDE1 /* PracticeReducerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeReducerTests.swift; sourceTree = "<group>"; };
 		380A4AC8175F29649C72C6F5 /* ProofView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProofView.swift; sourceTree = "<group>"; };
 		38A26651B63A69422EC6A4F1 /* MAUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MAUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -119,6 +122,7 @@
 		4719C53EEFEF2BEFEECD7750 /* RootFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootFlowView.swift; sourceTree = "<group>"; };
 		508550C2E38EDF6D68AF4798 /* repair-beat.m4a */ = {isa = PBXFileReference; path = "repair-beat.m4a"; sourceTree = "<group>"; };
 		53FEEABF591E3DCB4A31A29C /* PracticeState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeState.swift; sourceTree = "<group>"; };
+		5640640202127DBA4646CE55 /* ProbeAppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProbeAppModel.swift; sourceTree = "<group>"; };
 		5649E42D3B2A206E3CB79B85 /* PracticeReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeReducer.swift; sourceTree = "<group>"; };
 		630214A181046027ACE3E728 /* InstallCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstallCredentialStore.swift; sourceTree = "<group>"; };
 		6A85CAF8EA6CF8EFE5803042 /* RestaurantForOneFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestaurantForOneFixture.swift; sourceTree = "<group>"; };
@@ -326,6 +330,7 @@
 		DC207936A3EED53E4844ECD6 /* MAAudioProbeTests */ = {
 			isa = PBXGroup;
 			children = (
+				35408EBF1A372E4DB46CFDB2 /* ProbeAppModelTests.swift */,
 				19A51E4F4E48A1454D511D00 /* ProbeDiagnosticsTests.swift */,
 				D24CE619F2F526CDF0EEA5A4 /* ProbeGateStateTests.swift */,
 				906C02CDA15F528A25E9F8C9 /* SessionBrokerClientTests.swift */,
@@ -357,6 +362,7 @@
 				79644D7E1252F13E3F78B90A /* Evidence */,
 				1734BF477F2541E13B28CD7D /* Infrastructure */,
 				6D4CFE16DD1C32E80DE5A277 /* MAAudioProbeApp.swift */,
+				5640640202127DBA4646CE55 /* ProbeAppModel.swift */,
 				19C16B634C6C1B2FBE302214 /* ProbeGateView.swift */,
 			);
 			path = MAAudioProbe;
@@ -540,6 +546,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27DCF306829A48AC0C59C7B7 /* ProbeAppModelTests.swift in Sources */,
 				F99C2A96AB3E8C240BB39BB1 /* ProbeDiagnosticsTests.swift in Sources */,
 				27083A3247DFF0F2BA56DD9C /* ProbeGateStateTests.swift in Sources */,
 				502EB409366DB83DF65E4B88 /* SessionBrokerClientTests.swift in Sources */,
@@ -581,6 +588,7 @@
 			files = (
 				5AB4A1603E360CBD03B271B5 /* InstallCredentialStore.swift in Sources */,
 				2F6E93CBC683D5A11FBF2E4F /* MAAudioProbeApp.swift in Sources */,
+				87E2A4C3C2BEF22D86BE954D /* ProbeAppModel.swift in Sources */,
 				9D6CF909066B530CEF608C64 /* ProbeConfiguration.swift in Sources */,
 				E2E7A50E29F4EF2EB6AA4FA2 /* ProbeDiagnostics.swift in Sources */,
 				B44D2E7D56DB59C6947C5043 /* ProbeGateView.swift in Sources */,

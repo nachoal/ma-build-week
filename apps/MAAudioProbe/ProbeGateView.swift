@@ -2,9 +2,12 @@ import SwiftUI
 
 enum ProbeGateState {
     static let liveProductBindingUnlocked = false
+    static let gateLabel = "running — PARTIAL transport pending"
 }
 
 struct ProbeGateView: View {
+    let model: ProbeAppModel
+
     var body: some View {
         NavigationStack {
             List {
@@ -25,9 +28,10 @@ struct ProbeGateView: View {
                         "Gate",
                         value: ProbeGateState.liveProductBindingUnlocked
                             ? "live binding unlocked by written verdict"
-                            : "0 — not yet run"
+                            : ProbeGateState.gateLabel
                     )
                     LabeledContent("Target", value: "Physical iPhone")
+                    LabeledContent("Broker credential", value: model.credentialStatus.label)
                     Text("Fixture product UI is authorized. Live microphone/provider binding and overlap claims stay gated until the written verdict permits them.")
                         .foregroundStyle(.secondary)
                 }
@@ -38,5 +42,5 @@ struct ProbeGateView: View {
 }
 
 #Preview {
-    ProbeGateView()
+    ProbeGateView(model: ProbeAppModel())
 }

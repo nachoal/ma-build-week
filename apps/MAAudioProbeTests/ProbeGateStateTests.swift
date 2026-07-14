@@ -6,5 +6,6 @@ struct ProbeGateStateTests {
     @Test("Live product binding starts locked")
     func liveProductBindingStartsLocked() {
         #expect(ProbeGateState.liveProductBindingUnlocked == false)
+        #expect(ProbeGateState.gateLabel == "running — PARTIAL transport pending")
     }
 }

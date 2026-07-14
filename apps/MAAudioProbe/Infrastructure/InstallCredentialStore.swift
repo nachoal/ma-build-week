@@ -21,6 +21,13 @@ enum InstallCredentialProvisioningResult: Equatable {
     case missing
 }
 
+protocol InstallCredentialStoring {
+    func provisionFromProcessEnvironment(
+        _ environment: [String: String]
+    ) throws -> InstallCredentialProvisioningResult
+    func loadToken() throws -> String?
+}
+
 struct InstallTokenProvisioning {
     static let environmentKey = "MA_INSTALL_TOKEN"
 
@@ -32,7 +39,7 @@ struct InstallTokenProvisioning {
     }
 }
 
-struct InstallCredentialStore {
+struct InstallCredentialStore: InstallCredentialStoring {
     private let service = "com.ia.ma.audio-probe.session-broker"
     private let account = "private-install-token"
 

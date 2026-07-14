@@ -2,10 +2,14 @@ import SwiftUI
 
 @main
 struct MAAudioProbeApp: App {
+    @State private var model = ProbeAppModel()
+
     var body: some Scene {
         WindowGroup {
-            ProbeGateView()
+            ProbeGateView(model: model)
+                .task {
+                    model.prepareCredentials()
+                }
         }
     }
 }
-
