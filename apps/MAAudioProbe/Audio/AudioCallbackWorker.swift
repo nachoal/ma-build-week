@@ -13,6 +13,8 @@ final class AudioCallbackWorker: @unchecked Sendable {
     private struct ConvertedInput: Sendable {
         let data: Data
         let sourceRate: Double
+        let sourceFrameCount: Int
+        let timing: AudioTapTiming
     }
 
     private struct RenderedPacket: Sendable {
@@ -65,6 +67,9 @@ final class AudioCallbackWorker: @unchecked Sendable {
                     .microphoneFrame,
                     details: [
                         "bytes": String(input.data.count),
+                        "frames": String(input.sourceFrameCount),
+                        "host_time": input.timing.hostTime.map { String($0) } ?? "none",
+                        "sample_time": input.timing.sampleTime.map { String($0) } ?? "none",
                         "source_rate": String(Int(input.sourceRate)),
                     ]
                 )
@@ -81,7 +86,9 @@ final class AudioCallbackWorker: @unchecked Sendable {
                     .playbackRendered,
                     details: [
                         "frames": String(packet.samples.count),
+                        "host_time": packet.timing.hostTime.map { String($0) } ?? "none",
                         "rate": String(Int(packet.timing.sampleRate)),
+                        "sample_time": packet.timing.sampleTime.map { String($0) } ?? "none",
                     ]
                 )
             }
@@ -99,7 +106,12 @@ final class AudioCallbackWorker: @unchecked Sendable {
         queue.async { [self] in
             guard let data = convertToPCM16(frame), !data.isEmpty else { return }
             inputContinuation.yield(
-                ConvertedInput(data: data, sourceRate: frame.sampleRate)
+                ConvertedInput(
+                    data: data,
+                    sourceRate: frame.sampleRate,
+                    sourceFrameCount: frame.samples.count,
+                    timing: frame.timing
+                )
             )
         }
     }

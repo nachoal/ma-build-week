@@ -119,7 +119,7 @@ private enum ProbeDiagnosticSanitizer {
         Dictionary(
             uniqueKeysWithValues: details
                 .sorted { $0.key < $1.key }
-                .prefix(24)
+                .prefix(32)
                 .map { key, value in
                     let normalizedKey = String(key.prefix(64))
                     let lowered = normalizedKey.lowercased()

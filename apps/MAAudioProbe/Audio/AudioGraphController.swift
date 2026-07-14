@@ -142,10 +142,32 @@ final class AudioGraphController {
             await diagnostics.record(
                 .configuration,
                 details: [
+                    "category": configuration.category,
                     "graph_hash": hash,
+                    "graph_owner": configuration.audioDeviceOwner,
+                    "input_latency_ms": Self.milliseconds(configuration.inputLatency),
+                    "input_node_channels": String(configuration.inputNodeChannelCount),
+                    "input_node_rate": String(Int(configuration.inputNodeSampleRate)),
+                    "input_routes": configuration.inputRouteTypes.joined(separator: ","),
+                    "input_vp": String(configuration.inputVoiceProcessingEnabled),
+                    "input_vp_bypassed": String(configuration.inputVoiceProcessingBypassed),
+                    "input_vp_muted": String(configuration.inputVoiceProcessingMuted),
+                    "io_buffer_ms": Self.milliseconds(configuration.ioBufferDuration),
+                    "media_library": configuration.mediaLibrary,
+                    "mixer_channels": String(configuration.mixerChannelCount),
                     "transport": "websocket",
-                    "input_rate": String(Int(inputFormat.sampleRate)),
                     "mixer_rate": String(Int(mixerFormat.sampleRate)),
+                    "mode": configuration.mode,
+                    "model": configuration.model,
+                    "options": configuration.options.joined(separator: ","),
+                    "output_latency_ms": Self.milliseconds(configuration.outputLatency),
+                    "output_routes": configuration.outputRouteTypes.joined(separator: ","),
+                    "output_vp": String(configuration.outputVoiceProcessingEnabled),
+                    "playback_channels": String(configuration.playbackChannelCount),
+                    "playback_rate": String(Int(configuration.playbackSampleRate)),
+                    "session_input_channels": String(configuration.inputChannelCount),
+                    "session_output_channels": String(configuration.outputChannelCount),
+                    "session_rate": String(Int(configuration.sessionSampleRate)),
                 ]
             )
             return AudioGraphRuntimeSnapshot(
@@ -355,6 +377,10 @@ final class AudioGraphController {
             hostTime: time.isHostTimeValid ? time.hostTime : nil,
             sampleRate: time.isSampleTimeValid ? time.sampleRate : fallbackRate
         )
+    }
+
+    nonisolated private static func milliseconds(_ seconds: TimeInterval) -> String {
+        String(format: "%.3f", seconds * 1_000)
     }
 
     private func currentPlayerFrame(_ player: AVAudioPlayerNode) -> Int64 {

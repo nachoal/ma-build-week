@@ -51,6 +51,7 @@ final class ProbeAppModel {
     private let outboundQueue: RealtimeOutboundCommandQueue
     private let inputPump: ProbeInputAudioPump
     private let evidenceStore: AudioGraphEvidenceStore
+    private let evidenceArchive: ProbeEvidenceArchive
     private let audioGraph: AudioGraphController
 
     private var nextCommandSequence: UInt64 = 0
@@ -66,8 +67,13 @@ final class ProbeAppModel {
     var scheduledTutorFrameCount: UInt64 = 0
     var renderedCursorMilliseconds: Int?
     var renderedWindowAvailable = false
+    var evidenceExportURL: URL?
+    var evidenceExportLabel = "not prepared"
 
-    init(credentialStore: any InstallCredentialStoring = InstallCredentialStore()) {
+    init(
+        credentialStore: any InstallCredentialStoring = InstallCredentialStore(),
+        evidenceArchive: ProbeEvidenceArchive = ProbeEvidenceArchive()
+    ) {
         let diagnostics = ProbeDiagnostics()
         let transport = RealtimeWebSocketTransport(diagnostics: diagnostics)
         let outboundQueue = RealtimeOutboundCommandQueue(transport: transport)
@@ -83,6 +89,7 @@ final class ProbeAppModel {
             diagnostics: diagnostics
         )
         self.evidenceStore = evidenceStore
+        self.evidenceArchive = evidenceArchive
         self.audioGraph = AudioGraphController(
             diagnostics: diagnostics,
             evidenceStore: evidenceStore
@@ -210,6 +217,17 @@ final class ProbeAppModel {
     func stopLiveProbe() async {
         runStatus = .stopping
         await stopResources(preserveStatus: false)
+    }
+
+    func prepareEvidenceExport() async {
+        do {
+            let snapshot = try await diagnostics.encodedSnapshot()
+            evidenceExportURL = try await evidenceArchive.writeRedactedSnapshot(snapshot)
+            evidenceExportLabel = "protected redacted snapshot ready"
+        } catch {
+            evidenceExportURL = nil
+            evidenceExportLabel = "export failed closed"
+        }
     }
 
     private func handleProviderEvent(_ event: RealtimeServerEvent) async {

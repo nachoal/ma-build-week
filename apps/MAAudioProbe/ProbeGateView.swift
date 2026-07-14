@@ -52,6 +52,7 @@ struct ProbeGateView: View {
                         "Four-second window",
                         value: model.renderedWindowAvailable ? "captured" : "not proven"
                     )
+                    LabeledContent("Evidence", value: model.evidenceExportLabel)
                     Text(model.activityLabel)
                         .foregroundStyle(.secondary)
                     Text("This dedicated probe may exercise the live microphone and provider. MA product binding and overlap claims remain gated by the written verdict.")
@@ -83,6 +84,16 @@ struct ProbeGateView: View {
                         Task { await model.stopLiveProbe() }
                     }
                     .disabled(model.runStatus == .idle)
+
+                    Button("Prepare redacted evidence") {
+                        Task { await model.prepareEvidenceExport() }
+                    }
+
+                    if let evidenceExportURL = model.evidenceExportURL {
+                        ShareLink(item: evidenceExportURL) {
+                            Label("Share redacted evidence", systemImage: "square.and.arrow.up")
+                        }
+                    }
 
                     if model.runStatus == .permissionDenied,
                        let settingsURL = URL(string: UIApplication.openSettingsURLString) {
