@@ -55,7 +55,7 @@ Append exact evidence after each milestone.
 | Repair/resume and next-attempt evidence | Root bound the natural local tutor turn to real playback state, admits pause only while it is active, plays one complete controlled segment labeled `REPLAY · DEMOSTRACIÓN`, resumes the same obligation only after playback completion, captures a new no-text attempt, and gates proof on the full stop/segment/resume chain | `cb9d8bd` | adversarial re-audit PASS; focused strict tests 11/11 and product UI smoke 1/1; no physical learner run yet | code and simulator complete; physical Gate 2 pending |
 | GPT-5.6 planner integration/guardrails | Root added versioned `ScenePlan`, `Attempt`, `LearningReport`, and `NextLearningAction` contracts; an immediate deterministic policy; a Keychain-backed broker client; report-generation cancellation; and double validation that binds every action/reason pair to the same observed obligation. The Worker fixes `gpt-5.6-sol`, strict structured output, `store: false`, bounded input/output/timeout/retry, canonical evidence copy, privacy-preserving safety ID, and endpoint-scoped product authentication | `64e8532` | Worker 18/18; complete strict MA scheme 104/104 test cases (106 parameterized executions); shared Swift/Worker fixtures; live private `gpt-5.6-sol` response validated; product token rejected by Realtime endpoint with 401 | code, broker, and live contract complete; physical product provisioning pending |
 | Physical-device validation and replay fallback | Root added a bounded normalized `ConversationProvider` contract, capability groups that cannot imply one another, a single-use `ReplayAdapter`, fixture-only provenance, a shared product/replay semantic reducer, stale-event and stale-capture rejection, and a permanently labeled replay UI with no microphone, audio, network, learner, or planner claim. One dynamic device script builds, signs, installs, and launches either product or replay without a checked-in device identifier or credential | `c344a67` | strict MA 113 Swift + 4 UI tests; independent replay re-audit PASS; exact-commit product and replay builds installed on the dynamically discovered iPhone 17 Pro, then both launches were lock-denied | fallback code, simulator, and signed install complete; unlocked physical runtime matrix pending |
-| Demo/submission evidence | Root added explicit planner opt-in, accurate deletion/privacy flows, captions, Reduce Motion and Dynamic Type hardening, a tested privacy manifest, claim matrix, Devpost draft, demo/testing/privacy runbooks, subtitles, rehearsal/cold-viewer protocols, precise secret scanning, dynamic device automation, and clean-tree archive automation | `c344a67` | MA 113 + 4, probe 47, Worker 18; `plutil`, script syntax, generated-project diff, current-tree/history secret scan, and independent WP-6/7 audit checks | submission packet prepared; release archive, physical/human evidence, video, URLs, `/feedback`, and submission remain gated |
+| Demo/submission evidence | Root added explicit planner opt-in, accurate deletion/privacy flows, captions, Reduce Motion and Dynamic Type hardening, a tested privacy manifest, claim matrix, Devpost draft, demo/testing/privacy runbooks, subtitles, rehearsal/cold-viewer protocols, fail-closed secret scanning, dynamic device automation, and canonical clean-tree archive automation | `c344a67`, `8c9effc` | MA 113 + 4, probe 47, Worker 18; `plutil`, script syntax, generated-project diff, current-tree/history/staged-input secret scans, negative release-tool tests, independent WP-6/7 audit PASS, signed Release archive, exact commit/environment files, and verified checksums | private submission packet/archive prepared; physical/human evidence, video, URLs, `/feedback`, and submission remain gated |
 
 ## Delegated tasks and sessions
 
@@ -438,6 +438,26 @@ For each material decision, capture:
   subtitles, release checklist, dynamic device tool, secret scanner, and clean
   archive/checksum tool are tracked. No repository push/share, video upload,
   `/feedback`, public URL, or Devpost submission was performed.
+- Release-boundary re-audit: `/root/wp67_submission_gap_audit` found that the
+  first scanner could mask tool errors, the archive output override could make
+  `rm -rf` unsafe, untracked XcodeGen inputs were not rejected, and an optional
+  redacted log was copied after scanning. It also caught unmeasured
+  “immediate” copy, inaccurate token-persistence wording, and unconditional
+  pre-verdict requirements. Root fixed every issue in `8c9effc`; the reviewer
+  returned PASS with no remaining P0/P1.
+- Fail-closed release evidence: missing extra scan input exits 2 without PASS;
+  a redacted fake credential exits 1 while printing only its location; an
+  output outside `.build/submission` exits 64; tracked/untracked drift exits 65;
+  and a temporary untracked Swift source was rejected before archive deletion
+  or build. Optional log/video inputs must resolve beneath ignored
+  `.build/submission-inputs` and staged text is rescanned.
+- Archive evidence: the clean `8c9effc` run produced a signed Release archive,
+  verified the embedded privacy manifest and app signature, recorded Xcode
+  26.6 / Swift 6.3.3 / iPhoneOS SDK 26.5, and passed all 24 entries in its
+  ignored `SHA256SUMS`. The package contains the signed Xcode archive,
+  sanitized replay contracts, approved submission copy, exact Git identity,
+  build environment, and build log; no optional private log or video was
+  supplied.
 - GPT-5.6 use at this milestone: `gpt-5.6-sol` with ultra reasoning powered the
   root implementation task. The product calls `gpt-5.6-sol` only after explicit
   learner opt-in and retains its deterministic local fallback.

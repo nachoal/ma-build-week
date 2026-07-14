@@ -125,7 +125,7 @@ fi
 git rev-parse HEAD >"$OUTPUT_DIR/GIT_COMMIT"
 {
   xcodebuild -version
-  xcrun swift --version
+  xcrun swift --version 2>&1
   printf 'iPhoneOS SDK %s\n' "$(xcrun --sdk iphoneos --show-sdk-version)"
 } >"$OUTPUT_DIR/BUILD_ENVIRONMENT"
 
