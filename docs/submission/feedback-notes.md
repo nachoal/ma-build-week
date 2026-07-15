@@ -62,6 +62,7 @@ Append exact evidence after each milestone.
 | Production-realistic simulator and policy closure | Root added a DEBUG-only harness that substitutes only deterministic bundled microphone input while retaining the production broker, `gpt-realtime-2.1` WebSocket, effective-policy verifier, structured two-turn review, spoken feedback, waiter audio, shipping playout, and `gpt-5.6-sol` planner. Root fixed cross-runtime hash normalization, pinned `reasoning.effort=low` in the broker-owned policy, and rejects client attempts to weaken it | `bebac3c` | Live smoke 2/2; repeated bilingual journey 10/10 (five English, five Spanish) at `.build/test-results/MA-live-low-reasoning-bilingual-stress5.xcresult`; real simulator permission/capture 1/1; current standard no-secret suite 213/213 executions; Worker 35/35 | simulator/code/service complete; broader physical route/human quality evidence remains gated |
 | Physical live automation and final evidence hardening | Root ran the credentialed lesson on the paired iPhone, distinguished a SpringBoard interruption from app behavior, removed every second-tap recovery so one dispatched tap is the invariant, disabled privileged failure diagnostics, widened the existing two planner attempts from 7 to 10 seconds after a reproduced 14.183-second broker 502, narrowed retries to 408/409/500/502/503/504, and made both live runners fail unless the app verifies test-credential deletion | `80c6eee`, `cf96ce0` | Physical English passed in 47.506 seconds and Spanish passed in 53.729 seconds with deterministic bundled learner input. Exact `bd66804` physical real-audio capture/stop passed 1/1 in 17.484 seconds with verified cleanup; current standard MA 213/213; probe 51/51; Worker 35/35; private Worker version `57d49379-af1f-4160-8e88-ec611ab9a1d7` | deterministic physical bilingual provider path and physical capture/stop complete; JIT prompt, route breadth, human audibility/teaching, real-mic semantic review, and broader device matrix remain gated |
 | Verified product data deletion | Root replaced best-effort profile reset with a fail-closed transaction: delete and reload the this-device-only Keychain item first, reset local state only after verified absence, and preserve profile/sheet state with fixed English/Spanish recovery copy on any failure | `f9f7a7f`; physical-runner fix `15f6709` | Focused simulator 7/7 plus complete uncontended MA 213/213. Physical iPhone/iOS 27.0: clean transaction/real-Keychain 4/4 and bilingual/success UI 3/3 bundles | simulator and physical code/Keychain/UI complete; archive refreshed |
+| Release review-access repair | A physical user report exposed that the frozen archive could launch without a retained private review credential and defer the failure until after capture. Before every explicit microphone action, root now reconciles cached readiness with the transport actor and reconnects only if stale; failure is visible/capture-blocking. The installer verifies Keychain readback and requires a second bearer-free Release launch to load Keychain and policy-verify a real WebSocket session before ordinary relaunch | pending current fix commit | Current simulator MA suite 227/227 (193 definitions), Worker 35/35, focused readiness/provisioning/audio 24/24 and transport preflight 27/27, Release warnings-as-errors build, and revised live smoke 2/2 pass; final 10-journey and replacement physical archive gates are in progress | old `e968354` archive superseded; not complete until exact replacement archive passes on the phone |
 
 ## Delegated tasks and sessions
 
@@ -102,6 +103,9 @@ audited. Core implementation remains in the root task.
 | `/root/candidate_hygiene_audit` (coordination API exposed no opaque ID) | Read-only current candidate secret, logging, artifact, signing, and release-tool audit | No files; found provider-controlled public logging and compiled-binary scan gaps, both corrected by root; otherwise clean | no |
 | `019f6286-a9de-7510-809f-bb634b902599` (`/root/planner_retry_audit`) | Read-only post-502 planner retry and timeout-budget audit | No files; independently accepted the root's two-by-ten-second policy, rejected a third attempt, and identified transient/permanent/status/privacy test gaps that root closed | no |
 | `019f6294-e73b-7613-9f26-4584b9eadac1` (`/root/final_delta_audit`) | Read-only final candidate delta and evidence audit | No files; found the potentially masking language-tap retry, unverified test-credential cleanup, overbroad permanent-5xx retries, and two documentation drifts; root removed or corrected each item | no |
+| `/root/release_review_failure_audit` (coordination API exposed no opaque ID) | Read-only physical Release review-failure audit | No files; independently traced the exact missing-credential path, proved the frozen archive had no ordinary bootstrap, and identified the PID-only/accept-any-recovery false gates | no |
+| `/root/release_provisioning_fix_audit` (coordination API exposed no opaque ID) | Read-only audit of the root's replacement provisioning/readiness diff | No files; credential leakage, marker integrity, races, Release behavior, and false-green checks only | no |
+| `/root/live_runner_isolation_audit` (coordination API exposed no opaque ID) | Read-only audit of the repeated live-simulator runner | No files; found stale-marker, unchecked-command, result-count, and repetition-proof gaps; root fixed each and the reviewer returned PASS | no |
 
 ## Codex implementation journal
 
@@ -1079,6 +1083,55 @@ For each material decision, capture:
   from `MA.app`. This closes final archive install/launch and immediate-stability
   evidence only; it does not upgrade the separately qualified audio, route,
   human-teaching, or learner-outcome claims.
+
+### 2026-07-15 — Physical Release review-access failure and replacement gate
+
+- Ignacio reproduced the archived product failure after submitting real audio.
+  Root traced the exact message to `missingCredential`: the prior live runner
+  deliberately removed its test credential, while the final archive gate then
+  proved only install, PID launch, and immediate liveness. An ordinary icon
+  launch could not provision the missing private access. The `e968354` archive
+  and its `29b045...` checksum are therefore superseded, not submission-ready.
+- Root changed the lesson contract so the model can still be heard, but the
+  microphone control is never exposed until the review connection succeeds.
+  Missing, expired, or unavailable access is now bilingual and actionable on
+  the model screen; retry reconnects without starting capture. This prevents a
+  learner from recording an answer the app already knows it cannot review.
+- Root added exact Keychain write/readback verification and an authorized
+  Release installer. A stored receipt proves the first launch's exact readback;
+  a second launch receives no bearer token and writes its unique ready receipt
+  only after loading Keychain and completing a real, policy-verified Realtime
+  WebSocket session. A final launch receives neither token nor nonce. The
+  private token is never retained in evidence. This repairs the authorized
+  single-device demo; it does not claim public/TestFlight self-enrollment.
+- Standard audio automation now starts/stops the real Apple audio graph, then
+  substitutes only the simulator's labeled deterministic learner payload and
+  requires visible feedback. A separate silence test requires no transcript or
+  review. Missing access, authorization failure, and generic recovery can no
+  longer satisfy that gate. Focused tests passed 24/24, MA passed 227/227,
+  Worker passed 35/35, the live bilingual smoke passed 2/2, and the Release
+  warnings-as-errors build passed. The repeated live journey and exact
+  replacement-archive iPhone gates remain open until recorded below.
+- The first stale-readiness fix deliberately disconnected and re-minted before
+  every capture. A live stress run rejected that design: its first process
+  opened three policy-verified sessions, but later simulator processes returned
+  Keychain OSStatus `-34018`; root stopped the run instead of retrying blindly,
+  retained the fixed-code-only log at
+  `.build/test-results/MA-live-forced-reconnect-keychain-failure.log`, and reset
+  only the simulator Keychain. The log passed the secret scanner.
+- Root replaced that churn with transport-state reconciliation. `connect()` now
+  reads the WebSocket transport actor's real state before every microphone
+  action, reuses a genuinely connected session, and invalidates/re-mints only a
+  failed or idle transport. The focused provider/feature/UI gate passed 27/27;
+  a new live English/Spanish smoke then passed 2/2 with verified credential
+  deletion. The aborted stress run is negative evidence and is never counted.
+- A later all-in-one XCTest repetition hit an Apple simulator AX failure and
+  then Keychain `-34018`; root replaced `-test-iterations` with isolated,
+  credential-bracketed pairs and exact xcresult validation. Three consecutive
+  English/Spanish pairs passed, but Ignacio correctly objected that continued
+  repetition was noisy and delayed the physical failure gate. Root stopped the
+  fourth pair, verified credential deletion, and moved to the phone. No claim
+  depends on the interrupted pair.
 
 ## Final feedback preparation
 

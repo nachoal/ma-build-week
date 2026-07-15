@@ -462,6 +462,57 @@ struct GuidedRealtimeWireProtocolTests {
         )
     }
 
+    @Test("Receive failure is visible before a suspending socket close finishes")
+    func publishesFailureBeforeSocketCloseFinishes() async throws {
+        let socket = SuspendingCloseGuidedRealtimeSocket(
+            firstMessage: try sessionCreatedEvent()
+        )
+        let transport = GuidedRealtimeWebSocketTransport(
+            socketFactory: SingleGuidedRealtimeSocketFactory(socket: socket)
+        )
+        try await transport.connect(
+            clientSecret: GuidedRealtimeClientSecret(
+                value: "ek_test_secret",
+                expiresAt: Int(Date().timeIntervalSince1970) + 120,
+                expectedConfigurationHash: workerPolicyHash
+            ),
+            onEvent: { _ in }
+        )
+
+        #expect(await eventually { await socket.isWaitingToReceive() })
+        await socket.failReceive()
+        #expect(await eventually { await socket.hasStartedClosing() })
+
+        // close() is deliberately suspended here. The old implementation
+        // still returned .connected at this point and could enable capture.
+        #expect(await transport.connectionState() == .failed)
+        await socket.finishClosing()
+    }
+
+    @Test("Explicit disconnect is visible before a suspending socket close finishes")
+    func publishesIdleBeforeSocketCloseFinishes() async throws {
+        let socket = SuspendingCloseGuidedRealtimeSocket(
+            firstMessage: try sessionCreatedEvent()
+        )
+        let transport = GuidedRealtimeWebSocketTransport(
+            socketFactory: SingleGuidedRealtimeSocketFactory(socket: socket)
+        )
+        try await transport.connect(
+            clientSecret: GuidedRealtimeClientSecret(
+                value: "ek_test_secret",
+                expiresAt: Int(Date().timeIntervalSince1970) + 120,
+                expectedConfigurationHash: workerPolicyHash
+            ),
+            onEvent: { _ in }
+        )
+
+        let disconnect = Task { await transport.disconnect() }
+        #expect(await eventually { await socket.hasStartedClosing() })
+        #expect(await transport.connectionState() == .idle)
+        await socket.finishClosing()
+        await disconnect.value
+    }
+
     @Test(
         "Every security-relevant live policy mutation fails closed",
         arguments: PolicyMutation.allCases
@@ -589,6 +640,24 @@ struct GuidedRealtimeWireProtocolTests {
         try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
     }
 
+    private func sessionCreatedEvent() throws -> Data {
+        try JSONSerialization.data(withJSONObject: [
+            "type": "session.created",
+            "event_id": "event-session-created",
+            "session": policySession(),
+        ])
+    }
+
+    private func eventually(
+        _ condition: @escaping @Sendable () async -> Bool
+    ) async -> Bool {
+        for _ in 0..<400 {
+            if await condition() { return true }
+            await Task.yield()
+        }
+        return await condition()
+    }
+
     private func policySession() -> [String: Any] {
         let schema: [String: Any] = [
             "type": "object",
@@ -672,5 +741,68 @@ struct GuidedRealtimeWireProtocolTests {
                 ],
             ],
         ]
+    }
+}
+
+private struct SingleGuidedRealtimeSocketFactory: GuidedRealtimeSocketCreating {
+    let socket: SuspendingCloseGuidedRealtimeSocket
+
+    func makeSocket(request: URLRequest) -> any GuidedRealtimeSocket {
+        socket
+    }
+}
+
+private actor SuspendingCloseGuidedRealtimeSocket: GuidedRealtimeSocket {
+    private struct ReceiveFailure: Error {}
+
+    private let firstMessage: Data
+    private var deliveredFirstMessage = false
+    private var receiveContinuation: CheckedContinuation<Data, Error>?
+    private var closeContinuation: CheckedContinuation<Void, Never>?
+    private var closeStarted = false
+
+    init(firstMessage: Data) {
+        self.firstMessage = firstMessage
+    }
+
+    func start() {}
+
+    func send(_ data: Data) async throws {}
+
+    func receive() async throws -> Data {
+        if !deliveredFirstMessage {
+            deliveredFirstMessage = true
+            return firstMessage
+        }
+        return try await withCheckedThrowingContinuation { continuation in
+            receiveContinuation = continuation
+        }
+    }
+
+    func close() async {
+        closeStarted = true
+        await withCheckedContinuation { continuation in
+            closeContinuation = continuation
+        }
+    }
+
+    func isWaitingToReceive() -> Bool {
+        receiveContinuation != nil
+    }
+
+    func hasStartedClosing() -> Bool {
+        closeStarted
+    }
+
+    func failReceive() {
+        let continuation = receiveContinuation
+        receiveContinuation = nil
+        continuation?.resume(throwing: ReceiveFailure())
+    }
+
+    func finishClosing() {
+        let continuation = closeContinuation
+        closeContinuation = nil
+        continuation?.resume()
     }
 }

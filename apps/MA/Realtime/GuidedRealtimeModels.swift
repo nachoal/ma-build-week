@@ -56,8 +56,8 @@ enum GuidedRealtimeError: Error, LocalizedError, Equatable, Sendable {
         switch self {
         case .missingCredential:
             language.text(
-                english: "This build does not have private access to speaking-turn review.",
-                spanish: "Esta compilación no tiene acceso privado a la revisión de voz."
+                english: "Speaking review is not ready on this private demo. Reinstall it from the authorized Mac before recording.",
+                spanish: "La revisión de voz no está lista en esta demo privada. Reinstálala desde la Mac autorizada antes de grabar."
             )
         case .unauthorized:
             language.text(
@@ -71,8 +71,8 @@ enum GuidedRealtimeError: Error, LocalizedError, Equatable, Sendable {
             )
         case .serviceUnavailable, .connectionFailed, .disconnected:
             language.text(
-                english: "I could not connect the speaking-turn review. You can record again.",
-                spanish: "No pude conectar la revisión de voz. Puedes grabar de nuevo."
+                english: "Speaking review is not connected yet. Retry the connection before recording.",
+                spanish: "La revisión de voz aún no está conectada. Reintenta la conexión antes de grabar."
             )
         case .invalidBrokerResponse, .invalidClientSecret, .configurationMismatch:
             language.text(

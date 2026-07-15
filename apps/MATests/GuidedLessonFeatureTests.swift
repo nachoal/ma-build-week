@@ -23,12 +23,86 @@ struct GuidedLessonFeatureTests {
         feature.send(.playModel)
         feature.send(.playModel)
         #expect(await eventually { feature.state.phase == .model(.completed) })
+        #expect(await eventually { feature.state.connectionReady })
         #expect(audio.playedPrompts == [.hitoriDesu])
         #expect(audio.captureRequests.isEmpty)
 
         feature.send(.beginAttempt)
         #expect(await eventually { feature.state.isRecording })
         #expect(audio.captureRequests.count == 1)
+    }
+
+    @Test("Missing private review access is visible before microphone capture")
+    func missingCredentialBlocksCapture() async {
+        let audio = FakeGuidedAudioController()
+        let feature = GuidedLessonFeature(
+            audio: audio,
+            realtime: FakeGuidedRealtimeProvider(connectionFailure: .missingCredential)
+        )
+
+        feature.send(.showPhrase)
+        #expect(await eventually {
+            feature.state.connectionFailure == .missingCredential
+        })
+        feature.send(.playModel)
+        #expect(await eventually { feature.state.phase == .model(.completed) })
+        feature.send(.beginAttempt)
+
+        #expect(audio.captureRequests.isEmpty)
+        #expect(feature.state.phase == .attempt(
+            context: .taughtPhrase,
+            step: .recoverableError(.realtime(.missingCredential))
+        ))
+    }
+
+    @Test("A review-connection retry must become ready before recording")
+    func reviewConnectionRetryRecovers() async {
+        let audio = FakeGuidedAudioController()
+        let feature = GuidedLessonFeature(
+            audio: audio,
+            realtime: FakeGuidedRealtimeProvider(connectionFailure: .serviceUnavailable)
+        )
+
+        feature.send(.showPhrase)
+        #expect(await eventually {
+            feature.state.connectionFailure == .serviceUnavailable
+        })
+        feature.send(.retryRealtimeConnection)
+        #expect(await eventually { feature.state.connectionReady })
+        #expect(feature.state.connectionFailure == nil)
+
+        feature.send(.playModel)
+        #expect(await eventually { feature.state.phase == .model(.completed) })
+        feature.send(.beginAttempt)
+        #expect(await eventually { feature.state.isRecording })
+        #expect(audio.captureRequests.count == 1)
+    }
+
+    @Test("A connection lost after warm-up is caught before microphone capture")
+    func staleWarmConnectionIsRevalidated() async {
+        let audio = FakeGuidedAudioController()
+        let feature = GuidedLessonFeature(
+            audio: audio,
+            realtime: FakeGuidedRealtimeProvider(
+                connectionFailure: .disconnected,
+                connectionFailureAttempt: 2
+            )
+        )
+
+        feature.send(.showPhrase)
+        #expect(await eventually { feature.state.connectionReady })
+        feature.send(.playModel)
+        #expect(await eventually { feature.state.phase == .model(.completed) })
+        feature.send(.beginAttempt)
+
+        #expect(await eventually {
+            feature.state.phase == .attempt(
+                context: .taughtPhrase,
+                step: .recoverableError(.realtime(.disconnected))
+            )
+        })
+        #expect(audio.captureRequests.isEmpty)
+        #expect(!feature.state.connectionReady)
     }
 
     @Test("Every learner turn is reviewed before the lesson can progress")
@@ -105,6 +179,7 @@ struct GuidedLessonFeatureTests {
         #expect(await eventually {
             feature.state.phase == .attempt(context: .taughtPhrase, step: .ready)
         })
+        #expect(await eventually { feature.state.connectionReady })
         feature.send(.beginAttempt)
         #expect(await eventually { audio.captureRequests.count == 2 })
         let retryRequest = try #require(audio.captureRequests.last)
@@ -136,11 +211,31 @@ struct GuidedLessonFeatureTests {
         #expect(await eventually {
             feature.state.phase == .attempt(context: .taughtPhrase, step: .ready)
         })
+        #expect(await eventually { feature.state.connectionReady })
         feature.send(.beginAttempt)
         #expect(await eventually { feature.state.isRecording })
         feature.send(.finishAttempt)
         #expect(await eventually { feature.state.reviewedAttempts.count == 1 })
         #expect(feature.state.reviewedAttempts.first?.targetMatch == .matched)
+    }
+
+    @Test("Silence never fabricates a transcript or a positive review")
+    func silenceRemainsUnreviewed() async {
+        let audio = FakeGuidedAudioController(speechPresenceDetected: false)
+        let realtime = FakeGuidedRealtimeProvider()
+        let feature = GuidedLessonFeature(audio: audio, realtime: realtime)
+
+        await reachFirstRecording(feature: feature)
+        feature.send(.finishAttempt)
+
+        #expect(await eventually {
+            feature.state.phase == .attempt(
+                context: .taughtPhrase,
+                step: .recoverableError(.noSpeech)
+            )
+        })
+        #expect(feature.state.reviewedAttempts.isEmpty)
+        #expect(await realtime.reviewRequestCount() == 0)
     }
 
     @Test("Restart invalidates a late provider review")
@@ -253,6 +348,7 @@ struct GuidedLessonFeatureTests {
         feature.send(.showPhrase)
         feature.send(.playModel)
         #expect(await eventually { feature.state.phase == .model(.completed) })
+        #expect(await eventually { feature.state.connectionReady })
         audio.suspendNextCaptureStart()
         feature.send(.beginAttempt)
         #expect(await eventually { audio.hasPendingCaptureStart })
@@ -339,6 +435,7 @@ struct GuidedLessonFeatureTests {
         feature.send(.showPhrase)
         feature.send(.playModel)
         #expect(await eventually { feature.state.phase == .model(.completed) })
+        #expect(await eventually { feature.state.connectionReady })
         feature.send(.beginAttempt)
         #expect(await eventually { feature.state.isRecording })
     }
@@ -387,23 +484,35 @@ private actor FakeGuidedRealtimeProvider: GuidedRealtimeProviding {
     private var waiterRequests = 0
     private var connected = false
     private let suspendsSpokenFeedback: Bool
+    private var connectionAttempt = 0
+    private var connectionFailures: [Int: GuidedRealtimeError]
     private var pendingSpokenFeedback:
         CheckedContinuation<GuidedRealtimeSpokenFeedback, Error>?
 
     init(
         matches: [GuidedTargetMatch] = [.matched],
-        suspendsSpokenFeedback: Bool = false
+        suspendsSpokenFeedback: Bool = false,
+        connectionFailure: GuidedRealtimeError? = nil,
+        connectionFailureAttempt: Int = 1
     ) {
         outcomes = matches.map(FakeReviewOutcome.success)
         self.suspendsSpokenFeedback = suspendsSpokenFeedback
+        connectionFailures = connectionFailure.map {
+            [connectionFailureAttempt: $0]
+        } ?? [:]
     }
 
     init(outcomes: [FakeReviewOutcome]) {
         self.outcomes = outcomes
         suspendsSpokenFeedback = false
+        connectionFailures = [:]
     }
 
     func connect() async throws {
+        connectionAttempt += 1
+        if let failure = connectionFailures.removeValue(forKey: connectionAttempt) {
+            throw failure
+        }
         connected = true
     }
 
@@ -609,11 +718,13 @@ private final class FakeGuidedAudioController: GuidedLessonAudioControlling {
     private var pendingStop: CheckedContinuation<Void, Never>?
     private var shouldSuspendCaptureStart = false
     private var pendingCaptureStart: CheckedContinuation<Void, Error>?
+    private let speechPresenceDetected: Bool
 
     var hasPendingStop: Bool { pendingStop != nil }
     var hasPendingCaptureStart: Bool { pendingCaptureStart != nil }
 
-    init() {
+    init(speechPresenceDetected: Bool = true) {
+        self.speechPresenceDetected = speechPresenceDetected
         let pair = AsyncStream.makeStream(
             of: ProductAudioEvent.self,
             bufferingPolicy: .bufferingNewest(32)
@@ -657,8 +768,8 @@ private final class FakeGuidedAudioController: GuidedLessonAudioControlling {
             startedAt: Date(timeIntervalSince1970: 10),
             endedAt: Date(timeIntervalSince1970: 12),
             capturedDuration: 2,
-            estimatedVoiceOnset: 0.2,
-            speechPresenceDetected: true,
+            estimatedVoiceOnset: speechPresenceDetected ? 0.2 : nil,
+            speechPresenceDetected: speechPresenceDetected,
             sampleRate: 48_000,
             disposition: disposition,
             rawAudioRetained: false

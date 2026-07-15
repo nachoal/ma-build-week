@@ -55,6 +55,7 @@ final class KaiwaProductSmokeUITests: XCTestCase {
 
         let tryVoice = app.buttons["guided.cta.try-voice"]
         XCTAssertTrue(tryVoice.waitForExistence(timeout: 5))
+        XCTAssertTrue(waitForEnabled(tryVoice, timeout: 5))
         XCTAssertFalse(app.buttons["guided.capture.stop"].exists)
         tryVoice.tap()
 
@@ -110,6 +111,41 @@ final class KaiwaProductSmokeUITests: XCTestCase {
     }
 
     @MainActor
+    func testMissingPrivateReviewAccessBlocksRecordingBeforeMicrophoneUse() {
+        let app = XCUIApplication()
+        app.launchEnvironment["MA_UI_TEST_ONBOARDING_COMPLETED"] = "true"
+        app.launchEnvironment["MA_UI_TEST_GUIDED_FIXTURE"] = "true"
+        app.launchEnvironment["MA_UI_TEST_GUIDED_CONNECTION_FAILURE"] =
+            "missing_credential"
+        app.launch()
+        ensureEnglish(app)
+
+        XCTAssertTrue(app.buttons["hero.restaurant"].waitForExistence(timeout: 10))
+        app.buttons["hero.restaurant"].tap()
+        XCTAssertTrue(app.buttons["guided.cta.show-phrase"].waitForExistence(timeout: 5))
+        app.buttons["guided.cta.show-phrase"].tap()
+
+        let accessError = app.staticTexts["guided.connection.error"]
+        XCTAssertTrue(accessError.waitForExistence(timeout: 5))
+        XCTAssertEqual(
+            accessError.label,
+            "Speaking review is not ready on this private demo. Reinstall it from the authorized Mac before recording."
+        )
+        XCTAssertEqual(accessError.value as? String, "missing_credential")
+
+        let model = app.buttons["guided.audio.model"]
+        XCTAssertTrue(model.waitForExistence(timeout: 5))
+        model.tap()
+        let retry = app.buttons["guided.connection.retry"]
+        XCTAssertTrue(retry.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["guided.cta.try-voice"].exists)
+        XCTAssertFalse(app.buttons["guided.capture.stop"].exists)
+        retry.tap()
+        XCTAssertTrue(accessError.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["guided.capture.stop"].exists)
+    }
+
+    @MainActor
     func testFeedbackRetryStaysOnTheSameVisiblePhrase() {
         let app = launchGuidedFixture()
         ensureEnglish(app)
@@ -117,8 +153,10 @@ final class KaiwaProductSmokeUITests: XCTestCase {
         app.buttons["hero.restaurant"].tap()
         app.buttons["guided.cta.show-phrase"].tap()
         app.buttons["guided.audio.model"].tap()
-        XCTAssertTrue(app.buttons["guided.cta.try-voice"].waitForExistence(timeout: 5))
-        app.buttons["guided.cta.try-voice"].tap()
+        let tryVoice = app.buttons["guided.cta.try-voice"]
+        XCTAssertTrue(tryVoice.waitForExistence(timeout: 5))
+        XCTAssertTrue(waitForEnabled(tryVoice, timeout: 5))
+        tryVoice.tap()
         XCTAssertTrue(app.buttons["guided.capture.stop"].waitForExistence(timeout: 5))
         app.buttons["guided.capture.stop"].tap()
 
@@ -158,5 +196,17 @@ final class KaiwaProductSmokeUITests: XCTestCase {
             language.tap()
             XCTAssertEqual(language.label, "Switch to Spanish")
         }
+    }
+
+    @MainActor
+    private func waitForEnabled(
+        _ element: XCUIElement,
+        timeout: TimeInterval
+    ) -> Bool {
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "isEnabled == true"),
+            object: element
+        )
+        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
     }
 }

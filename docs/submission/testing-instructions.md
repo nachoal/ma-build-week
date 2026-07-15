@@ -18,8 +18,12 @@ private production-Realtime UI suite is isolated in the opt-in `MALive` scheme,
 so a normal `xcodebuild test` never depends on a private credential or network
 provider. Guided deterministic tests and the historical replay use sanitized
 fixtures. The real-audio integration test exercises the shipping audio owner
-and accepts the simulator's honest recoverable no-speech/provider-unavailable
-state; it does not claim a successful semantic review.
+with real Apple playback/capture, replaces only the simulator's often-silent
+post-stop learner payload with the labeled bundled learner sample, and uses a
+deterministic secret-free review provider. It requires the complete
+capture/stop/review transition and may not
+accept missing private access, unauthorized access, or a generic recoverable
+provider failure as success. It does not claim a live semantic review.
 
 The standard `MA` suite also exercises local deletion as a transaction: four
 unit/Keychain tests prove delete-before-reset ordering, error propagation,
@@ -55,10 +59,19 @@ substitute for physical-device capture, route, or learner evidence.
 Use the provided signed build or, on the paired development Mac:
 
 ```sh
-scripts/device-ma.sh product
+scripts/install-release-product.sh
 ```
 
-Keep the iPhone unlocked and awake.
+Keep the iPhone unlocked and awake. The installer refuses a dirty tree, stale
+archive, checksum or signature mismatch, and a locked phone. It retains only
+value-free evidence after the Release app has verified exact Keychain readback.
+A second launch has no bearer token and must load Keychain, mint a short-lived
+secret, open the Realtime WebSocket, and policy-verify `session.created`. A
+third launch has neither token nor nonce. This is the authorized private-demo
+installation path, not public/TestFlight enrollment.
+
+`scripts/device-ma.sh product` builds and provisions a development candidate;
+it is useful during implementation but is not archived-Release evidence.
 
 The two automated physical checks use the same dynamic discovery, compile
 without requiring the phone to remain awake, then fail immediately before
@@ -76,8 +89,10 @@ can select an advertised `arm64e` destination for the generated `arm64` test
 bundle and fail before app assertions with `Bad CPU type in executable`.
 
 The first retains the production broker/Realtime/planner path with repeatable
-bundled learner input. The second uses the actual microphone permission and
-capture graph and accepts an honest silence/recoverable-review result. Neither
+bundled learner input. The second starts and stops the actual microphone
+capture graph, then substitutes only a labeled deterministic learner payload so
+its secret-free provider must reach completed feedback. A separate silence test
+requires no transcript and no review. Neither
 automated check can establish human audibility, Japanese teaching quality,
 route-change recovery, or learner outcome; record those observations
 separately. A passing runner also requires value-free proof that its temporary
@@ -107,6 +122,9 @@ version, route, network, commit, and evidence path.
 - Deny microphone permission: no capture begins; the error and Settings action
   are accurate.
 - Grant permission and retry: capture starts only after another explicit tap.
+- Remove or revoke private review access: the bilingual access error is visible
+  on the model screen and recording remains disabled; retry never starts the
+  microphone until connection readiness succeeds.
 - Record silence: no fabricated transcript or positive review appears.
 - Fail Realtime/network: the attempt remains unreviewed and recoverable; the app
   never jumps to the waiter or completion.
@@ -118,7 +136,8 @@ version, route, network, commit, and evidence path.
 - Force local credential deletion to fail in the DEBUG UI seam: the bilingual
   error appears, the profile sheet stays open, and onboarding/profile choices
   remain unchanged. With normal deletion, verified Keychain absence returns
-  the app to onboarding.
+  the app to onboarding. A deleted private-demo credential must be reprovisioned
+  by the authorized Mac; this build has no public self-enrollment path.
 
 ## Historical deterministic replay
 

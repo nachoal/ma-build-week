@@ -4,6 +4,7 @@ import Security
 
 enum PlannerCredentialError: Error, Equatable, Sendable {
     case invalidProvisioningToken
+    case provisioningNotVerified
     case keychain(OSStatus)
     case deletionNotVerified
 }
@@ -36,7 +37,11 @@ struct PlannerInstallCredentialStore: PlannerInstallCredentialLoading {
         guard Self.isValid(token: token) else {
             throw PlannerCredentialError.invalidProvisioningToken
         }
-        try save(token)
+        try Self.verifyProvisioning(
+            token: token,
+            save: save,
+            load: loadToken
+        )
     }
 
     func loadToken() throws -> String? {
@@ -81,6 +86,17 @@ struct PlannerInstallCredentialStore: PlannerInstallCredentialLoading {
         try delete()
         guard try load() == nil else {
             throw PlannerCredentialError.deletionNotVerified
+        }
+    }
+
+    static func verifyProvisioning(
+        token: String,
+        save: (String) throws -> Void,
+        load: () throws -> String?
+    ) throws {
+        try save(token)
+        guard try load() == token else {
+            throw PlannerCredentialError.provisioningNotVerified
         }
     }
 

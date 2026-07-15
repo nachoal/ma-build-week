@@ -29,7 +29,8 @@ final class GuidedLessonFeature {
 
     static func production() -> GuidedLessonFeature {
         #if DEBUG
-        if ProcessInfo.processInfo.environment["MA_UI_TEST_GUIDED_LIVE"] == "true" {
+        let environment = ProcessInfo.processInfo.environment
+        if environment["MA_UI_TEST_GUIDED_LIVE"] == "true" {
             let credentials = PlannerInstallCredentialStore()
             try? credentials.provisionFromProcessEnvironment()
             return GuidedLessonFeature(
@@ -42,10 +43,23 @@ final class GuidedLessonFeature {
                 )
             )
         }
-        if ProcessInfo.processInfo.environment["MA_UI_TEST_GUIDED_FIXTURE"] == "true" {
+        if environment["MA_UI_TEST_GUIDED_REAL_AUDIO_FIXTURE_PROVIDER"] == "true" {
+            return GuidedLessonFeature(
+                audio: GuidedLessonRealCaptureFixturePayloadAudioController(),
+                realtime: GuidedLessonUITestRealtimeProvider(),
+                planner: GuidedLessonUITestLearningPlanner()
+            )
+        }
+        if environment["MA_UI_TEST_GUIDED_FIXTURE"] == "true" {
+            let connectionFailure: GuidedRealtimeError? =
+                environment["MA_UI_TEST_GUIDED_CONNECTION_FAILURE"] == "missing_credential"
+                ? .missingCredential
+                : nil
             return GuidedLessonFeature(
                 audio: GuidedLessonUITestAudioController(),
-                realtime: GuidedLessonUITestRealtimeProvider(),
+                realtime: GuidedLessonUITestRealtimeProvider(
+                    connectionFailure: connectionFailure
+                ),
                 planner: GuidedLessonUITestLearningPlanner()
             )
         }
@@ -107,6 +121,10 @@ final class GuidedLessonFeature {
 
         case .playModel:
             playModel()
+
+        case .retryRealtimeConnection:
+            state.connectionReady = false
+            warmRealtimeConnection()
 
         case .beginAttempt:
             beginAttempt()
@@ -195,8 +213,21 @@ final class GuidedLessonFeature {
             return
         }
         guard !state.isBusy else { return }
+        guard state.connectionReady else {
+            if let failure = state.connectionFailure {
+                state.phase = .attempt(
+                    context: context,
+                    step: .recoverableError(.realtime(failure))
+                )
+            } else {
+                warmRealtimeConnection()
+            }
+            return
+        }
 
         operationTask?.cancel()
+        connectionTask?.cancel()
+        connectionTask = nil
         recordingTimeoutTask?.cancel()
         let request = GuidedAttemptRequest(
             context: context,
@@ -214,15 +245,33 @@ final class GuidedLessonFeature {
         )
         activeRequest = request
         activeCaptureRequest = capture
+        state.connectionPreparing = true
+        state.connectionReady = false
+        state.connectionFailure = nil
         state.spokenFeedbackUnavailable = false
         state.spokenFeedbackPreparing = false
         state.spokenFeedbackCompleted = false
-        state.phase = .attempt(context: context, step: .requestingPermission)
+        state.phase = .attempt(context: context, step: .checkingReviewConnection)
         let operationGeneration = generation
 
         operationTask = Task { [weak self] in
             guard let self else { return }
             do {
+                // Warm-up is only a latency optimization. `connect()` must
+                // reconcile the provider's cached readiness with its actual
+                // transport actor before every explicit microphone action.
+                try Task.checkCancellation()
+                try await realtime.connect()
+                guard !Task.isCancelled,
+                      generation == operationGeneration,
+                      activeRequest?.id == request.id,
+                      activeCaptureRequest?.id == request.id else {
+                    await realtime.disconnect()
+                    return
+                }
+                state.connectionPreparing = false
+                state.connectionReady = true
+                state.phase = .attempt(context: context, step: .requestingPermission)
                 try await audio.startRealtimeCapture(capture)
                 guard !Task.isCancelled,
                       generation == operationGeneration,
@@ -236,6 +285,20 @@ final class GuidedLessonFeature {
                     step: .recording(attemptID: request.id)
                 )
                 scheduleRecordingTimeout(requestID: request.id)
+            } catch let failure as GuidedRealtimeError {
+                guard !Task.isCancelled,
+                      generation == operationGeneration,
+                      activeRequest?.id == request.id,
+                      activeCaptureRequest?.id == request.id else { return }
+                activeRequest = nil
+                activeCaptureRequest = nil
+                state.connectionPreparing = false
+                state.connectionReady = false
+                state.connectionFailure = failure
+                state.phase = .attempt(
+                    context: context,
+                    step: .recoverableError(.realtime(failure))
+                )
             } catch let failure as ProductAudioFailure {
                 guard !Task.isCancelled,
                       generation == operationGeneration,
@@ -243,12 +306,15 @@ final class GuidedLessonFeature {
                       activeCaptureRequest?.id == request.id else { return }
                 activeRequest = nil
                 activeCaptureRequest = nil
+                state.connectionPreparing = false
                 state.phase = .attempt(
                     context: context,
                     step: .recoverableError(
                         failure == .microphoneDenied ? .microphoneDenied : .interrupted
                     )
                 )
+            } catch is CancellationError {
+                return
             } catch {
                 guard !Task.isCancelled,
                       generation == operationGeneration,
@@ -256,6 +322,7 @@ final class GuidedLessonFeature {
                       activeCaptureRequest?.id == request.id else { return }
                 activeRequest = nil
                 activeCaptureRequest = nil
+                state.connectionPreparing = false
                 state.phase = .attempt(
                     context: context,
                     step: .recoverableError(.interrupted)
@@ -310,6 +377,13 @@ final class GuidedLessonFeature {
                 #endif
                 activeRequest = nil
                 activeCaptureRequest = nil
+                if error != .noSpeech {
+                    // The production provider invalidates its transport on a
+                    // review error. Mirror that truth in UI readiness so the
+                    // next attempt must reconnect before capture.
+                    state.connectionReady = false
+                    state.connectionFailure = error
+                }
                 state.phase = .attempt(
                     context: context,
                     step: .recoverableError(
@@ -362,6 +436,9 @@ final class GuidedLessonFeature {
                   state.feedbackTransition == .retrying else { return }
             state.feedbackTransition = nil
             state.phase = .attempt(context: context, step: .ready)
+            if !state.connectionReady {
+                warmRealtimeConnection()
+            }
         }
     }
 
@@ -478,16 +555,31 @@ final class GuidedLessonFeature {
     private func warmRealtimeConnection() {
         guard connectionTask == nil, !state.connectionReady else { return }
         let operationGeneration = generation
+        state.connectionPreparing = true
+        state.connectionFailure = nil
         connectionTask = Task { [weak self] in
             guard let self else { return }
-            defer { connectionTask = nil }
+            defer {
+                connectionTask = nil
+                if generation == operationGeneration {
+                    state.connectionPreparing = false
+                }
+            }
             do {
                 try await realtime.connect()
                 guard !Task.isCancelled, generation == operationGeneration else { return }
                 state.connectionReady = true
+                state.connectionFailure = nil
+            } catch let error as GuidedRealtimeError {
+                guard !Task.isCancelled, generation == operationGeneration else { return }
+                state.connectionReady = false
+                state.connectionFailure = error
+            } catch is CancellationError {
+                return
             } catch {
-                // Recording remains available; the visible review state owns
-                // the actionable retry if a later connection also fails.
+                guard !Task.isCancelled, generation == operationGeneration else { return }
+                state.connectionReady = false
+                state.connectionFailure = .serviceUnavailable
             }
         }
     }

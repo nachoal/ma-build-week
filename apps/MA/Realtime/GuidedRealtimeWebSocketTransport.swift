@@ -14,6 +14,7 @@ protocol GuidedRealtimeTransporting: Sendable {
         onEvent: @escaping @Sendable (GuidedRealtimeServerEvent) async -> Void
     ) async throws
     func send(_ command: Data) async throws
+    func connectionState() async -> GuidedRealtimeTransportState
     func disconnect() async
 }
 
@@ -245,15 +246,23 @@ actor GuidedRealtimeWebSocketTransport: GuidedRealtimeTransporting {
         }
     }
 
+    func connectionState() async -> GuidedRealtimeTransportState {
+        state
+    }
+
     func disconnect() async {
         generation &+= 1
         receiveTask?.cancel()
         receiveTask = nil
-        if let socket { await socket.close() }
+        let socketToClose = socket
         socket = nil
         eventHandler = nil
         deduplicator = GuidedProviderEventDeduplicator()
         state = .idle
+        // Publish the detached, non-connected state before crossing the
+        // socket actor boundary. A close may suspend; reconnect/readiness
+        // checks must never observe the old socket as connected meanwhile.
+        if let socketToClose { await socketToClose.close() }
     }
 
     private func receiveFirstMessage(
@@ -299,13 +308,19 @@ actor GuidedRealtimeWebSocketTransport: GuidedRealtimeTransporting {
     }
 
     private func failCurrentConnection(notify: Bool) async {
+        generation &+= 1
         receiveTask?.cancel()
         receiveTask = nil
-        if let socket { await socket.close() }
+        let socketToClose = socket
         let handler = eventHandler
         socket = nil
         eventHandler = nil
+        deduplicator = GuidedProviderEventDeduplicator()
         state = .failed
+        // As with explicit disconnect, detach and publish failure before an
+        // awaited close. The provider's pre-record readiness check can now
+        // reliably reject or reconnect a socket already in teardown.
+        if let socketToClose { await socketToClose.close() }
         if notify, let handler {
             await handler(.transportFailed)
         }

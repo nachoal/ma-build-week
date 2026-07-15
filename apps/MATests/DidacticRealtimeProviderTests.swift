@@ -127,6 +127,23 @@ struct DidacticRealtimeProviderTests {
         #expect(await transport.connectCount() == 1)
     }
 
+    @Test("A transport failure after warm-up reconnects before readiness")
+    func staleWarmTransportReconnects() async throws {
+        let transport = CountingGuidedTransport()
+        let provider = DidacticRealtimeProvider(
+            broker: StubGuidedSecretBroker(),
+            transport: transport
+        )
+
+        try await provider.connect()
+        await transport.failConnection()
+        try await provider.connect()
+
+        #expect(await transport.connectCount() == 2)
+        #expect(await transport.disconnectCount() == 1)
+        #expect(await transport.connectionState() == .connected)
+    }
+
     @Test("Disconnect invalidates a late secret mint without resurrecting transport")
     func disconnectInvalidatesLateConnect() async {
         let broker = SuspendedGuidedSecretBroker()
@@ -239,19 +256,26 @@ private actor SuspendedGuidedSecretBroker: GuidedRealtimeSecretMinting {
 private actor CountingGuidedTransport: GuidedRealtimeTransporting {
     private var connections = 0
     private var disconnections = 0
+    private var state: GuidedRealtimeTransportState = .idle
 
     func connect(
         clientSecret: GuidedRealtimeClientSecret,
         onEvent: @escaping @Sendable (GuidedRealtimeServerEvent) async -> Void
     ) async throws {
         connections += 1
+        state = .connected
     }
 
     func send(_ command: Data) async throws {}
 
+    func connectionState() async -> GuidedRealtimeTransportState { state }
+
     func disconnect() async {
         disconnections += 1
+        state = .idle
     }
+
+    func failConnection() { state = .failed }
 
     func connectCount() -> Int { connections }
     func disconnectCount() -> Int { disconnections }
@@ -266,6 +290,7 @@ private actor ScriptedGuidedTransport: GuidedRealtimeTransporting {
     private var purposes: [String] = []
     private var connections = 0
     private var disconnections = 0
+    private var state: GuidedRealtimeTransportState = .idle
 
     init(
         reviewStatus: String = "completed",
@@ -281,6 +306,7 @@ private actor ScriptedGuidedTransport: GuidedRealtimeTransporting {
     ) async throws {
         connections += 1
         handler = onEvent
+        state = .connected
     }
 
     func send(_ command: Data) async throws {
@@ -366,7 +392,10 @@ private actor ScriptedGuidedTransport: GuidedRealtimeTransporting {
         disconnections += 1
         staleHandler = handler
         handler = nil
+        state = .idle
     }
+
+    func connectionState() async -> GuidedRealtimeTransportState { state }
 
     func commandTypes() -> [String] { types }
     func responsePurposes() -> [String] { purposes }

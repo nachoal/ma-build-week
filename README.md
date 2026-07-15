@@ -50,10 +50,17 @@ scripts/device-ma.sh build-install
 scripts/device-ma.sh product
 scripts/device-ma.sh replay
 scripts/test-live-guided-device.sh
+scripts/install-release-product.sh
 ```
 
-`product` reads the revocable private install token from the macOS Keychain and
-provisions it into this-device-only iOS Keychain storage without printing it.
+`product` is a development-build helper. For the final private demo,
+`install-release-product.sh` installs only the exact signed/checksummed archive,
+proves exact Keychain readback, then requires a second bearer-free launch to
+load Keychain and policy-verify a real Realtime WebSocket session before a final
+ordinary launch. Both helpers read the
+revocable private install token from the authorized Mac's Keychain without
+printing it; the token persists only in this-device-only iOS Keychain until
+explicit deletion. This is not a public/TestFlight enrollment design.
 `replay` launches a deterministic visual fallback permanently labeled
 `REPLAY · NOT LIVE / NO EN VIVO`; it invokes neither microphone, audio hardware, network,
 nor the planner.

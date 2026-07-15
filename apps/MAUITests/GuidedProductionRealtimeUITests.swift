@@ -49,8 +49,11 @@ final class GuidedProductionRealtimeUITests: XCTestCase {
         model.tap()
         let firstRecord = app.buttons["guided.cta.try-voice"]
         XCTAssertTrue(firstRecord.waitForExistence(timeout: 8))
+        XCTAssertTrue(waitForEnabled(firstRecord, timeout: networkTimeout))
         firstRecord.tap()
-        XCTAssertTrue(app.buttons["guided.capture.stop"].waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            app.buttons["guided.capture.stop"].waitForExistence(timeout: networkTimeout)
+        )
         app.buttons["guided.capture.stop"].tap()
 
         let firstAdvance = try requireCompletedReview(
@@ -78,7 +81,9 @@ final class GuidedProductionRealtimeUITests: XCTestCase {
             : "The server finished. Now you answer."
         XCTAssertTrue(app.staticTexts[responseReady].exists)
         respond.tap()
-        XCTAssertTrue(app.buttons["guided.capture.stop"].waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            app.buttons["guided.capture.stop"].waitForExistence(timeout: networkTimeout)
+        )
         app.buttons["guided.capture.stop"].tap()
 
         let secondAdvance = try requireCompletedReview(
@@ -166,6 +171,18 @@ final class GuidedProductionRealtimeUITests: XCTestCase {
     ) -> Bool {
         let expectation = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "label == %@", expected),
+            object: element
+        )
+        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
+    }
+
+    @MainActor
+    private func waitForEnabled(
+        _ element: XCUIElement,
+        timeout: TimeInterval
+    ) -> Bool {
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "isEnabled == true"),
             object: element
         )
         return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed

@@ -3,29 +3,42 @@
 No item authorizes a push, public upload, repository share, `/feedback`, or
 Devpost submission. Those require Ignacio's explicit approval.
 
+The prior `e968354` / `29b045...` archive is **superseded and must not be
+installed or submitted**. A physical report reproduced that it could launch
+without usable speaking-turn review access. PID-only launch evidence was a
+false release gate. The replacement archive remains pending until the exact
+Release app passes verified credential readback, a bearer-free policy-checked
+Realtime WebSocket session, a fully ordinary relaunch, and the current
+functional gates below.
+
 ## Freeze identity
 
-- [x] Frozen submission/archive commit:
+- [ ] Replacement frozen submission/archive commit:
+      `________________`; pending current fix and device verification
+- [x] Superseded archive retained for audit only:
       `e968354b04d5043d65db9c809d02f0ae209a60a1`; shipping app
       implementation commit: `f9f7a7f9fdd2ae649ac20bb18392ab14f2b6047c`
 - [x] Xcode/Swift/iOS build versions recorded in the candidate packet
 - [x] Release `.xcarchive` rebuilt from the clean frozen commit
 - [x] `PrivacyInfo.xcprivacy` reverified inside the refreshed `MA.app`
-- [x] Signed physical install/launch verified on the dynamically discovered
+- [x] Superseded archive install/launch reproduced on the dynamically discovered
       iPhone 17 Pro running iOS 27.0. The final Release app from the exact
       `e968354b04d5043d65db9c809d02f0ae209a60a1` archive launched as PID 20185;
       a follow-up process inventory still found that PID running from
       `MA.app`. This is launch/stability evidence only and does not strengthen
-      any audio or learner claim
+      any audio or learner claim and did not prove usable review access
+- [ ] Replacement archived Release verifies exact Keychain readback, then a
+      bearer-free Keychain-loaded WebSocket `session.created` policy check,
+      relaunches with neither token nor nonce, and remains running on the device
 - [x] `scripts/scan-secrets.sh` rerun after the new frozen implementation
       commit, including the archived app and compiled executable
 
 ## Automated and service evidence
 
-- [x] Exact documented, no-secret hardened-candidate MA result bundle: 213/213
-      executions, 0 skipped (184 test definitions); the isolated private
-      `MALive` target was absent at
-      `.build/test-results/MA-final-verified-deletion-standard.xcresult`
+- [x] Current no-secret replacement MA result bundle: 227/227 executions,
+      0 skipped (193 test definitions plus 38 dynamic parameter runs); the
+      isolated private `MALive` target was absent at
+      `.build/test-results/MA-release-access-final-standard.xcresult`
 - [x] Focused local-deletion gate: 7/7 (four transaction/Keychain tests and
       three bilingual UI journeys) at
       `.build/test-results/MA-local-data-deletion-focused.xcresult`; the same
@@ -36,10 +49,11 @@ Devpost submission. Those require Ignacio's explicit approval.
       times with `MA_LIVE_SIM_ITERATIONS=5`, and all 10 journeys passed (five
       English, five Spanish) at
       `.build/test-results/MA-live-low-reasoning-bilingual-stress5.xcresult`
-- [x] Separate real-audio simulator result includes English permission
-      disclosure, one-tap model completion, real AVAudio capture, and stop; 1/1
-      with verified credential deletion at
-      `.build/test-results/MA-live-audio-cleanup-proof-simulator.xcresult`
+- [x] Focused replacement gate passed 24/24 at
+      `.build/test-results/MA-release-access-focused-current.xcresult`, including
+      real AVAudio playback/capture/stop followed by labeled deterministic
+      review feedback, separate silence honesty, missing-access-before-mic,
+      stale-warm-transport rejection, and provisioning receipt checks
 - [x] Complete MAAudioProbe result bundle (51/51 executions, 49 test
       definitions, characterization only) at
       `.build/test-results/MAAudioProbe-final-hardening.xcresult`
@@ -49,7 +63,7 @@ Devpost submission. Those require Ignacio's explicit approval.
 - [x] Live private health, malformed-media rejection, Realtime mint,
       exact policy-hash, and guided-planner verification
 - [x] Secret scan passes the current candidate, staged inputs, reachable
-      history, and the current compiled simulator executable after the 213/213,
+      history, and the current compiled simulator executable after the 227/227,
       10/10, and 1/1 gates; the refreshed archive bundle and compiled executable
       scan also passed from the exact frozen commit
 
@@ -100,9 +114,10 @@ Stage optional redacted logs/video under ignored `.build/submission-inputs/`;
 the archive tool rejects paths outside its canonical roots, records the build
 environment and exact commit, and rescans staged copy.
 
-- [x] Refreshed archive checksum:
+- [ ] Replacement archive checksum: `________________`
+- [x] Superseded broken archive checksum retained for audit only:
       `29b0454396797d7483c6306731eae9c309fe8406d45227b61870845e81ba08db`
-- [x] Latest superseded archive checksum retained for audit only:
+- [x] Earlier superseded archive checksum retained for audit only:
       `91c251a7d51a58c8375c9ab8bf27d85bccc51a101f3158dd90a1fc07c64d96e9`
 - [ ] Video checksum: `________________`
 - [x] Subtitle checksum:
@@ -112,7 +127,7 @@ environment and exact commit, and rescans staged copy.
       `6d0479cf791f0a74607db27c80beac9454a8409684d8c8054a507970c73b6abe`;
       `KaiwaLoopReplayFixture.swift` —
       `2fd876b1f55aaadff58c2c3f8d52c83d7df5a4d9667316309f25cc2cfb78164e`
-- [x] Final 26-entry checksum manifest reviewed and rehashed
+- [ ] Replacement checksum manifest reviewed and rehashed
 
 ## Final external actions
 

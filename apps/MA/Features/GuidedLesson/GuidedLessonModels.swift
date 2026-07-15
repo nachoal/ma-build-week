@@ -50,11 +50,16 @@ enum GuidedAttemptFailure: Equatable, Sendable {
         }
     }
 
+    var isRealtimeFailure: Bool {
+        if case .realtime = self { true } else { false }
+    }
+
     var message: String { message(in: .spanish) }
 }
 
 enum GuidedAttemptStep: Equatable, Sendable {
     case ready
+    case checkingReviewConnection
     case requestingPermission
     case recording(attemptID: UUID)
     case reviewing(attemptID: UUID)
@@ -94,7 +99,9 @@ struct GuidedLessonState: Equatable, Sendable {
     var spokenFeedbackPreparing = false
     var spokenFeedbackCompleted = false
     var feedbackTransition: GuidedFeedbackTransition?
+    var connectionPreparing = false
     var connectionReady = false
+    var connectionFailure: GuidedRealtimeError?
     var learningReport: GuidedLearningReport?
     var plannerStep: GuidedPlannerStep?
 
@@ -111,6 +118,7 @@ struct GuidedLessonState: Equatable, Sendable {
         if feedbackTransition != nil { return true }
         return switch phase {
         case .model(.playing),
+             .attempt(_, .checkingReviewConnection),
              .attempt(_, .requestingPermission),
              .attempt(_, .reviewing),
              .tutorTurn(.preparing),
@@ -138,6 +146,7 @@ struct GuidedLessonState: Equatable, Sendable {
 enum GuidedLessonIntent: Equatable, Sendable {
     case showPhrase
     case playModel
+    case retryRealtimeConnection
     case beginAttempt
     case finishAttempt
     case retryAttempt

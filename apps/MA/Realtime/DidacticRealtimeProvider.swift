@@ -131,7 +131,15 @@ actor DidacticRealtimeProvider: GuidedRealtimeProviding {
     }
 
     func connect() async throws {
-        guard !connected else { return }
+        if connected {
+            // The receive loop can observe a socket failure between warm-up
+            // and the learner's explicit record tap. Reconcile the provider's
+            // cached flag with the transport actor before treating it as ready.
+            if await transport.connectionState() == .connected {
+                return
+            }
+            await invalidateConnection(expectedGeneration: connectionGeneration)
+        }
 
         let attempt: ConnectionAttempt
         if let connectionAttempt {

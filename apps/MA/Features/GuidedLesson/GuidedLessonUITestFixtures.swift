@@ -166,7 +166,7 @@ final class GuidedLessonLiveUITestAudioController: GuidedLessonAudioControlling 
         continuation.yield(.stateChanged(value))
     }
 
-    private nonisolated static func bundledTargetPCM16() throws -> Data {
+    fileprivate nonisolated static func bundledTargetPCM16() throws -> Data {
         let file = try AVAudioFile(
             forReading: AudioAssetCatalog.url(for: .hitoriDesu),
             commonFormat: .pcmFormatFloat32,
@@ -209,11 +209,69 @@ final class GuidedLessonLiveUITestAudioController: GuidedLessonAudioControlling 
     }
 }
 
+/// Starts and stops the shipping Apple capture graph, then replaces only the
+/// simulator's often-silent microphone payload with the bundled learner sample.
+/// This makes the standard no-secret integration gate require a real reviewed
+/// UI state without pretending that simulator silence is learner speech.
+@MainActor
+final class GuidedLessonRealCaptureFixturePayloadAudioController:
+    GuidedLessonAudioControlling {
+    private let audio = AudioGraphController()
+
+    var state: ProductAudioState { audio.state }
+    var events: AsyncStream<ProductAudioEvent> { audio.events }
+
+    func play(_ prompt: BundledPrompt) async throws {
+        try await audio.play(prompt)
+    }
+
+    func startRealtimeCapture(_ request: CaptureRequest) async throws {
+        try await audio.startRealtimeCapture(request)
+    }
+
+    func finishRealtimeCapture(
+        _ disposition: CaptureDisposition
+    ) async throws -> RealtimeCapturePayload? {
+        guard let captured = try await audio.finishRealtimeCapture(disposition) else {
+            return nil
+        }
+        let pcm16 = try GuidedLessonLiveUITestAudioController.bundledTargetPCM16()
+        let duration = Double(pcm16.count) / (24_000 * 2)
+        let receipt = CaptureReceipt(
+            id: captured.receipt.id,
+            request: captured.receipt.request,
+            startedAt: captured.receipt.startedAt,
+            endedAt: captured.receipt.endedAt,
+            capturedDuration: duration,
+            estimatedVoiceOnset: 0,
+            speechPresenceDetected: true,
+            sampleRate: 24_000,
+            disposition: captured.receipt.disposition,
+            rawAudioRetained: false
+        )
+        return RealtimeCapturePayload(receipt: receipt, pcm16Data: pcm16)
+    }
+
+    func playRealtimePCM16(_ data: Data) async throws {
+        try await audio.playRealtimePCM16(data)
+    }
+
+    func stop(_ reason: AudioStopReason) async {
+        await audio.stop(reason)
+    }
+}
+
 actor GuidedLessonUITestRealtimeProvider: GuidedRealtimeProviding {
     private var reviewCount = 0
+    private let connectionFailure: GuidedRealtimeError?
+
+    init(connectionFailure: GuidedRealtimeError? = nil) {
+        self.connectionFailure = connectionFailure
+    }
 
     func connect() async throws {
         try await ContinuousClock().sleep(for: .milliseconds(50))
+        if let connectionFailure { throw connectionFailure }
     }
 
     func reviewAttempt(

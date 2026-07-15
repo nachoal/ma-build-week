@@ -2,13 +2,15 @@ import XCTest
 
 /// A deliberately separate integration check for the real simulator audio
 /// graph. The deterministic product journey tests prove lesson ordering; this
-/// test proves that the shipping dependencies cross the Apple permission and
-/// AVAudioEngine boundaries without substituting fixture audio.
+/// test proves that the shipping audio dependency crosses the Apple permission
+/// and AVAudioEngine boundaries. A deterministic provider keeps this standard
+/// no-secret gate from treating missing private access as an acceptable result.
 final class GuidedLiveAudioIntegrationUITests: XCTestCase {
     @MainActor
     func testOneTapModelPlaybackAndRealCaptureStopStayResponsive() {
         let app = XCUIApplication()
         app.launchEnvironment["MA_UI_TEST_ONBOARDING_COMPLETED"] = "true"
+        app.launchEnvironment["MA_UI_TEST_GUIDED_REAL_AUDIO_FIXTURE_PROVIDER"] = "true"
         app.launch()
 
         let language = app.buttons["chrome.language"]
@@ -34,6 +36,11 @@ final class GuidedLiveAudioIntegrationUITests: XCTestCase {
         // must therefore be sufficient to unlock the learner turn.
         let record = app.buttons["guided.cta.try-voice"]
         XCTAssertTrue(record.waitForExistence(timeout: 8))
+        let enabled = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "isEnabled == true"),
+            object: record
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 8), .completed)
         record.tap()
 
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
@@ -71,9 +78,7 @@ final class GuidedLiveAudioIntegrationUITests: XCTestCase {
 
         XCTAssertTrue(app.exists)
         XCTAssertFalse(stop.exists, "Stopping capture must leave the recording state")
-        XCTAssertTrue(
-            retryAfterError.exists || feedback.exists,
-            "Structured review must resolve to feedback or a recoverable error"
-        )
+        XCTAssertTrue(feedback.exists, "Deterministic review must complete")
+        XCTAssertFalse(retryAfterError.exists, "No recoverable provider result is accepted")
     }
 }

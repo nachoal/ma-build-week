@@ -149,6 +149,23 @@ private struct GuidedModelScreen: View {
                 .padding(.horizontal, MATheme.sideMargin)
                 .padding(.top, 28)
 
+                if let failure = state.connectionFailure {
+                    Label {
+                        Text(failure.message(in: language))
+                    } icon: {
+                        Image(systemName: "wifi.exclamationmark")
+                    }
+                    .font(MATheme.body(15, weight: .semibold))
+                    .foregroundStyle(MATheme.sumi)
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(MATheme.mist, in: RoundedRectangle(cornerRadius: 18))
+                    .accessibilityIdentifier("guided.connection.error")
+                    .accessibilityValue(failure.diagnosticCode)
+                    .padding(.horizontal, MATheme.sideMargin)
+                    .padding(.top, 14)
+                }
+
                 if step == .completed {
                     Button {
                         send(.playModel)
@@ -171,14 +188,13 @@ private struct GuidedModelScreen: View {
                 Spacer(minLength: 28)
                 PrimaryButton(
                     title: primaryTitle,
-                    identifier: step == .completed
-                        ? "guided.cta.try-voice" : "guided.audio.model"
+                    identifier: primaryIdentifier
                 ) {
-                    send(step == .completed ? .beginAttempt : .playModel)
+                    performPrimaryAction()
                 } icon: {
-                    Image(systemName: step == .completed ? "mic.fill" : "speaker.wave.2.fill")
+                    Image(systemName: primaryIcon)
                 }
-                .disabled(step == .playing)
+                .disabled(primaryDisabled)
                 .padding(.horizontal, MATheme.sideMargin)
                 .padding(.bottom, 12)
             }
@@ -192,8 +208,47 @@ private struct GuidedModelScreen: View {
         case .playing:
             language.text(english: "Listening…", spanish: "Escuchando…")
         case .completed:
-            language.text(english: "Try it aloud", spanish: "Probar con mi voz")
+            if state.connectionFailure != nil {
+                language.text(
+                    english: "Retry review connection",
+                    spanish: "Reintentar conexión de revisión"
+                )
+            } else if !state.connectionReady {
+                language.text(
+                    english: "Preparing review…",
+                    spanish: "Preparando revisión…"
+                )
+            } else {
+                language.text(english: "Try it aloud", spanish: "Probar con mi voz")
+            }
         }
+    }
+
+    private var primaryIdentifier: String {
+        guard step == .completed else { return "guided.audio.model" }
+        return state.connectionFailure == nil
+            ? "guided.cta.try-voice"
+            : "guided.connection.retry"
+    }
+
+    private var primaryIcon: String {
+        guard step == .completed else { return "speaker.wave.2.fill" }
+        return state.connectionFailure == nil ? "mic.fill" : "arrow.clockwise"
+    }
+
+    private var primaryDisabled: Bool {
+        step == .playing
+            || (step == .completed
+                && !state.connectionReady
+                && state.connectionFailure == nil)
+    }
+
+    private func performPrimaryAction() {
+        guard step == .completed else {
+            send(.playModel)
+            return
+        }
+        send(state.connectionFailure == nil ? .beginAttempt : .retryRealtimeConnection)
     }
 }
 
@@ -257,6 +312,27 @@ private struct GuidedAttemptScreen: View {
             } else {
                 privacyNote.padding(.top, 16)
             }
+
+        case .checkingReviewConnection:
+            VStack(alignment: .leading, spacing: 16) {
+                ProgressView()
+                    .controlSize(.large)
+                    .tint(MATheme.ai)
+                Text(language.text(
+                    english: "Checking speaking review before the microphone starts…",
+                    spanish: "Comprobando la revisión de voz antes de encender el micrófono…"
+                ))
+                    .font(MATheme.heading())
+                Text(language.text(
+                    english: "Your recording will start only after review is ready.",
+                    spanish: "Tu grabación comenzará solo cuando la revisión esté lista."
+                ))
+                    .font(MATheme.body(15, weight: .regular))
+                    .foregroundStyle(MATheme.stone)
+            }
+            .padding(22)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(MATheme.mist, in: RoundedRectangle(cornerRadius: 20))
 
         case .reviewing:
             VStack(alignment: .leading, spacing: 16) {
@@ -428,14 +504,41 @@ private struct GuidedAttemptScreen: View {
     private var controls: some View {
         switch step {
         case .ready:
-            PrimaryButton(title: language.text(
-                english: "Record my attempt",
-                spanish: "Grabar mi intento"
-            ), identifier: "guided.capture.start") {
-                send(.beginAttempt)
-            } icon: {
-                Image(systemName: "mic.fill")
+            if state.connectionFailure != nil {
+                PrimaryButton(title: language.text(
+                    english: "Retry review connection",
+                    spanish: "Reintentar conexión de revisión"
+                ), identifier: "guided.connection.retry-attempt") {
+                    send(.retryRealtimeConnection)
+                } icon: {
+                    Image(systemName: "arrow.clockwise")
+                }
+            } else if !state.connectionReady {
+                PrimaryButton(title: language.text(
+                    english: "Preparing review…",
+                    spanish: "Preparando revisión…"
+                ), identifier: "guided.connection.preparing-attempt") {} icon: {
+                    ProgressView().tint(.white)
+                }
+                .disabled(true)
+            } else {
+                PrimaryButton(title: language.text(
+                    english: "Record my attempt",
+                    spanish: "Grabar mi intento"
+                ), identifier: "guided.capture.start") {
+                    send(.beginAttempt)
+                } icon: {
+                    Image(systemName: "mic.fill")
+                }
             }
+        case .checkingReviewConnection:
+            PrimaryButton(title: language.text(
+                english: "Checking review…",
+                spanish: "Comprobando revisión…"
+            ), identifier: "guided.connection.checking") {} icon: {
+                ProgressView().tint(.white)
+            }
+            .disabled(true)
         case .requestingPermission:
             PrimaryButton(title: language.text(
                 english: "Waiting for permission…",
@@ -463,7 +566,7 @@ private struct GuidedAttemptScreen: View {
             .disabled(true)
         case .feedback(let result):
             feedbackControls(result)
-        case .recoverableError:
+        case .recoverableError(let failure):
             if state.feedbackTransition == .retrying {
                 PrimaryButton(title: language.text(
                     english: "Preparing another attempt…",
@@ -474,8 +577,12 @@ private struct GuidedAttemptScreen: View {
                 .disabled(true)
             } else {
                 PrimaryButton(title: language.text(
-                    english: "Record again",
-                    spanish: "Grabar de nuevo"
+                    english: failure.isRealtimeFailure
+                        ? "Reconnect before recording"
+                        : "Record again",
+                    spanish: failure.isRealtimeFailure
+                        ? "Reconectar antes de grabar"
+                        : "Grabar de nuevo"
                 ), identifier: "guided.capture.retry-error") {
                     send(.retryAttempt)
                 } icon: {
@@ -568,6 +675,11 @@ private struct GuidedAttemptScreen: View {
 
     private var headerLabel: String {
         switch step {
+        case .checkingReviewConnection:
+            language.text(
+                english: "REVIEW CONNECTION",
+                spanish: "CONEXIÓN DE REVISIÓN"
+            )
         case .reviewing:
             language.text(english: "REVIEWING YOUR ATTEMPT", spanish: "REVISANDO TU INTENTO")
         case .feedback:
@@ -586,6 +698,11 @@ private struct GuidedAttemptScreen: View {
 
     private var headerTitle: String {
         switch step {
+        case .checkingReviewConnection:
+            language.text(
+                english: "Making sure your answer can be reviewed.",
+                spanish: "Confirmando que tu respuesta se pueda revisar."
+            )
         case .recording:
             language.text(english: "I’m listening.", spanish: "Te escucho.")
         case .reviewing:
