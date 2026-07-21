@@ -1,16 +1,17 @@
 # Devpost draft — MA
 
-Status: copy prepared. Publication, repository sharing, video upload, `/feedback`,
-and final submission require Ignacio's explicit approval.
+Status: final submission explicitly authorized on 2026-07-21. The reviewed
+source repository is public; the narrated demo has been produced and awaits its
+required public YouTube URL before the one permitted Devpost submission.
 
 ## Submission fields
 
 - Project name: **MA**
 - Track/category: **Education**
 - Tagline: **Hear it, say it, understand the feedback, use it for real.**
-- Video URL: `[PENDING — public upload requires approval]`
-- Repository URL: `[PENDING — private reviewer share or public release requires approval]`
-- Codex `/feedback` Session ID: `[PENDING — run in root task after final evidence freeze]`
+- Video URL: `[PENDING — 90.23-second English-narrated video built; public YouTube upload in progress]`
+- Repository URL: `https://github.com/nachoal/ma-build-week`
+- Codex project-thread Session ID: `019f5f68-b42c-7bb2-97dc-a1243d495298`
 
 ## Short description
 

@@ -30,7 +30,8 @@ will enumerate its work below rather than relying on a bare “majority” claim
 - Model: `gpt-5.6-sol`
 - Reasoning: `ultra`
 - Started at: 2026-07-14 00:57:03 CST (America/Mexico_City, UTC-06:00)
-- Final `/feedback` Session ID: pending
+- Final Codex project-thread Session ID:
+  `019f5f68-b42c-7bb2-97dc-a1243d495298`
 
 ## Existing baseline before the root task
 
@@ -55,14 +56,14 @@ Append exact evidence after each milestone.
 | Repair/resume and next-attempt evidence | Root bound the natural local tutor turn to real playback state, admits pause only while it is active, plays one complete controlled segment labeled `REPLAY · DEMOSTRACIÓN`, resumes the same obligation only after playback completion, captures a new no-text attempt, and gates proof on the full stop/segment/resume chain | `cb9d8bd` | adversarial re-audit PASS; focused strict tests 11/11 and product UI smoke 1/1 | superseded by the guided retry/continue product; historical replay remains labeled and no physical learner repair claim is made |
 | GPT-5.6 planner integration/guardrails | Root added versioned `ScenePlan`, `Attempt`, `LearningReport`, and `NextLearningAction` contracts; an immediate deterministic policy; a Keychain-backed broker client; report-generation cancellation; and double validation that binds every action/reason pair to the same observed obligation. The Worker fixes `gpt-5.6-sol`, strict structured output, `store: false`, bounded input/output/timeout/retry, canonical evidence copy, privacy-preserving safety ID, and endpoint-scoped product authentication | `64e8532` | Physical English/Spanish deterministic-input routes provisioned the private product credential and completed non-fallback GPT-5.6 plans; real microphone audio/transcript never enters the planner | code, broker, live contract, and physical deterministic-input planner path complete; human outcome remains unclaimed |
 | Physical-device validation and replay fallback | Root added a bounded normalized `ConversationProvider` contract, capability groups that cannot imply one another, a single-use `ReplayAdapter`, fixture-only provenance, a shared product/replay semantic reducer, stale-event and stale-capture rejection, and a permanently labeled replay UI with no microphone, audio, network, learner, or planner claim. One dynamic device script builds, signs, installs, and launches either product or replay without a checked-in device identifier or credential | `c344a67` | Later physical English/Spanish deterministic-input provider routes and a separate real capture/stop path passed; replay remains permanently labeled and isolated | bounded physical provider/control paths complete; route breadth and human evidence remain open |
-| Demo/submission evidence | Root added explicit planner opt-in, accurate deletion/privacy flows, captions, Reduce Motion and Dynamic Type hardening, a tested privacy manifest, claim matrix, Devpost draft, demo/testing/privacy runbooks, subtitles, rehearsal/cold-viewer protocols, fail-closed secret scanning, dynamic device automation, and canonical clean-tree archive automation | `c344a67`, `8c9effc` | Current gates: MA 213/213 executions (184 definitions), probe 51/51 (49 definitions), Worker 35/35; `plutil`, script syntax, generated-project stability, current-tree/history/staged-input/compiled-binary secret scans, negative release-tool tests, and independent audits pass | exact `e968354` packet/archive verified with shipping app implementation `f9f7a7f`; human-quality evidence, video, URLs, `/feedback`, and submission remain gated |
+| Demo/submission evidence | Root added explicit planner opt-in, accurate deletion/privacy flows, captions, Reduce Motion and Dynamic Type hardening, a tested privacy manifest, claim matrix, Devpost draft, demo/testing/privacy runbooks, subtitles, rehearsal/cold-viewer protocols, fail-closed secret scanning, dynamic device automation, canonical clean-tree archive automation, and the final English-narrated video | `c344a67`, `8c9effc`, `5bc1b9d` | Submission-day gates: MA 230/230 executions (196 definitions), probe 51/51 (49 definitions), Worker 35/35; public source passed the current/history secret scan and published at `https://github.com/nachoal/ma-build-week` | replacement `68ce85b` packet structurally verified; no fresh replacement-phone run, human-quality claim, or final submission claim until the external confirmations are recorded |
 | Guided bilingual Realtime product | After the learner rejected the fixture-first flow, root replaced the shipping route with an English-default/Spanish-switchable lesson: explained target, one-tap bundled model, explicit bounded capture, enum-only transcript-grounded Realtime review, canonical bilingual feedback, retry/continue, a briefed captioned waiter turn, second capture/review, and completion without scores or self-rating. One `AudioGraphController` owns every product audio operation | `a9eb988` | Physical English and Spanish provider/review/planner routes passed with deterministic bundled learner input; a separate real physical capture/stop path passed without claiming semantic review | code/service and bounded physical provider/control paths complete; real-microphone semantic review and human quality remain open |
 | Guided aggregate planner and hardened product broker | Root added separate v2 aggregate-only guided planning, explicit opt-in, deterministic local fallback, cancellation/generation fencing, a fixed `gpt-5.6-sol` Responses contract, and an independently re-audited product Realtime mint/review policy. Authenticated quota is consumed before bounded body parsing; exact JSON media types and enum-only review arguments fail closed | `a9eb988` | Worker 30/30; security re-audit DEPLOY; live version `e45a3b92-217b-4830-8841-a50a7465a6da` passed health, invalid-media 400, exact-key mint, local policy-hash match, and bilingual guided-plan validation | complete for authorized private single-device demo; not public/TestFlight auth |
 | Current guided device/submission evidence | Root generated, signed, and installed the guided build, rewrote the submission story around the actual bilingual two-review product, and made the operator-only replay's not-live badge bilingual | `a9eb988` | Later retained evidence records physical English/Spanish deterministic-input routes plus real capture/stop on iPhone 17 Pro/iOS 27.0 | physical bounded provider/control paths complete; human/Japanese review, broader device matrix, video, `/feedback`, and submission remain gated |
 | Production-realistic simulator and policy closure | Root added a DEBUG-only harness that substitutes only deterministic bundled microphone input while retaining the production broker, `gpt-realtime-2.1` WebSocket, effective-policy verifier, structured two-turn review, spoken feedback, waiter audio, shipping playout, and `gpt-5.6-sol` planner. Root fixed cross-runtime hash normalization, pinned `reasoning.effort=low` in the broker-owned policy, and rejects client attempts to weaken it | `bebac3c` | Live smoke 2/2; repeated bilingual journey 10/10 (five English, five Spanish) at `.build/test-results/MA-live-low-reasoning-bilingual-stress5.xcresult`; real simulator permission/capture 1/1; current standard no-secret suite 213/213 executions; Worker 35/35 | simulator/code/service complete; broader physical route/human quality evidence remains gated |
 | Physical live automation and final evidence hardening | Root ran the credentialed lesson on the paired iPhone, distinguished a SpringBoard interruption from app behavior, removed every second-tap recovery so one dispatched tap is the invariant, disabled privileged failure diagnostics, widened the existing two planner attempts from 7 to 10 seconds after a reproduced 14.183-second broker 502, narrowed retries to 408/409/500/502/503/504, and made both live runners fail unless the app verifies test-credential deletion | `80c6eee`, `cf96ce0` | Physical English passed in 47.506 seconds and Spanish passed in 53.729 seconds with deterministic bundled learner input. Exact `bd66804` physical real-audio capture/stop passed 1/1 in 17.484 seconds with verified cleanup; current standard MA 213/213; probe 51/51; Worker 35/35; private Worker version `57d49379-af1f-4160-8e88-ec611ab9a1d7` | deterministic physical bilingual provider path and physical capture/stop complete; JIT prompt, route breadth, human audibility/teaching, real-mic semantic review, and broader device matrix remain gated |
 | Verified product data deletion | Root replaced best-effort profile reset with a fail-closed transaction: delete and reload the this-device-only Keychain item first, reset local state only after verified absence, and preserve profile/sheet state with fixed English/Spanish recovery copy on any failure | `f9f7a7f`; physical-runner fix `15f6709` | Focused simulator 7/7 plus complete uncontended MA 213/213. Physical iPhone/iOS 27.0: clean transaction/real-Keychain 4/4 and bilingual/success UI 3/3 bundles | simulator and physical code/Keychain/UI complete; archive refreshed |
-| Release review-access repair | A physical user report exposed that the frozen archive could launch without a retained private review credential and defer the failure until after capture. Before every explicit microphone action, root now reconciles cached readiness with the transport actor and reconnects only if stale; failure is visible/capture-blocking. The installer verifies Keychain readback and requires a second bearer-free Release launch to load Keychain and policy-verify a real WebSocket session before ordinary relaunch | pending current fix commit | Current simulator MA suite 227/227 (193 definitions), Worker 35/35, focused readiness/provisioning/audio 24/24 and transport preflight 27/27, Release warnings-as-errors build, and revised live smoke 2/2 pass; final 10-journey and replacement physical archive gates are in progress | old `e968354` archive superseded; not complete until exact replacement archive passes on the phone |
+| Release review-access repair | A physical user report exposed that the frozen archive could launch without a retained private review credential and defer the failure until after capture. Before every explicit microphone action, root now reconciles cached readiness with the transport actor and reconnects only if stale; failure is visible/capture-blocking. The installer verifies Keychain readback and requires a second bearer-free Release launch to load Keychain and policy-verify a real WebSocket session before ordinary relaunch | `68ce85bdafd71a73f90b323071c5ae934073a90c` | Fresh MA 230/230, Worker 35/35, probe 51/51, focused readiness/provisioning/audio and transport gates, Release warnings-as-errors build, one live smoke pair, and three consecutive isolated English/Spanish pairs pass; fourth/fifth pairs are not counted | old `e968354` archive superseded; replacement archive is structurally verified but was not freshly installed on the phone, so the submission makes no fresh replacement-Release device claim |
 
 ## Delegated tasks and sessions
 
@@ -1132,6 +1133,47 @@ For each material decision, capture:
   repetition was noisy and delayed the physical failure gate. Root stopped the
   fourth pair, verified credential deletion, and moved to the phone. No claim
   depends on the interrupted pair.
+
+### 2026-07-21 — Submission-day freeze without a fresh phone run
+
+- Ignacio explicitly authorized completion without reconnecting the physical
+  iPhone. Root retained the earlier qualified physical evidence and narrowed
+  the final story: no fresh replacement-archive install, route breadth,
+  human-audibility, Japanese-quality, pronunciation, mastery, or learner-outcome
+  claim is made.
+- On the newest installed iPhone 17 Pro Simulator runtime (iOS 26.5), the fresh
+  standard MA gate passed 230/230 executions with zero failures or skips (196
+  definitions plus 38 dynamic parameter executions) at
+  `.build/test-results/MA-submission-final-simulator-20260721.xcresult`. It
+  includes 12 UI journeys and the real Apple playback/capture/stop integration.
+  Host output was muted only during the run and restored automatically.
+- The characterization-only MAAudioProbe gate freshly passed 51/51 executions
+  (49 definitions) at
+  `.build/test-results/MAAudioProbe-submission-final-simulator-20260721.xcresult`.
+  Worker contracts freshly passed 35/35 at
+  `.build/test-results/MAWorker-submission-final-20260721.tap`.
+- The exact-current private production path is represented only by one passing
+  English/Spanish smoke pair and three consecutive passing isolated pairs, two
+  journeys each. The deliberately interrupted fourth pair and incomplete fifth
+  artifact are excluded. No additional noisy live loop was run.
+- The signed replacement packet at exact app commit
+  `68ce85bdafd71a73f90b323071c5ae934073a90c` retains deep signature, embedded
+  privacy manifest, export, secret-scan, and checksum verification. Its ZIP
+  SHA-256 is
+  `31a39d8482fc77d3297cb058a39ba8753238fe77b8bdc883c465db82cea7d116`.
+  It was not freshly installed on the phone.
+- Root produced a 90.23-second 1080x1920 H.264/AAC English-narrated demo from
+  the preserved successful production-realistic bilingual Simulator footage.
+  The narration explicitly labels deterministic learner input, preserved
+  physical evidence, and prohibited claims. Video SHA-256 is
+  `3c56e1f6a06a4047bdac658e90bddc78c1f7b93b88c0abb0126b204e05986a4c`.
+- After a complete current/history secret scan, root published only the tracked
+  source, tests, redacted documentation, and MIT license to
+  `https://github.com/nachoal/ma-build-week`. Ignored device evidence, archives,
+  video working files, raw audio, standard keys, install tokens, and private
+  Worker configuration were not pushed.
+- The root Codex project-thread Session ID intended for the submission is
+  `019f5f68-b42c-7bb2-97dc-a1243d495298`.
 
 ## Final feedback preparation
 
