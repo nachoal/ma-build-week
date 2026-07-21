@@ -1,0 +1,10 @@
+HOW MA USES OPENAI
+
+GPT Realtime
+Two explicit speaking turns with qualitative review
+
+gpt-5.6-sol
+Optional next practice from aggregate lesson facts only
+
+Codex
+Built, tested, hardened, and documented end to end

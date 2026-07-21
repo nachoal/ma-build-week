@@ -155,5 +155,8 @@ binding [Gate 0 verdict](docs/poc/verdict.md) for the exact claim boundary.
 - `docs/submission` — Devpost draft, demo/rehearsal plans, claims, privacy, and session ledger
 - `scripts` — reproducible device, evidence, and secret-scan helpers
 
-The repository has no public remote. Do not push, publish the video, expose the
-Worker, or submit Devpost without Ignacio's explicit approval.
+This repository is published for OpenAI Build Week judging under the MIT
+License. It contains no standard OpenAI key, private install token, raw learner
+audio, or unredacted device evidence. The deployed Worker and its credentials
+remain private; standard Simulator tests and the deterministic guided UI suite
+remain secret-free and reproducible from source.

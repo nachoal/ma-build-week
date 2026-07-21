@@ -1,0 +1,13 @@
+MA is a Japanese speaking tutor designed for a real level-zero beginner. Instead of opening with unexplained Japanese or an empty chat prompt, it teaches one useful restaurant response through a clear sequence: understand, listen, speak, review, retry, and use it in context.
+
+The fresh interface defaults to English for judges, and this demo switches to Spanish to show that the entire lesson and feedback are bilingual without losing progress. Before any Japanese plays, MA explains the goal, shows the phrase hitori desu, its meaning, and exactly what the learner should do.
+
+One tap plays a short model. Recording never starts automatically. The learner explicitly begins and ends each turn. GPT Realtime returns an approximate transcript and a small, schema-guided review. The app validates that result and renders canonical feedback locally, with no score and no mastery claim.
+
+Next, MA briefs the restaurant situation in the learner's language before a short, captioned Realtime waiter turn. The learner answers explicitly and receives a second review before the scene can complete.
+
+Completion always includes a local next practice. GPT-5.6 is a separate opt-in planner that receives only versioned aggregate lesson facts, never audio, transcripts, or free-form feedback.
+
+Codex was used end to end to turn the original fixture into the SwiftUI product, one-owner audio graph, private short-lived-secret broker, Realtime transport, bilingual teaching flow, planner, privacy controls, tests, and evidence-led scope cuts.
+
+This footage is a production-realistic iPhone Simulator run with deterministic learner input. Preserved physical iPhone evidence separately covers the bounded provider path and real capture and stop controls. MA makes no full-duplex, pronunciation-score, or learner-outcome claim.
