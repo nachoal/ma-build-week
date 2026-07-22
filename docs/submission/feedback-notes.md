@@ -1175,6 +1175,28 @@ For each material decision, capture:
 - The root Codex project-thread Session ID intended for the submission is
   `019f5f68-b42c-7bb2-97dc-a1243d495298`.
 
+### 2026-07-21 — Public artifacts and Devpost deadline rejection
+
+- Root enabled YouTube Data API v3 only for the existing OAuth client project
+  and uploaded the approved 90.23-second demo exactly once. YouTube confirmed
+  `https://youtu.be/ZyGVFLA4onM`; the public watch page shows the expected MA
+  title, Ignacio Alonso channel, and 1:30 duration.
+- Devpost created draft submission `1111542` / project slug `ma-l19fkh`. Root
+  saved the approved project name, pitch, evidence-bounded story, public source
+  URL, public video URL, Education category, Mexico residence, individual
+  submitter type, reviewer instructions, and root `/feedback` Session ID. The
+  draft reached 4/5 steps. Chrome rejected the prepared cover transfer before
+  its local-file permission was enabled, so the draft retained Devpost's
+  placeholder thumbnail.
+- At 2026-07-21 18:25 CST, after the 17:00 PDT / 18:00 CST submission deadline,
+  root recovered the preserved finalization page, applied Ignacio's confirmed
+  Rules/Terms acceptance, and clicked **Submit project** exactly once. Devpost
+  rejected that request with `Sorry! This hackathon is no longer accepting
+  submissions.` and redirected to the ended-hackathon page. Root did not retry.
+  The authoritative **My hackathon projects** dashboard continues to report
+  `DRAFT · 4/5 steps done`; therefore no official public Devpost entry or
+  submission confirmation is claimed.
+
 ## Final feedback preparation
 
 Before running `/feedback` in the root implementation task:

@@ -1,15 +1,17 @@
 # Devpost draft — MA
 
 Status: final submission explicitly authorized on 2026-07-21. The reviewed
-source repository is public; the narrated demo has been produced and awaits its
-required public YouTube URL before the one permitted Devpost submission.
+source repository and narrated demo are public. Devpost draft `1111542` reached
+4/5 steps, but the one permitted submit click occurred after the deadline and
+Devpost rejected it. The authoritative project dashboard remains `DRAFT`; no
+official Devpost submission is claimed.
 
 ## Submission fields
 
 - Project name: **MA**
 - Track/category: **Education**
 - Tagline: **Hear it, say it, understand the feedback, use it for real.**
-- Video URL: `[PENDING — 90.23-second English-narrated video built; public YouTube upload in progress]`
+- Video URL: `https://youtu.be/ZyGVFLA4onM`
 - Repository URL: `https://github.com/nachoal/ma-build-week`
 - Codex project-thread Session ID: `019f5f68-b42c-7bb2-97dc-a1243d495298`
 

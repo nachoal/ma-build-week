@@ -94,7 +94,7 @@ replacement archive as fresh physical Release evidence.
 - [ ] Five-person 4/5 cold-viewer result
 - [x] Under-three-minute English-narrated final video produced: 90.23 seconds,
       1080x1920 H.264/AAC, with an explicit Simulator/deterministic-input
-      disclosure; public YouTube processing remains pending
+      disclosure; public at `https://youtu.be/ZyGVFLA4onM`
 
 ## Public claim audit
 
@@ -140,7 +140,11 @@ environment and exact commit, and rescans staged copy.
 
 - [x] Ignacio approves the minimum required public repository release; source
       published at `https://github.com/nachoal/ma-build-week`
-- [x] Ignacio approves the public YouTube video; upload is in progress
+- [x] Ignacio approves the public YouTube video; upload confirmed at
+      `https://youtu.be/ZyGVFLA4onM`
 - [x] Root Codex project-thread Session ID recorded as
       `019f5f68-b42c-7bb2-97dc-a1243d495298`
 - [x] Ignacio explicitly approves the final Devpost fields and one submission
+- [ ] Official Devpost submission. The single authorized submit click occurred
+      after the deadline and Devpost rejected it; project `ma-l19fkh` remains a
+      4/5-step draft.
